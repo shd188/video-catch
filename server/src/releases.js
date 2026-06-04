@@ -20,13 +20,7 @@ export function getReleaseFilePath(channelId, version) {
   return fs.existsSync(full) ? full : null;
 }
 
-export function createRelease({ channelId, version, filename, releaseNotes }) {
-  const dir = path.join(getReleasesDir(), channelId);
-  fs.mkdirSync(dir, { recursive: true });
-  const target = path.join(dir, filename);
-  if (!fs.existsSync(target)) {
-    throw new Error(`File not found: ${target}. Copy zip to this path first.`);
-  }
+function upsertReleaseRow({ channelId, version, filename, releaseNotes }) {
   getDb()
     .prepare(
       `INSERT INTO releases (channel_id, version, filename, release_notes)
@@ -37,7 +31,46 @@ export function createRelease({ channelId, version, filename, releaseNotes }) {
          published_at = datetime('now')`
     )
     .run(channelId, version, filename, releaseNotes || null);
-  return getLatestRelease(channelId);
+  return getDb()
+    .prepare(`SELECT * FROM releases WHERE channel_id = ? AND version = ?`)
+    .get(channelId, version);
+}
+
+export function listReleases(channelId) {
+  if (channelId) {
+    return getDb()
+      .prepare(
+        `SELECT * FROM releases WHERE channel_id = ? ORDER BY published_at DESC, id DESC`
+      )
+      .all(channelId);
+  }
+  return getDb()
+    .prepare(`SELECT * FROM releases ORDER BY published_at DESC, id DESC LIMIT 100`)
+    .all();
+}
+
+export function createRelease({ channelId, version, filename, releaseNotes }) {
+  const dir = path.join(getReleasesDir(), channelId);
+  const target = path.join(dir, filename);
+  if (!fs.existsSync(target)) {
+    throw new Error(`File not found: ${target}. Upload zip in admin or copy file first.`);
+  }
+  return upsertReleaseRow({ channelId, version, filename, releaseNotes });
+}
+
+/** 管理后台上传 zip 后登记版本 */
+export function registerRelease({ channelId, version, filename, releaseNotes }) {
+  const dir = path.join(getReleasesDir(), channelId);
+  fs.mkdirSync(dir, { recursive: true });
+  const target = path.join(dir, filename);
+  if (!fs.existsSync(target)) {
+    throw new Error(`Upload failed: ${target}`);
+  }
+  return upsertReleaseRow({ channelId, version, filename, releaseNotes });
+}
+
+export function sanitizeReleaseFilename(name) {
+  return path.basename(name).replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
 export function buildDownloadUrl(publicBaseUrl, channelId, version, licenseKey, installationId) {

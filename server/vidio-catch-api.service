@@ -1,0 +1,14 @@
+[Unit]
+Description=Vidio-Catch License API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/vidio-catch/server
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -76,7 +76,9 @@ ssh root@你的公网IP
 # 或 ssh ecs-user@...（按阿里云创建实例时提示的用户名）
 ```
 
-建议首次：
+**Alibaba Cloud Linux 3** 请直接用逐步命令：[DEPLOY-ALIYUN-ACL3.md](./DEPLOY-ALIYUN-ACL3.md)（`dnf`，不是 `apt`）。
+
+**Ubuntu / Debian** 建议首次：
 
 ```bash
 apt update && apt upgrade -y

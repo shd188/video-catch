@@ -16,8 +16,23 @@ export function getDb() {
     db.pragma("journal_mode = WAL");
     const schema = fs.readFileSync(path.join(root, "schema.sql"), "utf8");
     db.exec(schema);
+    migrate(db);
   }
   return db;
+}
+
+function migrate(database) {
+  const cols = database.prepare(`PRAGMA table_info(licenses)`).all().map((c) => c.name);
+  if (!cols.includes("single_use")) {
+    database.exec(`ALTER TABLE licenses ADD COLUMN single_use INTEGER NOT NULL DEFAULT 0`);
+  }
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS admin_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
 }
 
 export function getReleasesDir() {

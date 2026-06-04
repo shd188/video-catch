@@ -65,6 +65,10 @@ export function activateLicense({ licenseKey, channelId, installationId, userAge
     )
     .get(license.id, installationId);
 
+  if (license.single_use && count >= 1 && !existing) {
+    return { ok: false, code: "ALREADY_USED", message: "激活码已使用，每个码仅可用一次" };
+  }
+
   if (!existing && count >= license.max_devices) {
     return {
       ok: false,
@@ -111,20 +115,139 @@ export function checkLicense({ licenseKey, channelId, installationId }) {
   };
 }
 
-export function createLicense({
+/** 某渠道激活码用量统计（用于后台判断是否要补生成） */
+export function licenseStats(channelId) {
+  const row = channelId
+    ? getDb()
+        .prepare(
+          `SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) = 0 THEN 1 ELSE 0 END) AS unused,
+            SUM(CASE WHEN (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) > 0 THEN 1 ELSE 0 END) AS used
+           FROM licenses l WHERE channel_id = ?`
+        )
+        .get(channelId)
+    : getDb()
+        .prepare(
+          `SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) = 0 THEN 1 ELSE 0 END) AS unused,
+            SUM(CASE WHEN (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) > 0 THEN 1 ELSE 0 END) AS used
+           FROM licenses l`
+        )
+        .get();
+  return {
+    channel_id: channelId || null,
+    total: row?.total ?? 0,
+    unused: row?.unused ?? 0,
+    used: row?.used ?? 0,
+  };
+}
+
+export function listLicenses(channelId, { limit = 500, unusedOnly = false } = {}) {
+  const usedClause = unusedOnly
+    ? `AND (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) = 0`
+    : "";
+  if (channelId) {
+    return getDb()
+      .prepare(
+        `SELECT l.*,
+          (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) AS devices_used
+         FROM licenses l WHERE channel_id = ? ${usedClause}
+         ORDER BY l.id DESC LIMIT ?`
+      )
+      .all(channelId, limit);
+  }
+  return getDb()
+    .prepare(
+      `SELECT l.*,
+        (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) AS devices_used
+       FROM licenses l WHERE 1=1 ${usedClause}
+       ORDER BY l.id DESC LIMIT ?`
+    )
+    .all(limit);
+}
+
+function insertLicenseRow({
   channelId,
   email,
   maxDevices = 2,
+  singleUse = 0,
   expiresAt,
   note,
   licenseKey,
 }) {
   const key = licenseKey || generateLicenseKey();
+  const devices = singleUse ? 1 : maxDevices;
+  const single = singleUse ? 1 : 0;
   getDb()
     .prepare(
-      `INSERT INTO licenses (license_key, channel_id, email, max_devices, expires_at, note)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO licenses (license_key, channel_id, email, max_devices, single_use, expires_at, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(key, channelId, email || null, maxDevices, expiresAt || null, note || null);
+    .run(key, channelId, email || null, devices, single, expiresAt || null, note || null);
   return findLicenseByKey(key);
+}
+
+export function createLicense({
+  channelId,
+  email,
+  maxDevices = 2,
+  singleUse = false,
+  expiresAt,
+  note,
+  licenseKey,
+}) {
+  return insertLicenseRow({
+    channelId,
+    email,
+    maxDevices,
+    singleUse: singleUse ? 1 : 0,
+    expiresAt,
+    note,
+    licenseKey,
+  });
+}
+
+/** 批量生成一次性激活码（适合预生成 1000 个发客户） */
+export function createLicensesBulk({
+  channelId,
+  count,
+  expiresAt,
+  note,
+  singleUse = true,
+}) {
+  const n = Math.min(Math.max(parseInt(count, 10) || 0, 1), 10000);
+  const batchNote = note || `batch-${new Date().toISOString().slice(0, 10)}`;
+  const keys = [];
+  const insert = getDb().transaction((items) => {
+    for (const item of items) {
+      insertLicenseRow(item);
+      keys.push(item.licenseKey);
+    }
+  });
+  const items = [];
+  const seen = new Set();
+  while (items.length < n) {
+    const licenseKey = generateLicenseKey();
+    if (seen.has(licenseKey)) continue;
+    seen.add(licenseKey);
+    items.push({
+      channelId,
+      email: null,
+      maxDevices: 1,
+      singleUse: singleUse ? 1 : 0,
+      expiresAt: expiresAt || null,
+      note: batchNote,
+      licenseKey,
+    });
+  }
+  insert(items);
+  const csv = ["license_key,channel_id,note,expires_at"].concat(
+    items.map(
+      (i) =>
+        `${i.licenseKey},${channelId},${(batchNote || "").replace(/,/g, " ")},${expiresAt || ""}`
+    )
+  ).join("\n");
+  return { count: n, channel_id: channelId, note: batchNote, keys, csv };
 }

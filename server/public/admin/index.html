@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Vidio-Catch 激活码与渠道包管理" />
+  <title>Vidio-Catch 管理后台</title>
+  <style>
+    :root { --bg: #f4f6f8; --card: #fff; --primary: #1677ff; --border: #e5e7eb; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: var(--bg); color: #1f2937; min-height: 100vh; }
+    header {
+      background: #111827; color: #fff; padding: 12px 20px;
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 10;
+    }
+    header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+    #authBar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+    #authBar input[type="password"] { width: 200px; padding: 6px 10px; border-radius: 6px; border: 1px solid #374151; }
+    #authBar label { display: flex; align-items: center; gap: 4px; color: #d1d5db; margin: 0; }
+    #authStatus { padding: 4px 10px; border-radius: 999px; font-size: 12px; }
+    #authStatus.ok { background: #065f46; color: #d1fae5; }
+    #authStatus.guest { background: #374151; color: #e5e7eb; }
+    main { max-width: 960px; margin: 20px auto; padding: 0 16px 48px; }
+    .card { background: var(--card); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .banner-warn { background: #fffbeb; border: 1px solid #fcd34d; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+    label { display: block; font-size: 13px; margin-bottom: 4px; color: #4b5563; }
+    input, select, textarea { width: 100%; padding: 8px 10px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    button { background: var(--primary); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    button.secondary { background: #6b7280; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tabs button { background: #e5e7eb; color: #374151; }
+    .tabs button.active { background: var(--primary); color: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+    .mono { font-family: ui-monospace, monospace; font-size: 12px; }
+    .success-box { background: #ecfdf5; border: 1px solid #6ee7b7; padding: 12px; border-radius: 8px; margin-top: 12px; }
+    .err { color: #dc2626; font-size: 13px; margin-top: 8px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .row2 { grid-template-columns: 1fr; } #authBar input[type="password"] { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vidio-Catch 管理后台</h1>
+    <div id="authBar">
+      <span id="authStatus" class="guest">未登录</span>
+      <input type="password" id="loginKey" placeholder="管理登录密码" autocomplete="current-password" />
+      <label><input type="checkbox" id="rememberLogin" checked /> 记住登录</label>
+      <button type="button" id="loginBtn">登录</button>
+      <button type="button" class="secondary" id="logoutBtn" hidden>退出</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="authBanner" class="banner-warn">
+      请先输入右上角<strong>管理登录密码</strong>并登录（与客户激活码无关）。建议将本页加入书签：<strong id="pageUrl"></strong>
+    </div>
+
+    <div class="card" style="background:#eff6ff;border:1px solid #93c5fd;font-size:13px">
+      <strong>推荐流程：</strong>每个渠道只 <b>发布一次 zip</b> → 批量生成激活码 → 下载 CSV → 每单发一个未使用的码。
+    </div>
+
+    <div class="tabs">
+      <button type="button" data-tab="bulk" class="active">生成激活码</button>
+      <button type="button" data-tab="release">发布渠道包</button>
+      <button type="button" data-tab="licenses">激活码查询</button>
+      <button type="button" data-tab="releases">版本列表</button>
+      <button type="button" data-tab="license">单个生成</button>
+      <button type="button" data-tab="account">修改登录密码</button>
+    </div>
+
+    <section id="panel-bulk" class="card">
+      <h3>生成激活码</h3>
+      <p style="font-size:13px;color:#6b7280">选择渠道和数量，生成后下载 CSV。码快用完时在此补生成一批。</p>
+      <div id="bulkStats" style="font-size:13px;margin-bottom:16px;padding:12px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+        登录后显示剩余未使用数量…
+      </div>
+      <div class="row2">
+        <div>
+          <label>渠道</label>
+          <select id="bulkChannel"></select>
+        </div>
+        <div>
+          <label>生成数量（1～10000）</label>
+          <input id="bulkCount" type="number" min="1" max="10000" value="1000" />
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="secondary preset-count" data-n="500" style="padding:4px 10px;font-size:12px">500</button>
+            <button type="button" class="secondary preset-count" data-n="1000" style="padding:4px 10px;font-size:12px">1000</button>
+            <button type="button" class="secondary preset-count" data-n="2000" style="padding:4px 10px;font-size:12px">2000</button>
+          </div>
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>过期日期（可选）</label>
+          <input id="bulkExpires" type="date" />
+        </div>
+        <div>
+          <label>批次备注（可选）</label>
+          <input id="bulkNote" placeholder="例如：2026-06-补货批次" />
+        </div>
+      </div>
+      <button type="button" id="bulkBtn" data-require-auth>生成并下载 CSV</button>
+      <div id="bulkResult"></div>
+    </section>
+
+    <section id="panel-release" class="card" hidden>
+      <h3>发布渠道扩展包</h3>
+      <p style="font-size:13px;color:#6b7280">本机 <code>npm run build -- 渠道名</code> 打 zip 后上传。</p>
+      <label>渠道 ID</label>
+      <input id="relChannel" value="xiaoetong" list="channelList" />
+      <label>版本号</label>
+      <input id="relVersion" placeholder="2.6.9" />
+      <label>更新说明</label>
+      <textarea id="relNotes" rows="2"></textarea>
+      <label>扩展 zip</label>
+      <input id="relFile" type="file" accept=".zip" />
+      <button type="button" id="publishBtn" data-require-auth>上传并发布</button>
+      <p class="err" id="relErr"></p>
+      <div id="relResult"></div>
+    </section>
+
+    <section id="panel-licenses" class="card" hidden>
+      <h3>激活码查询</h3>
+      <label><input type="checkbox" id="unusedOnly" checked /> 仅显示未使用</label>
+      <button type="button" class="secondary" id="refreshLicBtn" data-require-auth>刷新</button>
+      <div style="overflow-x:auto;margin-top:12px">
+        <table>
+          <thead>
+            <tr><th>激活码</th><th>渠道</th><th>状态</th><th>一次性</th><th>过期</th><th>备注</th><th>创建</th></tr>
+          </thead>
+          <tbody id="licTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-license" class="card" hidden>
+      <h3>单个生成</h3>
+      <label>渠道 ID</label>
+      <input id="licChannel" value="xiaoetong" list="channelList" />
+      <label>客户邮箱（可选）</label>
+      <input id="licEmail" type="email" />
+      <label>过期日期（可选）</label>
+      <input id="licExpires" type="date" />
+      <label>备注</label>
+      <input id="licNote" placeholder="订单号" />
+      <button type="button" id="createLicBtn" data-require-auth>生成 1 个激活码</button>
+      <div id="licResult"></div>
+    </section>
+
+    <section id="panel-account" class="card" hidden>
+      <h3>修改管理登录密码</h3>
+      <p style="font-size:13px;color:#6b7280">
+        此密码<strong>仅用于</strong>登录本管理后台（及调用管理 API），与客户购买的<strong>激活码无关</strong>。
+        首次部署时密码来自服务器 <code>.env</code> 的 <code>ADMIN_API_KEY</code>；在此修改后会保存到数据库，之后以新密码为准。
+      </p>
+      <label>新密码（至少 8 位）</label>
+      <input type="password" id="newPassword" autocomplete="new-password" />
+      <label>确认新密码</label>
+      <input type="password" id="newPassword2" autocomplete="new-password" />
+      <button type="button" id="changePasswordBtn" data-require-auth>保存新密码</button>
+      <div id="passwordResult"></div>
+    </section>
+
+    <section id="panel-releases" class="card" hidden>
+      <h3>已发布版本</h3>
+      <button type="button" class="secondary" id="refreshRelBtn" data-require-auth>刷新</button>
+      <div style="overflow-x:auto;margin-top:12px">
+        <table>
+          <thead>
+            <tr><th>渠道</th><th>版本</th><th>文件</th><th>说明</th><th>发布时间</th></tr>
+          </thead>
+          <tbody id="relTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <datalist id="channelList"></datalist>
+
+  <script>
+    const STORAGE_KEY = "vidio_admin_key";
+    const REMEMBER_KEY = "vidio_admin_remember";
+    let lastBulkDownload = null;
+    let isAuthenticated = false;
+
+    document.getElementById("pageUrl").textContent = location.origin + "/admin/";
+
+    function getKey() {
+      if (localStorage.getItem(REMEMBER_KEY) === "1") {
+        return localStorage.getItem(STORAGE_KEY) || "";
+      }
+      return sessionStorage.getItem(STORAGE_KEY) || "";
+    }
+
+    function saveKey(key, remember) {
+      if (remember) {
+        localStorage.setItem(STORAGE_KEY, key);
+        localStorage.setItem(REMEMBER_KEY, "1");
+        sessionStorage.removeItem(STORAGE_KEY);
+      } else {
+        sessionStorage.setItem(STORAGE_KEY, key);
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    }
+
+    function setAuthenticated(ok) {
+      isAuthenticated = ok;
+      const status = document.getElementById("authStatus");
+      const banner = document.getElementById("authBanner");
+      const loginKey = document.getElementById("loginKey");
+      const remember = document.getElementById("rememberLogin");
+      const loginBtn = document.getElementById("loginBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (ok) {
+        status.textContent = "已登录";
+        status.className = "ok";
+        banner.hidden = true;
+        loginKey.hidden = true;
+        remember.hidden = true;
+        loginBtn.hidden = true;
+        logoutBtn.hidden = false;
+      } else {
+        status.textContent = "未登录";
+        status.className = "guest";
+        banner.hidden = false;
+        loginKey.hidden = false;
+        remember.hidden = false;
+        loginBtn.hidden = false;
+        logoutBtn.hidden = true;
+      }
+
+      document.querySelectorAll("[data-require-auth]").forEach((el) => {
+        el.disabled = !ok;
+      });
+    }
+
+    function requireAuth(message) {
+      if (isAuthenticated) return true;
+      alert(message || "请先登录");
+      document.getElementById("loginKey").focus();
+      return false;
+    }
+
+    async function api(path, options = {}) {
+      const headers = { "X-Admin-Key": getKey(), ...(options.headers || {}) };
+      const res = await fetch(path, { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        clearAuth();
+        throw new Error("登录已失效，请重新输入管理密钥");
+      }
+      if (!res.ok) throw new Error(data.message || res.statusText);
+      return data;
+    }
+
+    function clearAuth() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(REMEMBER_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
+      setAuthenticated(false);
+    }
+
+    async function tryAutoLogin() {
+      const key = getKey();
+      if (!key) {
+        setAuthenticated(false);
+        return;
+      }
+      try {
+        await api("/api/admin/ping");
+        setAuthenticated(true);
+        await loadChannels();
+      } catch {
+        clearAuth();
+      }
+    }
+
+    document.getElementById("loginBtn").onclick = async () => {
+      const key = document.getElementById("loginKey").value.trim();
+      if (!key) return;
+      const remember = document.getElementById("rememberLogin").checked;
+      saveKey(key, remember);
+      try {
+        await api("/api/admin/ping");
+        setAuthenticated(true);
+        document.getElementById("loginKey").value = "";
+        await loadChannels();
+      } catch (e) {
+        clearAuth();
+        alert(e.message);
+      }
+    };
+
+    document.getElementById("logoutBtn").onclick = () => {
+      clearAuth();
+      document.getElementById("bulkStats").textContent = "登录后显示剩余未使用数量…";
+    };
+
+    document.getElementById("rememberLogin").checked =
+      localStorage.getItem(REMEMBER_KEY) === "1" || localStorage.getItem(REMEMBER_KEY) === null;
+
+    function fillChannelSelects(channels) {
+      const opts = channels.map((c) => `<option value="${c}">${c}</option>`).join("");
+      const bulkSel = document.getElementById("bulkChannel");
+      const prev = bulkSel.value;
+      bulkSel.innerHTML = opts || '<option value="xiaoetong">xiaoetong</option>';
+      if (prev && [...bulkSel.options].some((o) => o.value === prev)) bulkSel.value = prev;
+      document.getElementById("channelList").innerHTML =
+        (channels.length ? channels : ["xiaoetong"]).map((c) => `<option value="${c}"></option>`).join("");
+    }
+
+    async function loadChannels() {
+      if (!isAuthenticated) return;
+      try {
+        const { channels } = await api("/api/admin/channels");
+        fillChannelSelects(channels);
+        loadBulkStats();
+      } catch (_) {}
+    }
+
+    async function loadBulkStats() {
+      const el = document.getElementById("bulkStats");
+      if (!isAuthenticated) {
+        el.textContent = "登录后显示剩余未使用数量…";
+        return;
+      }
+      const ch = document.getElementById("bulkChannel").value.trim();
+      if (!ch) return;
+      try {
+        const { stats } = await api("/api/admin/licenses/stats?channel_id=" + encodeURIComponent(ch));
+        const low = stats.unused < 100;
+        el.innerHTML =
+          `渠道 <b>${ch}</b>：共 <b>${stats.total}</b> 个，<b style="color:${low ? "#dc2626" : "#059669"}">${stats.unused}</b> 未使用，${stats.used} 已使用。` +
+          (low ? ` <span style="color:#dc2626">建议补生成。</span>` : "");
+      } catch (e) {
+        el.textContent = e.message;
+      }
+    }
+
+    document.getElementById("bulkChannel").addEventListener("change", loadBulkStats);
+
+    const TAB_IDS = ["bulk", "release", "licenses", "releases", "license", "account"];
+
+    function showTab(tab) {
+      if (!TAB_IDS.includes(tab)) tab = "bulk";
+      document.querySelectorAll(".tabs button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.tab === tab);
+      });
+      TAB_IDS.forEach((t) => {
+        document.getElementById("panel-" + t).hidden = t !== tab;
+      });
+      if (location.hash !== "#" + tab) {
+        history.replaceState(null, "", "#" + tab);
+      }
+      if (tab === "bulk") loadBulkStats();
+      if (tab === "licenses" && isAuthenticated) loadLicenses();
+      if (tab === "releases" && isAuthenticated) loadReleases();
+    }
+
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.onclick = () => showTab(btn.dataset.tab);
+    });
+
+    window.addEventListener("hashchange", () => {
+      const tab = (location.hash || "#bulk").slice(1);
+      showTab(tab);
+    });
+
+    document.querySelectorAll(".preset-count").forEach((btn) => {
+      btn.onclick = () => {
+        document.getElementById("bulkCount").value = btn.dataset.n;
+      };
+    });
+
+    function downloadCsv(filename, text) {
+      const blob = new Blob(["\uFEFF" + text], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById("bulkBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const el = document.getElementById("bulkResult");
+      const btn = document.getElementById("bulkBtn");
+      const ch = document.getElementById("bulkChannel").value.trim();
+      if (!ch) {
+        el.innerHTML = `<p class="err">请选择渠道</p>`;
+        return;
+      }
+      el.innerHTML = "生成中，请稍候…";
+      btn.disabled = true;
+      try {
+        const data = await api("/api/admin/licenses/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channel_id: ch,
+            count: Number(document.getElementById("bulkCount").value) || 1000,
+            expires_at: document.getElementById("bulkExpires").value || undefined,
+            note: document.getElementById("bulkNote").value.trim() || undefined,
+            single_use: true,
+          }),
+        });
+        const fname = `licenses-${data.channel_id}-${data.count}-${Date.now()}.csv`;
+        lastBulkDownload = { fname, csv: data.csv };
+        downloadCsv(fname, data.csv);
+        el.innerHTML = `<div class="success-box">
+          <p>已生成 <b>${data.count}</b> 个（渠道 <b>${data.channel_id}</b>，批次 <b>${data.note}</b>）。</p>
+          <button type="button" id="redownloadCsvBtn" style="margin-top:8px">再次下载 CSV</button>
+        </div>`;
+        document.getElementById("redownloadCsvBtn").onclick = () => {
+          if (lastBulkDownload) downloadCsv(lastBulkDownload.fname, lastBulkDownload.csv);
+        };
+        loadBulkStats();
+      } catch (e) {
+        el.innerHTML = `<p class="err">${e.message}</p>`;
+      } finally {
+        btn.disabled = !isAuthenticated;
+      }
+    };
+
+    document.getElementById("createLicBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const el = document.getElementById("licResult");
+      el.innerHTML = "";
+      try {
+        const { license } = await api("/api/admin/licenses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channel_id: document.getElementById("licChannel").value.trim(),
+            email: document.getElementById("licEmail").value.trim() || undefined,
+            single_use: true,
+            expires_at: document.getElementById("licExpires").value || undefined,
+            note: document.getElementById("licNote").value.trim() || undefined,
+          }),
+        });
+        el.innerHTML = `<div class="success-box">
+          <div class="mono" style="font-size:18px;margin:8px 0">${license.license_key}</div>
+          <button type="button" onclick="navigator.clipboard.writeText('${license.license_key}')">复制</button>
+        </div>`;
+      } catch (e) {
+        el.innerHTML = `<p class="err">${e.message}</p>`;
+      }
+    };
+
+    async function loadLicenses() {
+      if (!requireAuth()) return;
+      const ch = document.getElementById("bulkChannel").value.trim();
+      const unused = document.getElementById("unusedOnly").checked ? "&unused=1" : "";
+      const q = ch ? `?channel_id=${encodeURIComponent(ch)}${unused}&limit=200` : `?${unused.slice(1)}&limit=200`;
+      const { licenses } = await api("/api/admin/licenses" + q);
+      document.getElementById("licTable").innerHTML =
+        licenses
+          .map(
+            (l) => `<tr>
+        <td class="mono">${l.license_key}</td>
+        <td>${l.channel_id}</td>
+        <td>${l.devices_used > 0 ? "已使用" : "未使用"}</td>
+        <td>${l.single_use ? "是" : "否"}</td>
+        <td>${l.expires_at || "—"}</td>
+        <td>${l.note || "—"}</td>
+        <td>${l.created_at || ""}</td>
+      </tr>`
+          )
+          .join("") || "<tr><td colspan='7'>暂无</td></tr>";
+    }
+
+    document.getElementById("refreshLicBtn").onclick = loadLicenses;
+
+    document.getElementById("publishBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const err = document.getElementById("relErr");
+      const out = document.getElementById("relResult");
+      err.textContent = "";
+      out.innerHTML = "";
+      const file = document.getElementById("relFile").files[0];
+      if (!file) {
+        err.textContent = "请选择 zip";
+        return;
+      }
+      const fd = new FormData();
+      fd.append("channel_id", document.getElementById("relChannel").value.trim());
+      fd.append("version", document.getElementById("relVersion").value.trim());
+      fd.append("release_notes", document.getElementById("relNotes").value.trim());
+      fd.append("file", file);
+      const btn = document.getElementById("publishBtn");
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/admin/releases/upload", {
+          method: "POST",
+          headers: { "X-Admin-Key": getKey() },
+          body: fd,
+        });
+        const data = await res.json();
+        if (res.status === 401) {
+          clearAuth();
+          throw new Error("登录已失效");
+        }
+        if (!res.ok) throw new Error(data.message || "上传失败");
+        out.innerHTML = `<div class="success-box">已发布 ${data.release.channel_id} v${data.release.version}</div>`;
+        document.getElementById("relFile").value = "";
+      } catch (e) {
+        err.textContent = e.message;
+      } finally {
+        btn.disabled = !isAuthenticated;
+      }
+    };
+
+    async function loadReleases() {
+      if (!requireAuth()) return;
+      const ch = document.getElementById("relChannel").value.trim();
+      const q = ch ? `?channel_id=${encodeURIComponent(ch)}` : "";
+      const { releases } = await api("/api/admin/releases" + q);
+      document.getElementById("relTable").innerHTML =
+        releases
+          .map(
+            (r) => `<tr>
+        <td>${r.channel_id}</td>
+        <td>${r.version}</td>
+        <td class="mono">${r.filename}</td>
+        <td>${r.release_notes || "—"}</td>
+        <td>${r.published_at || ""}</td>
+      </tr>`
+          )
+          .join("") || "<tr><td colspan='5'>暂无</td></tr>";
+    }
+
+    document.getElementById("refreshRelBtn").onclick = loadReleases;
+
+    document.getElementById("changePasswordBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const el = document.getElementById("passwordResult");
+      const p1 = document.getElementById("newPassword").value;
+      const p2 = document.getElementById("newPassword2").value;
+      if (p1.length < 8) {
+        el.innerHTML = `<p class="err">新密码至少 8 位</p>`;
+        return;
+      }
+      if (p1 !== p2) {
+        el.innerHTML = `<p class="err">两次输入不一致</p>`;
+        return;
+      }
+      try {
+        const data = await api("/api/admin/password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ new_password: p1 }),
+        });
+        el.innerHTML = `<div class="success-box">${data.message}</div>`;
+        document.getElementById("newPassword").value = "";
+        document.getElementById("newPassword2").value = "";
+        clearAuth();
+        alert("密码已更新，请用新密码重新登录。");
+      } catch (e) {
+        el.innerHTML = `<p class="err">${e.message}</p>`;
+      }
+    };
+
+    document.getElementById("loginKey").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("loginBtn").click();
+    });
+
+    fillChannelSelects(["xiaoetong"]);
+    setAuthenticated(false);
+    showTab((location.hash || "#bulk").slice(1) || "bulk");
+    tryAutoLogin();
+  </script>
+</body>
+</html>

@@ -113,27 +113,15 @@ npm run init-db
 
 ### 4. systemd 守护进程
 
+服务名：**`vidio-catch-api`**（与 `docs/DEPLOY-ALIYUN-ACL3.md` 一致）。若 `restart` 报 Unit not found，说明尚未创建，需先 `enable --now`。
+
 ```bash
-sudo tee /etc/systemd/system/cat-catch-api.service << 'EOF'
-[Unit]
-Description=Cat-Catch License API
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/opt/cat-catch-server/server
-Environment=NODE_ENV=production
-ExecStart=/usr/bin/node src/index.js
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo chown -R www-data:www-data /opt/cat-catch-server/server/data
+sudo cp /opt/vidio-catch/server/vidio-catch-api.service /etc/systemd/system/
+# 按实际路径编辑 WorkingDirectory（默认 /opt/vidio-catch/server）
+sudo sed -i "s|ExecStart=.*|ExecStart=$(which node) src/index.js|" /etc/systemd/system/vidio-catch-api.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now cat-catch-api
+sudo systemctl enable --now vidio-catch-api
+sudo systemctl status vidio-catch-api
 ```
 
 ### 5. Nginx + HTTPS
@@ -178,9 +166,38 @@ npm run build -- xiaoetong
 
 ---
 
+## 管理后台（Web）
+
+部署后访问（可加入书签，随时打开）：`https://你的API域名/admin/`  
+无尾斜杠会自动跳转到 `/admin/`。页面常驻，勾选 **记住登录** 后关闭浏览器再开仍保持登录（密码存于本机浏览器，勿在公共电脑勾选）。
+
+**管理登录密码**（`ADMIN_API_KEY`）只用于后台登录，与客户激活码无关。首次用 `.env` 中的值登录；可在后台 **「修改登录密码」** 更换（保存到数据库）。
+
+忘记新密码时，在服务器执行：
+
+```bash
+cd /opt/vidio-catch/server
+sqlite3 data/licenses.db \"DELETE FROM admin_settings WHERE key='password_hash';\"
+# 在 .env 设置新的 ADMIN_API_KEY=... 后
+systemctl restart vidio-catch-api
+```
+
+再用 `.env` 里的新密码登录，并建议在后台再次修改为你好记的密码。
+
+功能：
+
+- **生成激活码**：选渠道、填数量（如 1000），生成后自动下载 CSV；页面显示该渠道「未使用」剩余数量，快用完时补生成一批
+- 激活码列表查询、上传 zip 发布版本（无需命令行）
+
+统计接口：`GET /api/admin/licenses/stats?channel_id=xiaoetong`（需 `X-Admin-Key`）
+
+本地：`http://127.0.0.1:8787/admin/`
+
+---
+
 ## 四、日常操作
 
-### 给用户发激活码
+### 给用户发激活码（或用管理后台）
 
 ```bash
 cd /opt/cat-catch-server/server

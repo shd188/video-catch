@@ -8,6 +8,8 @@
 |------|------|
 | [docs/NEXT-STEPS.md](docs/NEXT-STEPS.md) | **下一步行动清单（建议先看）** |
 | [docs/DEPLOY-ALIYUN.md](docs/DEPLOY-ALIYUN.md) | **阿里云 + heidilabs.cn 分步部署** |
+| [docs/DEPLOY-ALIYUN-ACL3.md](docs/DEPLOY-ALIYUN-ACL3.md) | **Alibaba Cloud Linux 3 复制粘贴命令** |
+| [docs/BUSINESS-WORKFLOW.md](docs/BUSINESS-WORKFLOW.md) | **批量一次性激活码 + 每渠道只打一包** |
 | [docs/SERVER.md](docs/SERVER.md) | 激活码 / 更新后台部署 |
 | [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | GPL 义务、分发检查清单 |
 | [docs/SERVICE.md](docs/SERVICE.md) | 付费服务边界（卖什么、不卖什么） |

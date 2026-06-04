@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS licenses (
   channel_id TEXT NOT NULL,
   email TEXT,
   max_devices INTEGER NOT NULL DEFAULT 2,
+  single_use INTEGER NOT NULL DEFAULT 0,
   expires_at TEXT,
   note TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -28,6 +29,12 @@ CREATE TABLE IF NOT EXISTS releases (
   min_license INTEGER NOT NULL DEFAULT 1,
   published_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(channel_id, version)
+);
+
+CREATE TABLE IF NOT EXISTS admin_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_activations_license ON activations(license_id);
