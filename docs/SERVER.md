@@ -86,10 +86,10 @@ sudo apt install -y nodejs
 ### 3. 上传代码
 
 ```bash
-sudo mkdir -p /opt/cat-catch-server
-sudo chown $USER:$USER /opt/cat-catch-server
-# 在本机 rsync 或 git clone 到 /opt/cat-catch-server/server
-cd /opt/cat-catch-server/server
+sudo mkdir -p /opt/video-catch
+sudo chown $USER:$USER /opt/video-catch
+# 在本机 rsync 或 git clone 到 /opt/video-catch/server
+cd /opt/video-catch/server
 cp .env.example .env
 nano .env
 ```
@@ -101,8 +101,8 @@ HOST=127.0.0.1
 PORT=8787
 ADMIN_API_KEY=你的超长随机密钥
 PUBLIC_BASE_URL=https://api.yourdomain.com
-DATABASE_PATH=/opt/cat-catch-server/server/data/licenses.db
-RELEASES_DIR=/opt/cat-catch-server/server/data/releases
+DATABASE_PATH=/opt/video-catch/server/data/licenses.db
+RELEASES_DIR=/opt/video-catch/server/data/releases
 CORS_ORIGIN=*
 ```
 
@@ -116,8 +116,8 @@ npm run init-db
 服务名：**`video-catch-api`**（与 `docs/DEPLOY-ALIYUN-ACL3.md` 一致）。若 `Unit file does not exist`，说明尚未创建，需先 `enable --now`。
 
 ```bash
-sudo cp /opt/vidio-catch/server/video-catch-api.service /etc/systemd/system/
-# 按实际路径编辑 WorkingDirectory（默认 /opt/vidio-catch/server）
+sudo cp /opt/video-catch/server/video-catch-api.service /etc/systemd/system/
+# 按实际路径编辑 WorkingDirectory（默认 /opt/video-catch/server）
 sudo sed -i "s|ExecStart=.*|ExecStart=$(which node) src/index.js|" /etc/systemd/system/video-catch-api.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now video-catch-api
@@ -176,7 +176,7 @@ npm run build -- xiaoetong
 忘记新密码时，在服务器执行：
 
 ```bash
-cd /opt/vidio-catch/server
+cd /opt/video-catch/server
 sqlite3 data/licenses.db \"DELETE FROM admin_settings WHERE key='password_hash';\"
 # 在 .env 设置新的 ADMIN_API_KEY=... 后
 systemctl restart video-catch-api
@@ -200,7 +200,7 @@ systemctl restart video-catch-api
 ### 给用户发激活码（或用管理后台）
 
 ```bash
-cd /opt/cat-catch-server/server
+cd /opt/video-catch/server
 npm run license:create -- --channel xiaoetong --email 客户邮箱 --max-devices 2 --expires 2027-06-01
 ```
 

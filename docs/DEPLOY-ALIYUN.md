@@ -1,6 +1,6 @@
 # 阿里云部署指南（heidilabs.cn）
 
-适用于：订阅 API（`server/`）+ GPL 源码仓库 [shd188/vidio-catch](https://github.com/shd188/vidio-catch)。
+适用于：订阅 API（`server/`）+ GPL 源码仓库 [shd188/video-catch](https://github.com/shd188/video-catch)。
 
 建议子域：**`api.heidilabs.cn`** → 激活码与版本下载 API。
 
@@ -22,8 +22,8 @@ cd "/Users/heidi/code/Browser Extensions/video-catch"
 
 git remote -v
 # 若仍是 cat-catch 上游，增加你的仓库：
-git remote add publish https://github.com/shd188/vidio-catch.git
-# 或改名：git remote rename origin upstream && git remote add origin https://github.com/shd188/vidio-catch.git
+git remote add publish https://github.com/shd188/video-catch.git
+# 或改名：git remote rename origin upstream && git remote add origin https://github.com/shd188/video-catch.git
 
 git add .
 git commit -m "Initial: cat-catch channels, xiaoetong, license server"
@@ -31,7 +31,7 @@ git push -u publish main
 # 若默认分支是 master，改成：git push -u publish master
 ```
 
-推送后打开 https://github.com/shd188/vidio-catch 应能看到完整源码（GPL）。
+推送后打开 https://github.com/shd188/video-catch 应能看到完整源码（GPL）。
 
 **不要**把 `server/.env`、`server/data/` 推上去（已在 `.gitignore`）。
 
@@ -95,8 +95,8 @@ node -v   # 应 v18+
 ### 4.1 拉代码
 
 ```bash
-mkdir -p /opt/vidio-catch && cd /opt/vidio-catch
-git clone https://github.com/shd188/vidio-catch.git .
+mkdir -p /opt/video-catch && cd /opt/video-catch
+git clone https://github.com/shd188/video-catch.git .
 ```
 
 ### 4.2 配置环境变量
@@ -114,8 +114,8 @@ HOST=127.0.0.1
 PORT=8787
 ADMIN_API_KEY=用_openssl_rand_hex_32_生成
 PUBLIC_BASE_URL=https://api.heidilabs.cn
-DATABASE_PATH=/opt/vidio-catch/server/data/licenses.db
-RELEASES_DIR=/opt/vidio-catch/server/data/releases
+DATABASE_PATH=/opt/video-catch/server/data/licenses.db
+RELEASES_DIR=/opt/video-catch/server/data/releases
 CORS_ORIGIN=*
 ```
 
@@ -137,13 +137,13 @@ npm run init-db
 ```bash
 sudo tee /etc/systemd/system/video-catch-api.service << 'EOF'
 [Unit]
-Description=Vidio-Catch License API
+Description=Video-Catch License API
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/vidio-catch/server
+WorkingDirectory=/opt/video-catch/server
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node src/index.js
 Restart=on-failure
@@ -203,7 +203,7 @@ curl https://api.heidilabs.cn/health
 在**服务器**上：
 
 ```bash
-cd /opt/vidio-catch/server
+cd /opt/video-catch/server
 
 # 给客户发码
 npm run license:create -- --channel xiaoetong --email customer@example.com --expires 2027-12-31
@@ -223,13 +223,13 @@ cd dist/xiaoetong && zip -r ../../releases/xiaoetong-2.6.9.zip .
 **上传到服务器：**
 
 ```bash
-scp releases/xiaoetong-2.6.9.zip root@你的IP:/opt/vidio-catch/server/data/releases/xiaoetong/
+scp releases/xiaoetong-2.6.9.zip root@你的IP:/opt/video-catch/server/data/releases/xiaoetong/
 ```
 
 **服务器登记版本：**
 
 ```bash
-cd /opt/vidio-catch/server
+cd /opt/video-catch/server
 npm run release:create -- --channel xiaoetong --version 2.6.9 --file xiaoetong-2.6.9.zip --notes "小鹅通渠道首版"
 ```
 
@@ -240,7 +240,7 @@ npm run release:create -- --channel xiaoetong --version 2.6.9 --file xiaoetong-2
 确认 `channels/xiaoetong/channel.json` 已为：
 
 ```json
-"repositoryUrl": "https://github.com/shd188/vidio-catch",
+"repositoryUrl": "https://github.com/shd188/video-catch",
 "license": { "apiBase": "https://api.heidilabs.cn", ... }
 ```
 
@@ -283,7 +283,7 @@ npm run build -- xiaoetong
 ## 日常运维命令（服务器）
 
 ```bash
-cd /opt/vidio-catch && git pull
+cd /opt/video-catch && git pull
 cd server && npm install --production
 sudo systemctl restart video-catch-api
 ```

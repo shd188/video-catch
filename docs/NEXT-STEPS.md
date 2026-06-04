@@ -2,7 +2,7 @@
 
 ## 阶段 A：仓库与合规（1 天）
 
-1. [ ] 推送代码到 https://github.com/shd188/vidio-catch（见 [DEPLOY-ALIYUN.md](./DEPLOY-ALIYUN.md) 第 1 步）  
+1. [ ] 推送代码到 https://github.com/shd188/video-catch（见 [DEPLOY-ALIYUN.md](./DEPLOY-ALIYUN.md) 第 1 步）  
 2. [x] `channels/xiaoetong/channel.json` 已指向该仓库与 `https://api.heidilabs.cn`（部署前请确认 DNS/HTTPS 已通）  
 3. [ ] 填写 `docs/SERVICE.md`、`docs/PRIVACY.md` 中的联系方式  
 4. [ ] 请律师审阅用户协议要点：仅用于已授权内容、GPL 权利、退款（可参考 `docs/COMPLIANCE.md`）

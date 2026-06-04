@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/vidio-catch/server
+WorkingDirectory=/opt/video-catch/server
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node src/index.js
 Restart=on-failure
