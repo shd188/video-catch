@@ -2,7 +2,7 @@
 
 系统：**Alibaba Cloud Linux 3.2104 LTS 64 位**  
 域名：**api.heidilabs.cn**  
-仓库：**https://github.com/shd188/vidio-catch.git**
+仓库：**https://github.com/shd188/video-catch.git**（旧链 `vidio-catch` 会重定向到此）
 
 前置：DNS 已添加 **A 记录 `api` → ECS 公网 IP**；安全组已放行 **22 / 80 / 443**（不要开放 8787）。
 
@@ -49,7 +49,7 @@ npm -v
 dnf install -y git
 mkdir -p /opt/vidio-catch
 cd /opt/vidio-catch
-git clone https://github.com/shd188/vidio-catch.git .
+git clone https://github.com/shd188/video-catch.git .
 ls server/src/index.js   # 必须能列出此文件，否则本节未成功
 ```
 
@@ -82,13 +82,17 @@ CORS_ORIGIN=*
 openssl rand -hex 32
 ```
 
-安装并初始化：
+安装并初始化（**必须在 `server` 目录执行**，在仓库根目录会报 `Missing script: init-db`）：
 
 ```bash
+cd /opt/vidio-catch/server
 npm install --production
 npm run init-db
+# 或直接：node src/init-db.js
 curl -s http://127.0.0.1:8787/health
 ```
+
+若已在仓库根目录 `/opt/vidio-catch`，也可用：`npm run server:init-db`（需最新 `package.json`）。
 
 ---
 

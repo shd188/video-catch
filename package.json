@@ -4,7 +4,9 @@
   "description": "GPL-3.0 channel builds on Cat-Catch — see docs/COMPLIANCE.md",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "build": "node scripts/build-channel.mjs"
+    "build": "node scripts/build-channel.mjs",
+    "server:init-db": "npm run init-db --prefix server",
+    "server:start": "npm start --prefix server"
   },
   "engines": {
     "node": ">=18"
