@@ -113,15 +113,15 @@ npm run init-db
 
 ### 4. systemd 守护进程
 
-服务名：**`vidio-catch-api`**（与 `docs/DEPLOY-ALIYUN-ACL3.md` 一致）。若 `restart` 报 Unit not found，说明尚未创建，需先 `enable --now`。
+服务名：**`video-catch-api`**（与 `docs/DEPLOY-ALIYUN-ACL3.md` 一致）。若 `Unit file does not exist`，说明尚未创建，需先 `enable --now`。
 
 ```bash
-sudo cp /opt/vidio-catch/server/vidio-catch-api.service /etc/systemd/system/
+sudo cp /opt/vidio-catch/server/video-catch-api.service /etc/systemd/system/
 # 按实际路径编辑 WorkingDirectory（默认 /opt/vidio-catch/server）
-sudo sed -i "s|ExecStart=.*|ExecStart=$(which node) src/index.js|" /etc/systemd/system/vidio-catch-api.service
+sudo sed -i "s|ExecStart=.*|ExecStart=$(which node) src/index.js|" /etc/systemd/system/video-catch-api.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now vidio-catch-api
-sudo systemctl status vidio-catch-api
+sudo systemctl enable --now video-catch-api
+sudo systemctl status video-catch-api
 ```
 
 ### 5. Nginx + HTTPS
@@ -179,7 +179,7 @@ npm run build -- xiaoetong
 cd /opt/vidio-catch/server
 sqlite3 data/licenses.db \"DELETE FROM admin_settings WHERE key='password_hash';\"
 # 在 .env 设置新的 ADMIN_API_KEY=... 后
-systemctl restart vidio-catch-api
+systemctl restart video-catch-api
 ```
 
 再用 `.env` 里的新密码登录，并建议在后台再次修改为你好记的密码。

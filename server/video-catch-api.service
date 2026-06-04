@@ -1,9 +1,5 @@
-# 已更名为 video-catch-api.service，请使用：
-#   cp video-catch-api.service /etc/systemd/system/
-#   systemctl enable --now video-catch-api
-
 [Unit]
-Description=Vidio-Catch License API (deprecated name)
+Description=Video-Catch License API
 After=network.target
 
 [Service]

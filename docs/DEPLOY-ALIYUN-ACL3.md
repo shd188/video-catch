@@ -98,7 +98,9 @@ curl -s http://127.0.0.1:8787/health
 
 ## 6. systemd 自启
 
-若执行 `systemctl restart vidio-catch-api` 报 **Unit not found**，说明本节尚未做过，请完整执行下面命令（路径按你实际安装目录改）。
+若 `systemctl enable video-catch-api` 报 **Unit file does not exist**，说明本节尚未做过，请完整执行下面命令（路径按你实际安装目录改）。
+
+服务名：**`video-catch-api`**（与 GitHub 仓库名一致）。旧文档里的 `vidio-catch-api` 请改用此名。
 
 先确认 Node 路径与项目目录：
 
@@ -111,9 +113,9 @@ ls /opt/vidio-catch/server/src/index.js
 
 ```bash
 NODE=$(which node)
-cat > /etc/systemd/system/vidio-catch-api.service << EOF
+cat > /etc/systemd/system/video-catch-api.service << EOF
 [Unit]
-Description=Vidio-Catch License API
+Description=Video-Catch License API
 After=network.target
 
 [Service]
@@ -129,23 +131,23 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now vidio-catch-api
-systemctl status vidio-catch-api
+systemctl enable --now video-catch-api
+systemctl status video-catch-api
 ```
 
 也可用仓库内模板（`git pull` 后）：
 
 ```bash
-cp /opt/vidio-catch/server/vidio-catch-api.service /etc/systemd/system/
+cp /opt/vidio-catch/server/video-catch-api.service /etc/systemd/system/
 # 若项目不在 /opt/vidio-catch，编辑 WorkingDirectory 与 ExecStart 中的 node 路径
-nano /etc/systemd/system/vidio-catch-api.service
-systemctl daemon-reload && systemctl enable --now vidio-catch-api
+nano /etc/systemd/system/video-catch-api.service
+systemctl daemon-reload && systemctl enable --now video-catch-api
 ```
 
-**排查**：是否装过旧名服务 `cat-catch-api`？
+**排查**：是否曾创建过旧名 `vidio-catch-api` 或 `cat-catch-api`？
 
 ```bash
-systemctl list-unit-files | grep -E 'vidio|cat-catch'
+systemctl list-unit-files | grep -E 'video-catch|vidio|cat-catch'
 ```
 
 ---
@@ -281,7 +283,7 @@ setsebool -P httpd_can_network_connect 1
 ```bash
 cd /opt/vidio-catch && git pull
 cd server && npm install --production
-systemctl restart vidio-catch-api
+systemctl restart video-catch-api
 nginx -t && systemctl reload nginx
 ```
 

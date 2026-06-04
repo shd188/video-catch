@@ -135,7 +135,7 @@ npm run init-db
 ### 4.4 systemd 开机自启
 
 ```bash
-sudo tee /etc/systemd/system/vidio-catch-api.service << 'EOF'
+sudo tee /etc/systemd/system/video-catch-api.service << 'EOF'
 [Unit]
 Description=Vidio-Catch License API
 After=network.target
@@ -153,8 +153,8 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now vidio-catch-api
-sudo systemctl status vidio-catch-api
+sudo systemctl enable --now video-catch-api
+sudo systemctl status video-catch-api
 curl -s http://127.0.0.1:8787/health
 ```
 
@@ -165,7 +165,7 @@ curl -s http://127.0.0.1:8787/health
 ## 第 5 步：Nginx + HTTPS
 
 ```bash
-sudo tee /etc/nginx/sites-available/vidio-catch-api << 'EOF'
+sudo tee /etc/nginx/sites-available/video-catch-api << 'EOF'
 server {
     listen 80;
     server_name api.heidilabs.cn;
@@ -180,7 +180,7 @@ server {
 }
 EOF
 
-sudo ln -sf /etc/nginx/sites-available/vidio-catch-api /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/video-catch-api /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -285,7 +285,7 @@ npm run build -- xiaoetong
 ```bash
 cd /opt/vidio-catch && git pull
 cd server && npm install --production
-sudo systemctl restart vidio-catch-api
+sudo systemctl restart video-catch-api
 ```
 
 创建激活码：`npm run license:create -- --channel xiaoetong --email ...`
