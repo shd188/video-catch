@@ -69,13 +69,16 @@ app.get("/health", (_req, res) => {
 });
 
 const adminDir = path.join(publicDir, "admin");
-app.get("/admin", (_req, res) => {
-  res.redirect(301, "/admin/");
-});
+function sendAdminIndex(_req, res) {
+  res.setHeader("Cache-Control", "no-cache");
+  res.sendFile(path.join(adminDir, "index.html"));
+}
+app.get(["/admin", "/admin/", "/admin/index.html"], sendAdminIndex);
 app.use(
   "/admin",
   express.static(adminDir, {
-    index: "index.html",
+    index: false,
+    redirect: false,
     maxAge: process.env.NODE_ENV === "production" ? "1h" : 0,
     setHeaders(res, filePath) {
       if (filePath.endsWith("index.html")) {
@@ -84,10 +87,6 @@ app.use(
     },
   })
 );
-app.get(["/admin/", "/admin/index.html"], (_req, res) => {
-  res.setHeader("Cache-Control", "no-cache");
-  res.sendFile(path.join(adminDir, "index.html"));
-});
 
 app.post("/api/v1/activate", (req, res) => {
   const { license_key, channel_id, installation_id, user_agent } = req.body || {};

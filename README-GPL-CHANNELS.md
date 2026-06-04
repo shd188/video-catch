@@ -9,6 +9,7 @@
 | [docs/NEXT-STEPS.md](docs/NEXT-STEPS.md) | **下一步行动清单（建议先看）** |
 | [docs/DEPLOY-ALIYUN.md](docs/DEPLOY-ALIYUN.md) | **阿里云 + heidilabs.cn 分步部署** |
 | [docs/DEPLOY-ALIYUN-ACL3.md](docs/DEPLOY-ALIYUN-ACL3.md) | **Alibaba Cloud Linux 3 复制粘贴命令** |
+| [docs/DEPLOY-UBUNTU-HK.md](docs/DEPLOY-UBUNTU-HK.md) | **Ubuntu 20.04 香港机（shentongxue.online）** |
 | [docs/BUSINESS-WORKFLOW.md](docs/BUSINESS-WORKFLOW.md) | **批量一次性激活码 + 每渠道只打一包** |
 | [docs/SERVER.md](docs/SERVER.md) | 激活码 / 更新后台部署 |
 | [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | GPL 义务、分发检查清单 |

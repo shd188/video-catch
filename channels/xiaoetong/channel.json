@@ -4,7 +4,7 @@
   "description": "基于 Cat-Catch (GPL-3.0)。仅在小鹅通相关域名下嗅探媒体，供课程学习备份使用。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
   "repositoryUrl": "https://github.com/shd188/video-catch",
   "license": {
-    "apiBase": "https://api.heidilabs.cn",
+    "apiBase": "https://api.shentongxue.online",
     "checkIntervalHours": 24,
     "strict": false
   },
