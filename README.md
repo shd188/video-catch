@@ -3,6 +3,8 @@
 # 📑简介
 猫抓(cat-catch) 资源嗅探扩展，能够帮你筛选列出当前页面的资源。
 
+> **GPL 渠道构建 / 商业服务合规**：见 [README-GPL-CHANNELS.md](README-GPL-CHANNELS.md)（含小鹅通试点 `npm run build -- xiaoetong`）。
+
 # 📖安装地址
 ## 🐴Chrome
 https://chrome.google.com/webstore/detail/jfedfbgedapdagkghmgibemcoggfppbb

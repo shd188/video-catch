@@ -1,0 +1,70 @@
+{
+  "id": "xiaoetong",
+  "displayName": "媒体助手 · 小鹅通版",
+  "description": "基于 Cat-Catch (GPL-3.0)。仅在小鹅通相关域名下嗅探媒体，供课程学习备份使用。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
+  "repositoryUrl": "https://github.com/shd188/vidio-catch",
+  "license": {
+    "apiBase": "https://api.heidilabs.cn",
+    "checkIntervalHours": 24,
+    "strict": false
+  },
+  "installPage": "channel-install.html",
+  "lockOptions": ["blockUrl", "blockUrlWhite", "deepSearch", "M3u8Ffmpeg", "M3u8Mp4", "iframeFFmpeg"],
+  "versionSuffix": "",
+  "manifest": {
+    "name": "媒体助手 · 小鹅通版",
+    "description": "GPL-3.0. Xiaoe (小鹅通) course media helper — whitelist-only sniffing.",
+    "homepage_url": "https://github.com/shd188/vidio-catch"
+  },
+  "locales": {
+    "zh_CN": {
+      "catCatch": "媒体助手",
+      "description": "小鹅通课程媒体嗅探（GPL · 白名单）",
+      "channelImportStripped": "配置已导入。以下渠道锁定项未写入：${keys}",
+      "popupChannelAllowed": "当前页面在白名单内，可嗅探",
+      "popupChannelBlocked": "当前页面不在渠道白名单内，不会嗅探",
+      "popupChannelPatterns": "白名单规则",
+      "popupChannelHost": "当前域名",
+      "popupChannelPilot": "试点课程页"
+    },
+    "en": {
+      "catCatch": "Media Helper",
+      "description": "Xiaoe course media sniffing (GPL, whitelist)",
+      "channelImportStripped": "Imported. Channel-locked keys were not applied: ${keys}",
+      "popupChannelAllowed": "This page is on the channel whitelist",
+      "popupChannelBlocked": "This page is not on the channel whitelist — sniffing disabled",
+      "popupChannelPatterns": "Whitelist rules",
+      "popupChannelHost": "Host",
+      "popupChannelPilot": "Pilot course page"
+    }
+  },
+  "optionLists": {
+    "blockUrlWhite": true,
+    "blockUrl": [
+      {
+        "url": "https://appkrjfyd6q7315.h5.xiaoeknow.com/*",
+        "state": true,
+        "comment": "试点店铺 H5 域名（参考课程页）"
+      },
+      {
+        "url": "https://*.h5.xiaoeknow.com/*",
+        "state": true,
+        "comment": "小鹅通 H5 店铺子域"
+      },
+      {
+        "url": "https://*.xiaoeknow.com/*",
+        "state": true,
+        "comment": "小鹅通主域及常见 CDN/API 子域"
+      }
+    ],
+    "deepSearch": false,
+    "enable": true,
+    "M3u8Ffmpeg": false,
+    "M3u8Mp4": true,
+    "iframeFFmpeg": false
+  },
+  "pilot": {
+    "referenceCourseUrl": "https://appkrjfyd6q7315.h5.xiaoeknow.com/v4/course/alive/l_5b0083070ce02_VbYUCnbU?app_id=appkrjfyD6q7315&l_program=xe_know_pc",
+    "notes": "直播课路径含 /v4/course/alive/；点播等其它路径仍落在 *.xiaoeknow.com 白名单内"
+  }
+}

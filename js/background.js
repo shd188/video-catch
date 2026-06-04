@@ -1,4 +1,4 @@
-importScripts("/js/function.js", "/js/init.js");
+importScripts("/js/function.js", "/js/init.js", "/js/channel-init.js", "/js/license-client.js");
 
 // Service Worker 5分钟后会强制终止扩展
 // https://bugs.chromium.org/p/chromium/issues/detail?id=1271154
@@ -33,7 +33,21 @@ chrome.alarms.onAlarm.addListener(function (alarm) {
         (chrome.storage.session ?? chrome.storage.local).set({ MediaData: cacheData });
         return;
     }
+    if (alarm.name === "licenseCheck" && typeof licenseCheck === "function") {
+        licenseCheck(false).catch(function () { });
+        return;
+    }
 });
+
+function scheduleLicenseCheckAlarm() {
+    if (typeof licenseGetConfig !== "function") return;
+    licenseGetConfig().then(function (cfg) {
+        if (!cfg?.apiBase) return;
+        const hours = cfg.checkIntervalHours ?? 24;
+        chrome.alarms.create("licenseCheck", { periodInMinutes: Math.max(30, hours * 60) });
+        licenseCheck(true).catch(function () { });
+    });
+}
 
 // onBeforeRequest 浏览器发送请求之前使用正则匹配发送请求的URL
 // chrome.webRequest.onBeforeRequest.addListener(

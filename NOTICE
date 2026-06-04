@@ -1,0 +1,20 @@
+Cat-Catch Channel Distribution
+=============================
+
+This repository contains modifications and channel packaging based on Cat-Catch
+(https://github.com/xifangczy/cat-catch), copyright (c) the Cat-Catch authors.
+
+Upstream baseline in this tree: version 2.6.9 (see docs/UPSTREAM.md).
+
+This combined work is licensed under the GNU General Public License v3.0 or later.
+See the file LICENSE for the full text.
+
+Additional channel-specific files (under channels/, scripts/, docs/) are part of
+the same GPL-licensed distribution unless explicitly marked otherwise.
+
+Third-party libraries in lib/ retain their respective licenses; see
+lib/third-party-libraries.md.
+
+Trademark notice: "Cat-Catch" / "猫抓" refer to the upstream project. Channel
+product names in manifest.json are descriptive labels for GPL builds and do not
+imply endorsement by the upstream authors.

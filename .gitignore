@@ -1,6 +1,11 @@
 # 构建产物
 build/
 dist/
+releases/
 *.crx
 *.zip
 *.pem
+node_modules/
+server/node_modules/
+server/data/
+server/.env

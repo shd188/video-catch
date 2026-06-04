@@ -14,9 +14,5 @@ if (typeof (browser) == "object" && !(typeof (G) == "object" && !G.isFirefox)) {
         _onFocusChanged(listener);
     };
 
-    browser.runtime.onInstalled.addListener(({ reason }) => {
-        if (reason == "install") {
-            browser.tabs.create({ url: "install.html" });
-        }
-    });
+    // 首次安装页由 js/init.js 统一处理（含渠道 channel-install.html）
 }

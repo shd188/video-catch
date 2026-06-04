@@ -332,6 +332,10 @@ function InitOptions() {
         });
         G = { ...items, ...G };
 
+        if (typeof applyChannelBuildDefaults === "function") {
+            applyChannelBuildDefaults();
+        }
+
         // 初始化 G.blockUrlSet
         (typeof isLockUrl == 'function') && chrome.tabs.query({}, function (tabs) {
             for (const tab of tabs) {
@@ -430,7 +434,11 @@ chrome.runtime.onInstalled.addListener(function (details) {
         chrome.alarms.create("nowClear", { when: Date.now() + 3000 });
     }
     if (details.reason == "install") {
-        chrome.tabs.create({ url: "install.html" });
+        const installPage = (G.channelInstallPage && String(G.channelInstallPage)) || "install.html";
+        chrome.tabs.create({ url: installPage });
+    }
+    if (details.reason == "install" || details.reason == "update") {
+        typeof scheduleLicenseCheckAlarm === "function" && scheduleLicenseCheckAlarm();
     }
 
     // 注册右键

@@ -1,0 +1,38 @@
+/* Channel build: locked settings (GPL distribution) */
+.channel-banner {
+    margin: 0 0 1rem;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: #e8f4fd;
+    border: 1px solid #b8d9f0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.channel-banner h2 {
+    margin: 0 0 8px;
+    font-size: 16px;
+}
+
+.channel-banner ul {
+    margin: 8px 0 0;
+    padding-left: 1.2rem;
+}
+
+.channel-whitelist-readonly {
+    opacity: 0.85;
+}
+
+.channel-whitelist-readonly input,
+.channel-whitelist-readonly button,
+.channel-whitelist-readonly .switch {
+    pointer-events: none;
+}
+
+.channel-locked-section {
+    display: none !important;
+}
+
+.sidebar a.channel-locked-nav {
+    display: none !important;
+}
