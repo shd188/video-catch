@@ -18,6 +18,7 @@ import {
   getLatestRelease,
   buildDownloadUrl,
   createRelease,
+  deleteRelease,
   listReleases,
   registerRelease,
   sanitizeReleaseFilename,
@@ -285,6 +286,20 @@ app.post("/api/admin/releases", adminAuth, (req, res) => {
       releaseNotes: req.body.release_notes,
     });
     res.json({ ok: true, release: row });
+  } catch (e) {
+    res.status(400).json({ ok: false, message: e.message });
+  }
+});
+
+app.delete("/api/admin/releases", adminAuth, (req, res) => {
+  try {
+    const channelId = String(req.body?.channel_id || req.query?.channel_id || "").trim();
+    const version = String(req.body?.version || req.query?.version || "").trim();
+    if (!channelId || !version) {
+      return res.status(400).json({ ok: false, message: "请指定 channel_id 与 version" });
+    }
+    const removed = deleteRelease({ channelId, version, removeFile: true });
+    res.json({ ok: true, removed });
   } catch (e) {
     res.status(400).json({ ok: false, message: e.message });
   }

@@ -198,6 +198,13 @@
     }
     button.secondary:hover:not(:disabled) { background: var(--bg); }
     button.btn-sm { padding: 6px 12px; font-size: var(--text-sm); border-radius: var(--radius-sm); }
+    button.btn-danger {
+      background: var(--surface);
+      color: #d70015;
+      border: 1px solid rgba(215, 0, 21, 0.35);
+    }
+    button.btn-danger:hover:not(:disabled) { background: rgba(215, 0, 21, 0.08); }
+    .row-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
     .tabs {
       display: flex;
@@ -889,22 +896,54 @@
         <td class="mono">${escapeHtml(r.filename)}</td>
         <td>${escapeHtml(r.release_notes || "—")}</td>
         <td>${escapeHtml(r.published_at || "")}</td>
-        <td><button type="button" class="secondary btn-sm btn-dl" data-ch="${r.channel_id}" data-ver="${r.version}" data-file="${r.filename}">下载</button></td>
+        <td class="row-actions">
+          <button type="button" class="secondary btn-sm btn-dl" data-ch="${r.channel_id}" data-ver="${r.version}" data-file="${r.filename}">下载</button>
+          <button type="button" class="btn-danger btn-sm btn-del" data-ch="${r.channel_id}" data-ver="${r.version}" data-label="${escapeHtml(channelLabel(r.channel_id))}">删除</button>
+        </td>
       </tr>`
           )
           .join("") || "<tr><td colspan='5'>该渠道暂无已发布版本</td></tr>";
     }
 
+    async function deleteReleaseRow(channelId, version, label) {
+      if (!requireAuth()) return;
+      const name = label || channelId;
+      if (
+        !confirm(
+          `确定删除「${name}」v${version}？\n\n将删除版本记录；若服务器上存在对应 zip 也会一并删除。`
+        )
+      ) {
+        return;
+      }
+      await api(
+        `/api/admin/releases?channel_id=${encodeURIComponent(channelId)}&version=${encodeURIComponent(version)}`,
+        { method: "DELETE" }
+      );
+      await loadReleases();
+    }
+
     document.getElementById("relTable").addEventListener("click", async (e) => {
-      const btn = e.target.closest(".btn-dl");
-      if (!btn) return;
-      btn.disabled = true;
+      const dlBtn = e.target.closest(".btn-dl");
+      if (dlBtn) {
+        dlBtn.disabled = true;
+        try {
+          await downloadRelease(dlBtn.dataset.ch, dlBtn.dataset.ver, dlBtn.dataset.file);
+        } catch (err) {
+          alert(err.message || "下载失败");
+        } finally {
+          dlBtn.disabled = false;
+        }
+        return;
+      }
+      const delBtn = e.target.closest(".btn-del");
+      if (!delBtn) return;
+      delBtn.disabled = true;
       try {
-        await downloadRelease(btn.dataset.ch, btn.dataset.ver, btn.dataset.file);
+        await deleteReleaseRow(delBtn.dataset.ch, delBtn.dataset.ver, delBtn.dataset.label);
       } catch (err) {
-        alert(err.message || "下载失败");
+        alert(err.message || "删除失败");
       } finally {
-        btn.disabled = false;
+        delBtn.disabled = false;
       }
     });
 

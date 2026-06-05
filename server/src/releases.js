@@ -97,6 +97,34 @@ export function registerRelease({ channelId, version, filename, releaseNotes }) 
   return upsertReleaseRow({ channelId, version, filename, releaseNotes });
 }
 
+/** 删除版本记录，并可选删除磁盘上的 zip */
+export function deleteRelease({ channelId, version, removeFile = true }) {
+  const row = getDb()
+    .prepare(`SELECT * FROM releases WHERE channel_id = ? AND version = ?`)
+    .get(channelId, version);
+  if (!row) {
+    throw new Error("版本记录不存在");
+  }
+  const filePath = resolveReleaseFilePath(channelId, version);
+  const deleted = getDb()
+    .prepare(`DELETE FROM releases WHERE channel_id = ? AND version = ?`)
+    .run(channelId, version);
+  if (deleted.changes === 0) {
+    throw new Error("版本记录不存在");
+  }
+  let fileRemoved = false;
+  if (removeFile && filePath && fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    fileRemoved = true;
+  }
+  return {
+    channel_id: channelId,
+    version,
+    filename: row.filename,
+    file_removed: fileRemoved,
+  };
+}
+
 export function sanitizeReleaseFilename(name) {
   return path.basename(name).replace(/[^a-zA-Z0-9._-]/g, "_");
 }
