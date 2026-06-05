@@ -723,12 +723,13 @@ function isLockUrl(url) {
  * @param {Number|Array} tabId 
  */
 function closeTab(tabId = 0) {
+    const id = typeof tabId === "number" && tabId > 0 ? tabId : 0;
     chrome.tabs.query({}, async function (tabs) {
         if (tabs.length === 1) {
             await chrome.tabs.create({ url: 'chrome://newtab' });
-            tabId ? chrome.tabs.remove(tabId) : window.close();
+            id ? chrome.tabs.remove(id) : window.close();
         } else {
-            tabId ? chrome.tabs.remove(tabId) : window.close();
+            id ? chrome.tabs.remove(id) : window.close();
         }
     });
 }

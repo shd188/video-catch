@@ -27,12 +27,22 @@ npm run build -- xiaoetong
 - 首次安装打开 `channel-install.html`（若配置了 `installPage`）
 - 同步 patch `manifest.firefox.json`（Firefox 侧载）
 
+## 固定扩展 ID（避免升级装成第二个扩展）
+
+渠道构建会自动把 `channels/_signing/extension-key.b64` 写入 `manifest.json` 的 `key` 字段，使各版本 **扩展 ID 一致**。说明见 [channels/_signing/README.md](../channels/_signing/README.md)。
+
+用户升级时应：**覆盖原 `dist/<channel>/` 目录后重新加载**，或 **先移除旧扩展再加载新目录**（不要保留两个同时启用）。
+
 ## 打 crx / zip（可选）
 
-与上游一致，可使用 [justfile](../justfile) 在 `dist/xiaoetong/` 目录上执行打包；或：
+```bash
+cd dist/xiaoetong && zip -r ../../releases/xiaoetong-$(node -p "require('./manifest.json').version").zip . -x "server/*"
+```
+
+打 crx（与解压版同 ID，可拖入覆盖升级）：
 
 ```bash
-cd dist/xiaoetong && zip -r ../../releases/xiaoetong-$(node -p "require('./manifest.json').version").zip .
+crx3 -p channels/_signing/private.pem -o releases/xiaoetong-2.7.0.crx dist/xiaoetong/
 ```
 
 ## 开发上游通用版

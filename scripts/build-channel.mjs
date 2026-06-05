@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
+const CHANNEL_SIGNING_KEY = path.join(ROOT, "channels", "_signing", "extension-key.b64");
 
 const channelId = process.argv[2];
 if (!channelId) {
@@ -119,8 +120,18 @@ function channelExtensionName(cfg) {
     return cfg.manifest?.name ?? cfg.displayName ?? cfg.id;
 }
 
+function readChannelSigningKey() {
+    if (!fs.existsSync(CHANNEL_SIGNING_KEY)) return null;
+    const key = fs.readFileSync(CHANNEL_SIGNING_KEY, "utf8").trim();
+    return key || null;
+}
+
 function patchManifest(manifest, cfg) {
     const m = { ...manifest, ...(cfg.manifest ?? {}) };
+    const signingKey = readChannelSigningKey();
+    if (signingKey) {
+        m.key = signingKey;
+    }
     if (cfg.channelNameZh) {
         m.name = channelExtensionName(cfg);
     }
@@ -221,3 +232,6 @@ console.log("Done.");
 console.log(`  Load unpacked: ${outDir}`);
 console.log(`  Name: ${manifest.name}`);
 console.log(`  Version: ${manifest.version}`);
+if (readChannelSigningKey()) {
+    console.log("  Extension ID: fixed (channels/_signing/extension-key.b64)");
+}

@@ -22,13 +22,16 @@ body.ch-update-page {
   inset: 0;
   z-index: 10000;
   min-height: 0;
+  overflow-y: auto;
   background: rgba(0, 0, 0, 0.45);
   padding: var(--ch-space-4);
 }
 
 .ch-update-dialog {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
+  max-height: min(92vh, 720px);
+  overflow-y: auto;
   background: var(--ch-surface);
   border-radius: var(--ch-radius-xl);
   border: 1px solid var(--ch-border);
@@ -80,6 +83,35 @@ body.ch-update-page {
 .ch-update-arrow {
   color: var(--ch-accent);
   font-weight: var(--ch-weight-semibold);
+}
+
+.ch-update-steps {
+  text-align: left;
+  font-size: var(--ch-text-sm);
+  color: var(--ch-text);
+  background: var(--ch-bg);
+  border: 1px solid var(--ch-border);
+  border-radius: var(--ch-radius-md);
+  padding: var(--ch-space-3) var(--ch-space-4) var(--ch-space-3) var(--ch-space-5);
+  margin: 0 0 var(--ch-space-4);
+  line-height: 1.6;
+}
+
+.ch-update-steps li {
+  margin-bottom: var(--ch-space-2);
+}
+
+.ch-update-steps li:last-child {
+  margin-bottom: 0;
+}
+
+.ch-update-steps code {
+  font-family: var(--ch-font-mono);
+  font-size: var(--ch-text-xs);
+  background: var(--ch-surface);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--ch-border);
 }
 
 .ch-update-notes {

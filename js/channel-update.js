@@ -26,7 +26,9 @@ window.addEventListener("DOMContentLoaded", async function () {
                 <button type="button" class="btn btn-outline" id="chUpdateCloseBtn">关闭</button>
             </div>
         </div></div>`;
-        document.getElementById("chUpdateCloseBtn")?.addEventListener("click", closeTab);
+        document.getElementById("chUpdateCloseBtn")?.addEventListener("click", function () {
+            closeTab();
+        });
         return;
     }
 

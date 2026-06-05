@@ -25,7 +25,9 @@ window.addEventListener("DOMContentLoaded", async function () {
             }
         });
 
-    document.getElementById("agreeBtn").addEventListener("click", closeTab);
+    document.getElementById("agreeBtn").addEventListener("click", function () {
+        closeTab();
+    });
     document.getElementById("openOptionsBtn").addEventListener("click", function () {
         chrome.runtime.openOptionsPage();
         closeTab();
