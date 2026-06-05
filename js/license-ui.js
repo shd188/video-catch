@@ -3,10 +3,14 @@
  */
 async function licenseUiInitInstallPage() {
   const cfg = await licenseGetConfig();
-  if (!cfg?.apiBase) return;
+  const emptySlot = document.getElementById("licenseActivateSlot");
+  if (!cfg?.apiBase) {
+    if (emptySlot) emptySlot.remove();
+    return;
+  }
 
-  const card = document.querySelector(".card-body");
-  if (!card || document.getElementById("licenseActivateBox")) return;
+  const slot = document.getElementById("licenseActivateSlot");
+  if (!slot || document.getElementById("licenseActivateBox")) return;
 
   const box = document.createElement("div");
   box.id = "licenseActivateBox";
@@ -23,8 +27,7 @@ async function licenseUiInitInstallPage() {
       <p id="licenseUpdateHint" class="ch-hint" style="display:none;margin-top:12px"></p>
     </div>
   `;
-  const buttons = card.querySelector(".buttons");
-  card.insertBefore(box, buttons);
+  slot.replaceWith(box);
 
   document.getElementById("licenseActivateBtn").addEventListener("click", async () => {
     const key = document.getElementById("licenseKeyInput").value;

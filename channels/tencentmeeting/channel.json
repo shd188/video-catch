@@ -58,9 +58,5 @@
     "M3u8Ffmpeg": false,
     "M3u8Mp4": true,
     "iframeFFmpeg": false
-  },
-  "pilot": {
-    "referenceCourseUrl": "https://meeting.tencent.com/",
-    "notes": "请按实际回放页域名补充白名单"
   }
 }

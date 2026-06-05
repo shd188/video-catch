@@ -37,6 +37,8 @@ npm run build -- xiaoetong
 - 本仓库分发物：**GPL-3.0-or-later**（见 [LICENSE](LICENSE)、[NOTICE](NOTICE)）
 - 上游 Cat-Catch：GPL-3.0
 
-## 与上游 README 的关系
+## 与 README 的关系
 
-通用功能介绍仍以 [README.md](README.md)（猫抓官方说明）为准；**商业化与渠道构建**以本页及 `docs/` 为准。
+- 本仓库主说明：[README.md](README.md)
+- 猫抓通用功能介绍（上游原文）：[README-CAT-CATCH.md](README-CAT-CATCH.md)
+- **商业化与渠道构建**以本页及 `docs/` 为准

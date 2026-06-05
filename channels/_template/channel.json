@@ -27,9 +27,5 @@
     ],
     "deepSearch": false,
     "enable": true
-  },
-  "pilot": {
-    "referenceCourseUrl": "https://example.com/",
-    "notes": ""
   }
 }

@@ -58,19 +58,6 @@
                 );
             }
         });
-
-        fetch(chrome.runtime.getURL("channel-build.json"))
-            .then((r) => (r.ok ? r.json() : null))
-            .catch(() => null)
-            .then((info) => {
-                if (!info?.pilot?.referenceCourseUrl) { return; }
-                const $hint = $(`<div class="channel-detail"></div>`);
-                $hint.html(
-                    `<a href="${escapeAttr(info.pilot.referenceCourseUrl)}" target="_blank" rel="noopener">`
-                    + `${i18nChannel("popupChannelPilot", "试点课程页")}</a>`
-                );
-                $bar.append($hint);
-            });
     }
 
     function i18nChannel(key, fallback) {

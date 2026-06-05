@@ -213,7 +213,6 @@ const buildInfo = {
     installPage: config.installPage ?? null,
     lockOptions: config.lockOptions ?? null,
     license: config.license ?? null,
-    pilot: config.pilot ?? null,
 };
 fs.writeFileSync(path.join(outDir, "channel-build.json"), JSON.stringify(buildInfo, null, 2) + "\n", "utf8");
 

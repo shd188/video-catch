@@ -23,21 +23,6 @@ window.addEventListener("DOMContentLoaded", async function () {
                 a.href = info.repositoryUrl;
                 a.textContent = info.repositoryUrl;
             }
-
-            if (info.pilot?.referenceCourseUrl) {
-                const box = document.querySelector(".card-body");
-                const sec = document.createElement("div");
-                sec.className = "policy-section";
-                sec.innerHTML = `
-                    <div class="section-title"><span class="emoji">🎓</span><span>试点课程页</span></div>
-                    <div class="content-box lang-zh active">
-                        <p>请在小鹅通课程页打开扩展使用：</p>
-                        <p><a href="${info.pilot.referenceCourseUrl}" target="_blank" rel="noopener">${info.pilot.referenceCourseUrl}</a></p>
-                    </div>
-                `;
-                const buttons = box.querySelector(".buttons");
-                box.insertBefore(sec, buttons);
-            }
         });
 
     document.getElementById("agreeBtn").addEventListener("click", closeTab);

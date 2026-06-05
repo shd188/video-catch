@@ -1,82 +1,102 @@
-<p align="center"> [中文] | [<a href="README_en.md">English</a>] | [<a href="README_es.md">Español</a>]</p>
+# Video-Catch · 渠道版视频下载扩展
 
-# 📑简介
-猫抓(cat-catch) 资源嗅探扩展，能够帮你筛选列出当前页面的资源。
+基于开源浏览器扩展 [Cat-Catch（猫抓）](https://github.com/xifangczy/cat-catch) 的 **GPL 渠道构建**：按站点白名单打包、定制 UI 与文案，并配套激活与版本发布后台，用于合法场景下的课程/会议视频辅助下载。
 
-> **GPL 渠道构建 / 商业服务合规**：见 [README-GPL-CHANNELS.md](README-GPL-CHANNELS.md)（含小鹅通试点 `npm run build -- xiaoetong`）。
+> 本仓库：**https://github.com/shd188/video-catch**  
+> 订阅 API 示例：`https://api.shentongxue.online`（以各渠道 `channel.json` 中 `apiBase` 为准）
 
-# 📖安装地址
-## 🐴Chrome
-https://chrome.google.com/webstore/detail/jfedfbgedapdagkghmgibemcoggfppbb
-## 🦄Edge
-https://microsoftedge.microsoft.com/addons/detail/oohmdefbjalncfplafanlagojlakmjci
-## 🦊Firefox
-https://addons.mozilla.org/addon/cat-catch/ 😂需非国区IP访问
-## 📱Edge Android
-<img src="https://raw.githubusercontent.com/xifangczy/cat-catch/master/README/edgeqrcode.png" width="20%" />
+## 功能概览
 
-💔猫抓是开源的，任何人都可以下载修改上架到应用商店，已经有不少加上广告代码后上架的伪猫抓，请注意自己的数据安全。所有安装地址以github和用户文档为准。
+| 能力 | 说明 |
+|------|------|
+| 资源嗅探 | 继承猫抓核心：列出当前页面媒体资源，支持 m3u8/mp4 等常见格式 |
+| 渠道白名单 | 仅对 `channels/<id>/` 中配置的域名启用扩展能力，降低误用风险 |
+| 渠道定制 | 扩展名、图标、安装说明、Popup/设置页 UI（见 [docs/UI-CUSTOMIZATION.md](docs/UI-CUSTOMIZATION.md)） |
+| 激活与更新 | 可选联网校验激活码、检查新版本（`server/` 专有后台，不随 GPL 扩展强制分发） |
 
-# 📒用户文档
-https://o2bmm.gitbook.io/cat-catch/
+### 当前渠道
 
-# 🌏翻译
-[![gitlocalized ](https://gitlocalize.com/repo/9392/whole_project/badge.svg)](https://gitlocalize.com/repo/9392?utm_source=badge)
+| 渠道 ID | 显示名 | 说明 |
+|---------|--------|------|
+| `xiaoetong` | 小鹅通 | 主试点渠道，见 [channels/xiaoetong/README.md](channels/xiaoetong/README.md) |
+| `tencentmeeting` | 腾讯会议 | 基础白名单骨架，见 [channels/tencentmeeting/](channels/tencentmeeting/) |
 
-# 📘安装方法
-## 应用商店安装
-通过安装地址的链接到官方扩展商店即可安装。
-## 源码安装
-1. Git Clone 代码。
-2. 扩展管理页面 打开 "开发者模式"。
-3. 点击 "加载已解压的扩展程序" 选中扩展文件夹即可。
-## crx安装
-1. [Releases](https://github.com/xifangczy/cat-catch/releases) **右键另存为**下载crx文件。
-2. 扩展管理页面 打开 "开发者模式"。
-3. 将crx文件拖入扩展程序页面即可。
+## 快速开始
 
-# 📚兼容性说明
-1.0.17版本之后需要Chromium内核版本93以上。
-低于93请使用1.0.16版本。
-要体验完整功能，请使用104版本以上。
+**环境**：Node.js ≥ 18
 
-# 🔍界面
-![popup界面](https://raw.githubusercontent.com/xifangczy/cat-catch/master/README/popup.png)
-![m3u8解析器界面](https://raw.githubusercontent.com/xifangczy/cat-catch/master/README/m3u8.png)
+```bash
+git clone https://github.com/shd188/video-catch.git
+cd video-catch
+npm run build -- xiaoetong
+```
 
-# 🤚🏻免责
-本扩展仅供下载用户拥有版权或已获授权的视频，禁止用于下载受版权保护且未经授权的内容。用户需自行承担使用本工具的全部法律责任，开发者不对用户的任何行为负责。本工具按“原样”提供，开发者不承担任何直接或间接责任。
+在 Chrome / Edge 打开 `chrome://extensions` → 开启「开发者模式」→「加载已解压的扩展程序」→ 选择 `dist/xiaoetong/`。
 
-# 🚫版权保护与拒绝抓取声明
-我们尊重所有网站的内容版权和运营方的合法权益。
-如果您不允许本工具运行在您的网站上，请遵循以下流程向我们提交请求，我们将会把您的域名加入本项目的“避免抓取列表”中。
-- 在本仓库创建一个新的 Issue
-- Issue 标题请使用格式： `[Opt-Out Request] 您的网站域名`
+构建其它渠道：
 
-在 Issue 正文中，请提供以下信息以便我们核实：
-- 网站域名：（例如：`example.com`）
-- 联系人邮箱：（用于必要时核实身份）
+```bash
+npm run build -- tencentmeeting
+```
 
-我们承诺在收到有效请求后，将在后续版本更新中尊重您的意愿。请注意，本项目是一个开源项目，更新和发布需要一定的周期。感谢您的理解与合作。
+详细步骤见 [docs/BUILD.md](docs/BUILD.md)。
 
-# 🔒隐私政策
-本扩展收集所有信息都在本地储存处理，不会发送到远程服务器，不包含任何跟踪器。
+### 激活与发布后台（可选）
 
-# 💖鸣谢
-- [hls.js](https://github.com/video-dev/hls.js)
-- [jQuery](https://github.com/jquery/jquery)
-- [mux.js](https://github.com/videojs/mux.js)
-- [js-base64](https://github.com/dankogai/js-base64)
-- [jquery.json-viewer](https://github.com/abodelot/jquery.json-viewer)
-- [Momo707577045](https://github.com/Momo707577045)
-- [mpd-parser](https://github.com/videojs/mpd-parser)
-- [StreamSaver.js](https://github.com/jimmywarting/StreamSaver.js)
+```bash
+cd server
+cp .env.example .env   # 配置 ADMIN_TOKEN、PUBLIC_BASE_URL 等
+npm install
+npm run init-db
+npm start
+```
 
-# 📜License
-GPL-3.0 license
+管理界面：`/admin/`。部署说明见 [docs/SERVER.md](docs/SERVER.md)、[docs/DEPLOY-UBUNTU-HK.md](docs/DEPLOY-UBUNTU-HK.md)。
 
-1.0版 使用 MIT许可
+## 文档索引
 
-2.0版 更改为GPL v3许可
+| 文档 | 内容 |
+|------|------|
+| [README-GPL-CHANNELS.md](README-GPL-CHANNELS.md) | 渠道分发模式与文档导航 |
+| [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | **GPL 义务与分发检查清单** |
+| [docs/SERVICE.md](docs/SERVICE.md) | 付费服务边界（卖服务、不卖专有软件权） |
+| [docs/PRIVACY.md](docs/PRIVACY.md) | 订阅 API 隐私说明 |
+| [docs/BUSINESS-WORKFLOW.md](docs/BUSINESS-WORKFLOW.md) | 激活码与按渠道发包流程 |
+| [docs/UPSTREAM.md](docs/UPSTREAM.md) | 上游版本跟踪与合并策略 |
 
-为了资源嗅探扩展有良好发展，希望使用猫抓源码的扩展仍然保持开源。
+## 使用声明与法律责任
+
+1. **合法用途**：本工具仅供下载您**拥有版权或已获得授权**的内容。禁止用于下载受版权保护且未经授权的视频、绕过 DRM 或违反平台服务条款的行为。
+2. **用户责任**：您须自行判断内容是否可下载，并承担全部法律责任。本软件按「原样」提供，维护者不对任何直接或间接损失负责。
+3. **渠道限制**：渠道版仅在配置的白名单域名下工作，不保证适用于任意网站。
+4. **拒绝抓取**：若您作为网站运营方不希望本渠道包适配您的域名，请在本仓库提交 Issue，标题格式：`[Opt-Out Request] 您的域名`，并附联系邮箱。核实后将在后续渠道配置中尊重您的意愿（开源更新存在周期，敬请理解）。
+5. **隐私**：嗅探与下载数据默认在本地处理；若启用激活/更新，扩展会向配置的 `apiBase` 发送必要请求（激活码、渠道 ID、版本号等），详见 [docs/PRIVACY.md](docs/PRIVACY.md)。**本仓库渠道版与猫抓官方商店版无关联，请勿混淆。**
+
+## 许可证（本仓库分发物）
+
+- 浏览器扩展及其构建产物（含对猫抓的修改、`channels/`、`scripts/` 等随包分发部分）：**[GPL-3.0-or-later](LICENSE)**，见 [NOTICE](NOTICE)。
+- 单独部署且**不随扩展分发**的 `server/` 订阅 API：可专有，见 [docs/COMPLIANCE.md](docs/COMPLIANCE.md) 第 5 节。
+- 收到扩展或其构建产物的任何人，依法享有 GPL 赋予的运行、研究、修改与再分发权利（包括收费再分发），前提是遵守 GPL 义务（提供对应源码、保留许可证与版权声明等）。
+
+付费购买的是**技术支持、渠道适配与构建交付等服务**，不是「专有软件许可证」。详见 [docs/SERVICE.md](docs/SERVICE.md)。
+
+---
+
+## 上游项目说明
+
+本仓库是在 **[Cat-Catch / 猫抓](https://github.com/xifangczy/cat-catch)** 源代码基础上的修改与渠道打包，**并非**猫抓官方项目，也**不代表**上游作者对本渠道产品的认可或背书。
+
+| 项目 | 说明 |
+|------|------|
+| 上游仓库 | https://github.com/xifangczy/cat-catch |
+| 上游许可证 | GPL-3.0（2.0 版起） |
+| 本树基准版本 | 2.6.9（见 `manifest.json`、`docs/UPSTREAM.md`） |
+| 上游功能文档 | [README-CAT-CATCH.md](README-CAT-CATCH.md)（猫抓原始中文说明） |
+
+**商标与名称**：「Cat-Catch」「猫抓」指向上游开源项目。本仓库各渠道在 `manifest.json` 中的产品名称（如「小鹅通视频下载」）仅为 GPL 构建的描述性标签，**不暗示**上游作者或相关平台的授权、合作或背书。
+
+**GPL 义务摘要**：分发本扩展构建包时，须同时提供与交付版本一致的对应源码（推荐公开本 Git 仓库或附 `source.zip`）、[LICENSE](LICENSE) 全文、[NOTICE](NOTICE) 及构建说明（[docs/BUILD.md](docs/BUILD.md)）。完整清单见 [docs/COMPLIANCE.md](docs/COMPLIANCE.md)。
+
+**合并上游**：`git remote add upstream https://github.com/xifangczy/cat-catch.git`，流程见 [docs/UPSTREAM.md](docs/UPSTREAM.md)。
+
+感谢猫抓作者及社区维护的开源工作。

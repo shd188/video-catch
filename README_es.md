@@ -1,4 +1,4 @@
-<p align="center"> [<a href="README.md">中文</a>] | [<a href="README_en.md">English</a>] | [Español]</p>
+<p align="center"> [<a href="README-CAT-CATCH.md">中文（上游猫抓）</a>] | [<a href="README_en.md">English</a>] | [Español] · 本仓库说明见 <a href="README.md">README.md</a></p>
 
 # 📑Introducción
 Cat-Catch es una extensión de rastreo de recursos que puede ayudarlo a filtrar y enumerar los recursos de la página actual.
