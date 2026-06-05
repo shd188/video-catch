@@ -1,18 +1,18 @@
 {
   "id": "CHANNEL_ID",
-  "displayName": "媒体助手 · 渠道名",
+  "channelNameZh": "渠道名",
+  "displayName": "渠道名视频下载",
   "description": "GPL-3.0 channel build. See docs/COMPLIANCE.md",
   "repositoryUrl": "https://github.com/YOUR_ORG/YOUR_GPL_REPO",
   "installPage": "channel-install.html",
   "lockOptions": ["blockUrl", "blockUrlWhite", "deepSearch"],
   "manifest": {
-    "name": "媒体助手 · 渠道名",
     "description": "Whitelist-only media helper (GPL-3.0)",
     "homepage_url": "https://github.com/YOUR_ORG/YOUR_GPL_REPO"
   },
   "locales": {
     "zh_CN": {
-      "catCatch": "媒体助手",
+      "catCatch": "渠道名视频下载",
       "description": "渠道说明（中文）"
     },
     "en": {

@@ -23,7 +23,7 @@ npm run build -- xiaoetong
 
 - 写入 `js/channel-init.js`（白名单锁定）
 - 生成 `channel-build.json`（安装页与关于页读取）
-- 按 `channel.json` → `locales` 覆盖 `_locales` 中的扩展名称与描述
+- 按 `channelNameZh` 生成扩展名 **`{中文渠道名}视频下载`**，并用 `locales` 覆盖 `_locales` 中的 `catCatch`、描述
 - 首次安装打开 `channel-install.html`（若配置了 `installPage`）
 - 同步 patch `manifest.firefox.json`（Firefox 侧载）
 

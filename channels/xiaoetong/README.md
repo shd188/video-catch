@@ -21,6 +21,17 @@
 
 `blockUrlWhite: true`：未命中上述模式的标签页**不嗅探**。
 
+## 扩展图标
+
+`icons/` 目录为小鹅通专用图标（蓝底小鹅 + 下载箭头），构建时覆盖 `dist/xiaoetong/img/icon.png`、`icon128.png`、`icon-disable.png`。更换素材后可用 `icon-source.png` 重新导出：
+
+```bash
+cd channels/xiaoetong/icons
+sips -z 64 64 icon-source.png --out icon.png
+sips -z 128 128 icon-source.png --out icon128.png
+cp icon.png icon-disable.png   # 或自行做灰度/半透明禁用态
+```
+
 ## 构建与安装
 
 ```bash

@@ -6,39 +6,257 @@
   <meta name="description" content="Video-Catch 激活码与渠道包管理" />
   <title>Video-Catch 管理后台</title>
   <style>
-    :root { --bg: #f4f6f8; --card: #fff; --primary: #1677ff; --border: #e5e7eb; }
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: var(--bg); color: #1f2937; min-height: 100vh; }
-    header {
-      background: #111827; color: #fff; padding: 12px 20px;
-      display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;
-      position: sticky; top: 0; z-index: 10;
+    :root {
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.12);
+      --primary: #0071e3;
+      --primary-hover: #0077ed;
+      --primary-soft: rgba(0, 113, 227, 0.08);
+      --success-soft: rgba(36, 138, 61, 0.1);
+      --warn-soft: rgba(178, 80, 0, 0.08);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --radius-pill: 999px;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --text-sm: 13px;
+      --text-base: 14px;
+      --text-lg: 17px;
+      --text-xl: 22px;
     }
-    header h1 { margin: 0; font-size: 17px; font-weight: 600; }
-    #authBar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
-    #authBar input[type="password"] { width: 200px; padding: 6px 10px; border-radius: 6px; border: 1px solid #374151; }
-    #authBar label { display: flex; align-items: center; gap: 4px; color: #d1d5db; margin: 0; }
-    #authStatus { padding: 4px 10px; border-radius: 999px; font-size: 12px; }
-    #authStatus.ok { background: #065f46; color: #d1fae5; }
-    #authStatus.guest { background: #374151; color: #e5e7eb; }
-    main { max-width: 960px; margin: 20px auto; padding: 0 16px 48px; }
-    .card { background: var(--card); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-    .banner-warn { background: #fffbeb; border: 1px solid #fcd34d; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
-    label { display: block; font-size: 13px; margin-bottom: 4px; color: #4b5563; }
-    input, select, textarea { width: 100%; padding: 8px 10px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-    button { background: var(--primary); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-    button.secondary { background: #6b7280; }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tabs button { background: #e5e7eb; color: #374151; }
-    .tabs button.active { background: var(--primary); color: #fff; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
-    .mono { font-family: ui-monospace, monospace; font-size: 12px; }
-    .success-box { background: #ecfdf5; border: 1px solid #6ee7b7; padding: 12px; border-radius: 8px; margin-top: 12px; }
-    .err { color: #dc2626; font-size: 13px; margin-top: 8px; }
-    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 600px) { .row2 { grid-template-columns: 1fr; } #authBar input[type="password"] { width: 100%; } }
+    * { box-sizing: border-box; }
+    body {
+      font-family: var(--font);
+      font-size: var(--text-base);
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      background: var(--surface);
+      color: var(--text);
+      padding: var(--space-3) var(--space-5);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: saturate(180%) blur(12px);
+      background: rgba(255, 255, 255, 0.88);
+    }
+    header h1 {
+      margin: 0;
+      font-size: var(--text-lg);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    #authBar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      font-size: var(--text-sm);
+    }
+    #authBar input[type="password"] {
+      width: 200px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      font-family: var(--font);
+      font-size: var(--text-base);
+      background: var(--surface);
+    }
+    #authBar input[type="password"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+    #authBar label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      color: var(--text-secondary);
+      margin: 0;
+      font-size: var(--text-sm);
+    }
+    #authStatus {
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    #authStatus.ok { background: var(--success-soft); color: #248a3d; }
+    #authStatus.guest { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+    main { max-width: 920px; margin: var(--space-6) auto; padding: 0 var(--space-4) 56px; }
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-4);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .card h3 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--text-lg);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .card-info {
+      background: var(--primary-soft);
+      border: 1px solid var(--border);
+      font-size: var(--text-sm);
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .section-desc {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      margin: 0 0 var(--space-4);
+      line-height: 1.5;
+    }
+    .stats-box {
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      line-height: 1.5;
+    }
+    .banner-warn {
+      background: var(--warn-soft);
+      border: 1px solid var(--border);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-4);
+      font-size: var(--text-sm);
+      line-height: 1.5;
+      color: var(--text);
+    }
+    label {
+      display: block;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      margin-bottom: var(--space-1);
+      color: var(--text-secondary);
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: var(--space-3);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-size: var(--text-base);
+      font-family: var(--font);
+      background: var(--surface);
+      color: var(--text);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: var(--text-base);
+      font-family: var(--font);
+      font-weight: 500;
+      transition: background 0.18s ease, opacity 0.18s ease;
+    }
+    button:hover:not(:disabled) { background: var(--primary-hover); }
+    button.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+    button.secondary:hover:not(:disabled) { background: var(--bg); }
+    button.btn-sm { padding: 6px 12px; font-size: var(--text-sm); border-radius: var(--radius-sm); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .tabs {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+      padding: var(--space-1);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+    }
+    .tabs button {
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+      padding: 8px 14px;
+      font-size: var(--text-sm);
+    }
+    .tabs button.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .table-wrap { overflow-x: auto; margin-top: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); background: var(--surface); }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 12px;
+      text-transform: none;
+      background: var(--bg);
+    }
+    tr:last-child td { border-bottom: none; }
+    .mono { font-family: var(--mono); font-size: 12px; }
+    .success-box {
+      background: var(--success-soft);
+      border: 1px solid var(--border);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-md);
+      margin-top: var(--space-3);
+      font-size: var(--text-sm);
+      line-height: 1.5;
+    }
+    .err { color: #d70015; font-size: var(--text-sm); margin-top: var(--space-2); }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .preset-row { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; }
+    code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+    @media (max-width: 600px) {
+      .row2 { grid-template-columns: 1fr; }
+      #authBar input[type="password"] { width: 100%; }
+      main { padding: 0 var(--space-3) 48px; }
+    }
   </style>
 </head>
 <body>
@@ -58,7 +276,7 @@
       请先输入右上角<strong>管理登录密码</strong>并登录（与客户激活码无关）。建议将本页加入书签：<strong id="pageUrl"></strong>
     </div>
 
-    <div class="card" style="background:#eff6ff;border:1px solid #93c5fd;font-size:13px">
+    <div class="card card-info">
       <strong>推荐流程：</strong>每个渠道只 <b>发布一次 zip</b> → 批量生成激活码 → 下载 CSV → 每单发一个未使用的码。
     </div>
 
@@ -73,8 +291,8 @@
 
     <section id="panel-bulk" class="card">
       <h3>生成激活码</h3>
-      <p style="font-size:13px;color:#6b7280">选择渠道和数量，生成后下载 CSV。码快用完时在此补生成一批。</p>
-      <div id="bulkStats" style="font-size:13px;margin-bottom:16px;padding:12px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+      <p class="section-desc">选择渠道和数量，生成后下载 CSV。码快用完时在此补生成一批。</p>
+      <div id="bulkStats" class="stats-box">
         登录后显示剩余未使用数量…
       </div>
       <div class="row2">
@@ -85,10 +303,10 @@
         <div>
           <label>生成数量（1～10000）</label>
           <input id="bulkCount" type="number" min="1" max="10000" value="1000" />
-          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-            <button type="button" class="secondary preset-count" data-n="500" style="padding:4px 10px;font-size:12px">500</button>
-            <button type="button" class="secondary preset-count" data-n="1000" style="padding:4px 10px;font-size:12px">1000</button>
-            <button type="button" class="secondary preset-count" data-n="2000" style="padding:4px 10px;font-size:12px">2000</button>
+          <div class="preset-row">
+            <button type="button" class="secondary btn-sm preset-count" data-n="500">500</button>
+            <button type="button" class="secondary btn-sm preset-count" data-n="1000">1000</button>
+            <button type="button" class="secondary btn-sm preset-count" data-n="2000">2000</button>
           </div>
         </div>
       </div>
@@ -108,7 +326,7 @@
 
     <section id="panel-release" class="card" hidden>
       <h3>发布渠道扩展包</h3>
-      <p style="font-size:13px;color:#6b7280">本机 <code>npm run build -- 渠道名</code> 打 zip 后上传。</p>
+      <p class="section-desc">本机 <code>npm run build -- 渠道名</code> 打 zip 后上传。</p>
       <label>渠道 ID</label>
       <input id="relChannel" value="xiaoetong" list="channelList" />
       <label>版本号</label>
@@ -126,7 +344,7 @@
       <h3>激活码查询</h3>
       <label><input type="checkbox" id="unusedOnly" checked /> 仅显示未使用</label>
       <button type="button" class="secondary" id="refreshLicBtn" data-require-auth>刷新</button>
-      <div style="overflow-x:auto;margin-top:12px">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr><th>激活码</th><th>渠道</th><th>状态</th><th>一次性</th><th>过期</th><th>备注</th><th>创建</th></tr>
@@ -152,7 +370,7 @@
 
     <section id="panel-account" class="card" hidden>
       <h3>修改管理登录密码</h3>
-      <p style="font-size:13px;color:#6b7280">
+      <p class="section-desc">
         此密码<strong>仅用于</strong>登录本管理后台（及调用管理 API），与客户购买的<strong>激活码无关</strong>。
         首次部署时密码来自服务器 <code>.env</code> 的 <code>ADMIN_API_KEY</code>；在此修改后会保存到数据库，之后以新密码为准。
       </p>
@@ -167,7 +385,7 @@
     <section id="panel-releases" class="card" hidden>
       <h3>已发布版本</h3>
       <button type="button" class="secondary" id="refreshRelBtn" data-require-auth>刷新</button>
-      <div style="overflow-x:auto;margin-top:12px">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr><th>渠道</th><th>版本</th><th>文件</th><th>说明</th><th>发布时间</th></tr>

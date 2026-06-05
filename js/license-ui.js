@@ -12,13 +12,15 @@ async function licenseUiInitInstallPage() {
   box.id = "licenseActivateBox";
   box.className = "policy-section";
   box.innerHTML = `
-    <div class="section-title"><span class="emoji">🔑</span><span>订阅激活（可选）</span></div>
+    <div class="section-title">订阅激活（可选）</div>
     <div class="content-box lang-zh active">
       <p>若您已购买本渠道技术支持，请输入激活码以接收版本更新通知与下载链接。</p>
-      <p><input type="text" id="licenseKeyInput" placeholder="CC-XXXX-XXXX-XXXX" style="width:100%;max-width:320px;padding:8px" /></p>
-      <p><button type="button" class="btn btn-primary" id="licenseActivateBtn">激活</button>
-      <span id="licenseActivateMsg" style="margin-left:8px"></span></p>
-      <p id="licenseUpdateHint" style="display:none"></p>
+      <p><input type="text" id="licenseKeyInput" class="ch-input" placeholder="CC-XXXX-XXXX-XXXX" autocomplete="off" /></p>
+      <div class="ch-actions">
+        <button type="button" class="btn btn-primary" id="licenseActivateBtn">激活</button>
+        <span id="licenseActivateMsg" class="ch-hint"></span>
+      </div>
+      <p id="licenseUpdateHint" class="ch-hint" style="display:none;margin-top:12px"></p>
     </div>
   `;
   const buttons = card.querySelector(".buttons");
@@ -31,6 +33,7 @@ async function licenseUiInitInstallPage() {
     try {
       const r = await licenseActivate(key);
       msg.textContent = r.ok ? "激活成功" : (r.message || "失败");
+      msg.className = "ch-hint " + (r.ok ? "ok" : "err");
       if (r.ok) await licenseCheck(true);
       licenseUiShowUpdateHint();
     } catch (e) {

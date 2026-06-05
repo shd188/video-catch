@@ -1,38 +1,54 @@
-/* Channel build: locked settings (GPL distribution) */
+@import url("channel-theme.css");
+
 .channel-banner {
-    margin: 0 0 1rem;
-    padding: 12px 16px;
-    border-radius: 8px;
-    background: #e8f4fd;
-    border: 1px solid #b8d9f0;
-    font-size: 14px;
-    line-height: 1.5;
+  margin: 0 0 var(--ch-space-4);
+  padding: var(--ch-space-4) var(--ch-space-5);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-accent-soft);
+  border: 1px solid var(--ch-border);
+  font-size: var(--ch-text-base);
+  line-height: 1.55;
+  color: var(--ch-text);
 }
 
 .channel-banner h2 {
-    margin: 0 0 8px;
-    font-size: 16px;
+  margin: 0 0 var(--ch-space-2);
+  font-size: var(--ch-text-lg);
+  font-weight: var(--ch-weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.channel-banner p {
+  margin: 0 0 var(--ch-space-2);
+  color: var(--ch-text-secondary);
+  font-size: var(--ch-text-sm);
 }
 
 .channel-banner ul {
-    margin: 8px 0 0;
-    padding-left: 1.2rem;
+  margin: var(--ch-space-2) 0 0;
+  padding-left: 1.25rem;
+  font-size: var(--ch-text-sm);
+  color: var(--ch-text-secondary);
+}
+
+.channel-banner li {
+  margin-bottom: var(--ch-space-1);
 }
 
 .channel-whitelist-readonly {
-    opacity: 0.85;
+  opacity: 0.92;
 }
 
 .channel-whitelist-readonly input,
 .channel-whitelist-readonly button,
 .channel-whitelist-readonly .switch {
-    pointer-events: none;
+  pointer-events: none;
 }
 
 .channel-locked-section {
-    display: none !important;
+  display: none !important;
 }
 
 .sidebar a.channel-locked-nav {
-    display: none !important;
+  display: none !important;
 }

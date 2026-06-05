@@ -1,6 +1,7 @@
 {
   "id": "xiaoetong",
-  "displayName": "媒体助手 · 小鹅通版",
+  "channelNameZh": "小鹅通",
+  "displayName": "小鹅通视频下载",
   "description": "基于 Cat-Catch (GPL-3.0)。仅在小鹅通相关域名下嗅探媒体，供课程学习备份使用。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
   "repositoryUrl": "https://github.com/shd188/video-catch",
   "license": {
@@ -12,14 +13,14 @@
   "lockOptions": ["blockUrl", "blockUrlWhite", "deepSearch", "M3u8Ffmpeg", "M3u8Mp4", "iframeFFmpeg"],
   "versionSuffix": "",
   "manifest": {
-    "name": "媒体助手 · 小鹅通版",
-    "description": "GPL-3.0. Xiaoe (小鹅通) course media helper — whitelist-only sniffing.",
+    "description": "小鹅通回放视频下载，仅限自有或已获授权的内容。",
     "homepage_url": "https://github.com/shd188/video-catch"
   },
   "locales": {
     "zh_CN": {
-      "catCatch": "媒体助手",
-      "description": "小鹅通课程媒体嗅探（GPL · 白名单）",
+      "catCatch": "小鹅通视频下载",
+      "description": "小鹅通回放视频下载，仅限自有或已获授权的内容。",
+      "noData": "还没找到视频哦~",
       "channelImportStripped": "配置已导入。以下渠道锁定项未写入：${keys}",
       "popupChannelAllowed": "当前页面在白名单内，可嗅探",
       "popupChannelBlocked": "当前页面不在渠道白名单内，不会嗅探",
@@ -29,7 +30,7 @@
     },
     "en": {
       "catCatch": "Media Helper",
-      "description": "Xiaoe course media sniffing (GPL, whitelist)",
+      "description": "Xiaoe replay video download. For your own or authorized content only.",
       "channelImportStripped": "Imported. Channel-locked keys were not applied: ${keys}",
       "popupChannelAllowed": "This page is on the channel whitelist",
       "popupChannelBlocked": "This page is not on the channel whitelist — sniffing disabled",

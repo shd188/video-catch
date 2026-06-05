@@ -34,9 +34,9 @@
             licenseCheck(false).then(function () {
                 const upd = typeof licenseGetUpdate === "function" ? licenseGetUpdate() : (G.licenseUpdate || null);
                 if (upd?.download_url) {
-                    const $u = $(`<div class="channel-detail" style="margin-top:4px">
+                    const $u = $(`<div class="channel-detail">
                         <a href="${escapeAttr(upd.download_url)}" target="_blank" rel="noopener">
-                        ⬆ 新版本 ${escapeHtml(upd.version)} 下载</a></div>`);
+                        新版本 ${escapeHtml(upd.version)} 可下载</a></div>`);
                     $bar.append($u);
                 }
             }).catch(function () { });
@@ -46,15 +46,15 @@
             if (allowed) {
                 $bar.removeClass("channel-blocked").addClass("channel-allowed");
                 $bar.find(".channel-detail").html(
-                    `✓ ${i18nChannel("popupChannelAllowed", "当前页面在白名单内，可嗅探")}`
-                    + (patterns.length ? `<br><span title="${escapeAttr(patterns.join("\n"))}">${i18nChannel("popupChannelPatterns", "规则")}: ${patterns.length} 条</span>` : "")
+                    `${i18nChannel("popupChannelAllowed", "当前页面在白名单内，可嗅探")}`
+                    + (patterns.length ? `<br><span title="${escapeAttr(patterns.join("\n"))}">${i18nChannel("popupChannelPatterns", "规则")}：${patterns.length} 条</span>` : "")
                 );
             } else {
                 $bar.removeClass("channel-allowed").addClass("channel-blocked");
                 const host = tabUrl ? tryHost(tabUrl) : "—";
                 $bar.find(".channel-detail").html(
-                    `✗ ${i18nChannel("popupChannelBlocked", "当前页面不在渠道白名单内，不会嗅探")}`
-                    + `<br>${i18nChannel("popupChannelHost", "当前")}: <code>${escapeHtml(host)}</code>`
+                    `${i18nChannel("popupChannelBlocked", "当前页面不在渠道白名单内，不会嗅探")}`
+                    + `<br>${i18nChannel("popupChannelHost", "当前")}：<code>${escapeHtml(host)}</code>`
                 );
             }
         });
@@ -64,7 +64,7 @@
             .catch(() => null)
             .then((info) => {
                 if (!info?.pilot?.referenceCourseUrl) { return; }
-                const $hint = $(`<div class="channel-detail" style="margin-top:4px"></div>`);
+                const $hint = $(`<div class="channel-detail"></div>`);
                 $hint.html(
                     `<a href="${escapeAttr(info.pilot.referenceCourseUrl)}" target="_blank" rel="noopener">`
                     + `${i18nChannel("popupChannelPilot", "试点课程页")}</a>`

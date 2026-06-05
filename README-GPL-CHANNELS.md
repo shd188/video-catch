@@ -17,6 +17,7 @@
 | [docs/PRIVACY.md](docs/PRIVACY.md) | 订阅 API 隐私说明 |
 | [docs/BUILD.md](docs/BUILD.md) | 构建与复现 |
 | [docs/UPSTREAM.md](docs/UPSTREAM.md) | 上游版本跟踪 |
+| [docs/UI-CUSTOMIZATION.md](docs/UI-CUSTOMIZATION.md) | **UI 定制清单与合并时保留策略** |
 | [channels/](channels/) | 各渠道 GPL 配置（公开） |
 | [server/](server/) | 专有订阅 API（不 GPL） |
 

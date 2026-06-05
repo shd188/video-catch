@@ -86,7 +86,7 @@ function generateChannelInit(cfg) {
         "(function () {",
         "    if (typeof G === 'undefined' || !G.OptionLists) { return; }",
         `    G.channelId = ${JSON.stringify(cfg.id)};`,
-        `    G.channelDisplayName = ${JSON.stringify(cfg.displayName ?? cfg.id)};`,
+        `    G.channelDisplayName = ${JSON.stringify(cfg.displayName ?? channelExtensionName(cfg))};`,
         `    G._channelBuildLock = ${JSON.stringify(lock, null, 4).replaceAll("\n", "\n    ")};`,
         `    G._channelLockOptions = ${JSON.stringify(lockOptions)};`,
     ];
@@ -113,8 +113,16 @@ function generateChannelInit(cfg) {
     return lines.join("\n");
 }
 
+function channelExtensionName(cfg) {
+    if (cfg.channelNameZh) return `${cfg.channelNameZh}视频下载`;
+    return cfg.manifest?.name ?? cfg.displayName ?? cfg.id;
+}
+
 function patchManifest(manifest, cfg) {
     const m = { ...manifest, ...(cfg.manifest ?? {}) };
+    if (cfg.channelNameZh) {
+        m.name = channelExtensionName(cfg);
+    }
     if (cfg.repositoryUrl && !cfg.manifest?.homepage_url) {
         m.homepage_url = cfg.repositoryUrl;
     }
@@ -167,6 +175,16 @@ for (const name of fs.readdirSync(ROOT)) {
 
 fs.writeFileSync(path.join(outDir, "js", "channel-init.js"), generateChannelInit(config), "utf8");
 
+const channelIconDir = path.join(channelDir, "icons");
+if (fs.existsSync(channelIconDir)) {
+    const outImg = path.join(outDir, "img");
+    for (const file of fs.readdirSync(channelIconDir)) {
+        if (!file.endsWith(".png") || file === "icon-source.png") continue;
+        fs.copyFileSync(path.join(channelIconDir, file), path.join(outImg, file));
+        console.log(`  Channel icon: img/${file}`);
+    }
+}
+
 function writeManifest(outDir, filename, cfg) {
     const manifestPath = path.join(outDir, filename);
     if (!fs.existsSync(manifestPath)) return null;
@@ -186,7 +204,8 @@ patchLocales(outDir, config.locales);
 
 const buildInfo = {
     channelId: config.id,
-    displayName: config.displayName ?? config.id,
+    displayName: config.displayName ?? channelExtensionName(config),
+    extensionName: channelExtensionName(config),
     builtAt: new Date().toISOString(),
     upstreamVersion: manifest.version?.replace(config.versionSuffix ?? "", "") ?? null,
     configSource: `channels/${channelId}/channel.json`,
