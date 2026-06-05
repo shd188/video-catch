@@ -30,34 +30,51 @@
             : [];
         $bar.find(".channel-title").text(name);
 
-        if (typeof licenseCheck === "function") {
-            licenseCheck(false).then(function () {
-                const upd = typeof licenseGetUpdate === "function" ? licenseGetUpdate() : (G.licenseUpdate || null);
-                if (upd?.download_url) {
-                    const $u = $(`<div class="channel-detail">
-                        <a href="${escapeAttr(upd.download_url)}" target="_blank" rel="noopener">
-                        新版本 ${escapeHtml(upd.version)} 可下载</a></div>`);
-                    $bar.append($u);
+        const renderWhitelist = function () {
+            isCurrentTabChannelAllowed(function (allowed, tabUrl) {
+                if (allowed) {
+                    $bar.removeClass("channel-blocked").addClass("channel-allowed");
+                    $bar.find(".channel-detail").html(
+                        `${i18nChannel("popupChannelAllowed", "当前页面在白名单内，可嗅探")}`
+                        + (patterns.length ? `<br><span title="${escapeAttr(patterns.join("\n"))}">${i18nChannel("popupChannelPatterns", "规则")}：${patterns.length} 条</span>` : "")
+                    );
+                } else {
+                    $bar.removeClass("channel-allowed").addClass("channel-blocked");
+                    const host = tabUrl ? tryHost(tabUrl) : "—";
+                    $bar.find(".channel-detail").html(
+                        `${i18nChannel("popupChannelBlocked", "当前页面不在渠道白名单内，不会嗅探")}`
+                        + `<br>${i18nChannel("popupChannelHost", "当前")}：<code>${escapeHtml(host)}</code>`
+                    );
                 }
-            }).catch(function () { });
-        }
+            });
+        };
 
-        isCurrentTabChannelAllowed(function (allowed, tabUrl) {
-            if (allowed) {
-                $bar.removeClass("channel-blocked").addClass("channel-allowed");
-                $bar.find(".channel-detail").html(
-                    `${i18nChannel("popupChannelAllowed", "当前页面在白名单内，可嗅探")}`
-                    + (patterns.length ? `<br><span title="${escapeAttr(patterns.join("\n"))}">${i18nChannel("popupChannelPatterns", "规则")}：${patterns.length} 条</span>` : "")
-                );
-            } else {
-                $bar.removeClass("channel-allowed").addClass("channel-blocked");
-                const host = tabUrl ? tryHost(tabUrl) : "—";
-                $bar.find(".channel-detail").html(
-                    `${i18nChannel("popupChannelBlocked", "当前页面不在渠道白名单内，不会嗅探")}`
-                    + `<br>${i18nChannel("popupChannelHost", "当前")}：<code>${escapeHtml(host)}</code>`
-                );
+        const renderLicenseState = function () {
+            if (typeof licenseBootstrap !== "function" || !G.channelLicenseApi?.apiBase) {
+                renderWhitelist();
+                return;
             }
-        });
+            licenseBootstrap().then(function () {
+                if (G.licenseActive !== true) {
+                    $bar.removeClass("channel-allowed").addClass("channel-blocked");
+                    const installUrl = chrome.runtime.getURL(G.channelInstallPage || "channel-install.html");
+                    $bar.find(".channel-detail").html(
+                        `${i18nChannel("popupChannelNeedActivate", "尚未激活，嗅探已禁用")}`
+                        + `<br><a href="${escapeAttr(installUrl)}" target="_blank" rel="noopener">`
+                        + `${i18nChannel("popupChannelOpenActivate", "打开激活页")}</a>`
+                    );
+                    return;
+                }
+                renderWhitelist();
+                if (typeof licenseShowPopupUpdateModal === "function") {
+                    licenseShowPopupUpdateModal();
+                }
+            }).catch(function () {
+                renderWhitelist();
+            });
+        };
+
+        renderLicenseState();
     }
 
     function i18nChannel(key, fallback) {

@@ -1,4 +1,4 @@
-importScripts("/js/function.js", "/js/init.js", "/js/channel-init.js", "/js/license-client.js");
+importScripts("/js/function.js", "/js/init.js", "/js/channel-init.js", "/js/license-client.js", "/js/license-update.js");
 
 // Service Worker 5分钟后会强制终止扩展
 // https://bugs.chromium.org/p/chromium/issues/detail?id=1271154
@@ -40,14 +40,17 @@ chrome.alarms.onAlarm.addListener(function (alarm) {
 });
 
 function scheduleLicenseCheckAlarm() {
-    if (typeof licenseGetConfig !== "function") return;
-    licenseGetConfig().then(function (cfg) {
+    if (typeof licenseBootstrap !== "function") return;
+    licenseBootstrap().then(function () {
+        return licenseGetConfig();
+    }).then(function (cfg) {
         if (!cfg?.apiBase) return;
         const hours = cfg.checkIntervalHours ?? 24;
         chrome.alarms.create("licenseCheck", { periodInMinutes: Math.max(30, hours * 60) });
-        licenseCheck(true).catch(function () { });
-    });
+    }).catch(function () { });
 }
+
+scheduleLicenseCheckAlarm();
 
 // onBeforeRequest 浏览器发送请求之前使用正则匹配发送请求的URL
 // chrome.webRequest.onBeforeRequest.addListener(
@@ -104,6 +107,10 @@ function findMedia(data, isRegex = false, filter = false, timer = false) {
     // 检查 是否启用 是否在当前标签是否在屏蔽列表中
     const blockUrlFlag = data.tabId && data.tabId > 0 && G.blockUrlSet.has(data.tabId);
     if (!G.enable || (G.blockUrlWhite ? !blockUrlFlag : blockUrlFlag)) {
+        return;
+    }
+
+    if (typeof licenseSniffingBlocked === "function" && licenseSniffingBlocked()) {
         return;
     }
 
@@ -331,6 +338,10 @@ function save(tabId) {
  */
 chrome.runtime.onMessage.addListener(function (Message, sender, sendResponse) {
     if (chrome.runtime.lastError) { return; }
+    if (Message.Message === "licenseActivated" && typeof licenseBootstrap === "function") {
+        licenseBootstrap().then(function () { sendResponse("ok"); }).catch(function () { sendResponse("error"); });
+        return true;
+    }
     if (!G.initLocalComplete || !G.initSyncComplete) {
         sendResponse("error");
         return true;
@@ -663,6 +674,10 @@ chrome.webNavigation.onCommitted.addListener(function (details) {
 
     // chrome内核版本 102 以下不支持 chrome.scripting.executeScript API
     if (G.version < 102) { return; }
+
+    if (typeof licenseSniffingBlocked === "function" && licenseSniffingBlocked()) {
+        return;
+    }
 
     if (G.deepSearch && G.deepSearchTemporarilyClose != details.tabId) {
         G.scriptList.get("search.js").tabId.add(details.tabId);

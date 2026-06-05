@@ -423,14 +423,34 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 
 // 扩展升级，清空本地储存
 chrome.runtime.onInstalled.addListener(function (details) {
+    const channelLicensed = !!(G.channelLicenseApi && G.channelLicenseApi.apiBase);
+    const finishLocalInit = function () {
+        if (chrome.storage.session) {
+            chrome.storage.session.clear(InitOptions);
+        } else {
+            InitOptions();
+        }
+    };
+
     if (details.reason == "update") {
-        chrome.storage.local.clear(function () {
-            if (chrome.storage.session) {
-                chrome.storage.session.clear(InitOptions);
-            } else {
-                InitOptions();
-            }
-        });
+        if (channelLicensed && typeof licensePreserveKeys === "function") {
+            chrome.storage.local.get(licensePreserveKeys(), function (saved) {
+                chrome.storage.local.clear(function () {
+                    const keep = {};
+                    for (const k of licensePreserveKeys()) {
+                        if (saved[k] !== undefined) { keep[k] = saved[k]; }
+                    }
+                    chrome.storage.local.set(keep, function () {
+                        finishLocalInit();
+                        if (!keep.licenseKey && typeof licenseOpenInstallPage === "function") {
+                            licenseOpenInstallPage();
+                        }
+                    });
+                });
+            });
+        } else {
+            chrome.storage.local.clear(finishLocalInit);
+        }
         chrome.alarms.create("nowClear", { when: Date.now() + 3000 });
     }
     if (details.reason == "install") {

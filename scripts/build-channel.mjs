@@ -95,6 +95,7 @@ function generateChannelInit(cfg) {
     }
     if (cfg.license?.apiBase) {
         lines.push(`    G.channelLicenseApi = ${JSON.stringify(cfg.license)};`);
+        lines.push(`    G.licenseActive = false;`);
     }
     if (typeof opts.blockUrlWhite === "boolean") {
         lines.push(`    G.OptionLists.blockUrlWhite = ${opts.blockUrlWhite};`);

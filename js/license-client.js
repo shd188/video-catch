@@ -24,6 +24,39 @@ function licenseSyncToG() {
   G.licenseUpdate = LicenseState.update;
 }
 
+/** 渠道构建且配置了 apiBase 时，嗅探须先通过激活校验 */
+function licenseSniffingBlocked() {
+  if (typeof G === "undefined") return false;
+  if (!G.channelLicenseApi?.apiBase) return false;
+  return G.licenseActive !== true;
+}
+
+function licenseOpenInstallPage() {
+  if (typeof G === "undefined" || !G.channelInstallPage) return;
+  const page = String(G.channelInstallPage);
+  chrome.tabs.create({ url: page });
+}
+
+async function licenseBootstrap() {
+  const cfg = await licenseGetConfig();
+  if (!cfg?.apiBase) {
+    LicenseState.active = true;
+    licenseSyncToG();
+    return { skipped: true };
+  }
+  const key = await licenseGetStoredKey();
+  if (!key) {
+    LicenseState.active = false;
+    LicenseState.update = null;
+    licenseSyncToG();
+    if (typeof licensePersistPendingUpdate === "function") {
+      licensePersistPendingUpdate(null);
+    }
+    return { active: false, code: "NO_KEY" };
+  }
+  return licenseCheck(true);
+}
+
 function licenseGetUpdate() {
   return LicenseState.update;
 }
@@ -133,6 +166,9 @@ async function licenseCheck(force = false) {
     LicenseState.active = false;
     LicenseState.update = null;
     licenseSyncToG();
+    if (typeof licensePersistPendingUpdate === "function") {
+      licensePersistPendingUpdate(null);
+    }
     return { active: false, code: "NO_KEY" };
   }
 
@@ -168,5 +204,23 @@ async function licenseCheck(force = false) {
     : null;
   licenseSyncToG();
 
+  if (typeof licensePersistPendingUpdate === "function") {
+    licensePersistPendingUpdate(LicenseState.update);
+  }
+  if (LicenseState.update && typeof licenseMaybePromptUpdate === "function") {
+    licenseMaybePromptUpdate();
+  }
+
   return result;
+}
+
+function licensePreserveKeys() {
+  return [
+    LicenseStorage.key,
+    LicenseStorage.installationId,
+    LicenseStorage.lastCheck,
+    "updateDismissedVersion",
+    "updatePromptShownVersion",
+    "pendingUpdate",
+  ];
 }

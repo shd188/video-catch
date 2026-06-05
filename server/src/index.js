@@ -14,6 +14,7 @@ import {
   licenseStats,
   listLicenses,
 } from "./licenses.js";
+import { isVersionNewer } from "./version.js";
 import {
   getReleaseFilePath,
   getLatestRelease,
@@ -133,7 +134,7 @@ app.post("/api/v1/check", (req, res) => {
   const manifestVersion = current_version || null;
   let update_available = false;
   if (latest && updatesAllowed && manifestVersion) {
-    update_available = manifestVersion !== latest.version;
+    update_available = isVersionNewer(latest.version, manifestVersion);
   }
   const payload = {
     ...status,

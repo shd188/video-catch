@@ -16,7 +16,7 @@ async function licenseUiInitInstallPage() {
   box.id = "licenseActivateBox";
   box.className = "policy-section";
   box.innerHTML = `
-    <div class="section-title">渠道激活（首次使用）</div>
+    <div class="section-title">🔑 渠道激活（首次使用）</div>
     <div class="content-box lang-zh active">
       <p>每个渠道<strong>首次使用</strong>时请输入激活码（每设备一次）。激活后扩展可正常使用；后续版本更新不再重复校验激活码。</p>
       <p><input type="text" id="licenseKeyInput" class="ch-input" placeholder="CC-XXXX-XXXX-XXXX" autocomplete="off" /></p>
@@ -37,7 +37,12 @@ async function licenseUiInitInstallPage() {
       const r = await licenseActivate(key);
       msg.textContent = r.ok ? "激活成功" : (r.message || "失败");
       msg.className = "ch-hint " + (r.ok ? "ok" : "err");
-      if (r.ok) await licenseCheck(true);
+      if (r.ok) {
+        await licenseCheck(true);
+        chrome.runtime.sendMessage({ Message: "licenseActivated" }, function () {
+          chrome.runtime.lastError;
+        });
+      }
       licenseUiShowUpdateHint();
     } catch (e) {
       msg.textContent = e.message || "网络错误";
