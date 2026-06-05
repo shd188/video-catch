@@ -11,13 +11,41 @@ export function getLatestRelease(channelId) {
     .get(channelId);
 }
 
-export function getReleaseFilePath(channelId, version) {
+function fileIfExists(filePath) {
+  return filePath && fs.existsSync(filePath) ? filePath : null;
+}
+
+function findZipInDir(dir, { filename, version }) {
+  if (!dir || !fs.existsSync(dir)) return null;
+  if (filename) {
+    const exact = fileIfExists(path.join(dir, filename));
+    if (exact) return exact;
+  }
+  const zips = fs
+    .readdirSync(dir)
+    .filter((name) => name.endsWith(".zip") && (!version || name.includes(version)));
+  if (zips.length === 1) return path.join(dir, zips[0]);
+  if (filename && zips.includes(filename)) return path.join(dir, filename);
+  return null;
+}
+
+/** 按 DB 记录解析磁盘上的 zip（兼容上传到 default/ 目录的历史包） */
+export function resolveReleaseFilePath(channelId, version) {
   const row = getDb()
     .prepare(`SELECT filename FROM releases WHERE channel_id = ? AND version = ?`)
     .get(channelId, version);
   if (!row) return null;
-  const full = path.join(getReleasesDir(), channelId, row.filename);
-  return fs.existsSync(full) ? full : null;
+  const base = getReleasesDir();
+  const hints = { filename: row.filename, version };
+  return (
+    findZipInDir(path.join(base, channelId), hints) ||
+    findZipInDir(path.join(base, "default"), hints) ||
+    findZipInDir(base, hints)
+  );
+}
+
+export function getReleaseFilePath(channelId, version) {
+  return resolveReleaseFilePath(channelId, version);
 }
 
 function upsertReleaseRow({ channelId, version, filename, releaseNotes }) {

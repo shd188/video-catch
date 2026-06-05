@@ -840,24 +840,37 @@
 
     async function downloadRelease(channelId, version, filename) {
       if (!requireAuth()) return;
-      const res = await fetch(
-        `/api/admin/releases/download?channel_id=${encodeURIComponent(channelId)}&version=${encodeURIComponent(version)}`,
-        { headers: { "X-Admin-Key": getKey() } }
-      );
+      if (!channelId || !version) {
+        throw new Error("渠道或版本无效，请刷新页面后重试");
+      }
+      const key = getKey();
+      const qs = new URLSearchParams({
+        channel_id: channelId,
+        version,
+        admin_key: key,
+      });
+      const url = `/api/admin/releases/download?${qs}`;
+      const res = await fetch(url, { headers: { "X-Admin-Key": key } });
       if (res.status === 401) {
         clearAuth();
-        throw new Error("登录已失效");
+        throw new Error("登录已失效，请重新登录");
       }
-      if (!res.ok) {
+      const contentType = res.headers.get("Content-Type") || "";
+      if (!res.ok || contentType.includes("application/json")) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "下载失败");
+        throw new Error(data.message || `下载失败 (HTTP ${res.status})`);
       }
       const blob = await res.blob();
+      if (!blob.size) {
+        throw new Error("文件为空，服务器上可能缺少 zip，请重新发布");
+      }
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = filename || `${channelId}-${version}.zip`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(a.href);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     }
 
     async function loadReleases() {
@@ -876,7 +889,7 @@
         <td class="mono">${escapeHtml(r.filename)}</td>
         <td>${escapeHtml(r.release_notes || "—")}</td>
         <td>${escapeHtml(r.published_at || "")}</td>
-        <td><button type="button" class="secondary btn-sm btn-dl" data-ch="${escapeHtml(r.channel_id)}" data-ver="${escapeHtml(r.version)}" data-file="${escapeHtml(r.filename)}">下载</button></td>
+        <td><button type="button" class="secondary btn-sm btn-dl" data-ch="${r.channel_id}" data-ver="${r.version}" data-file="${r.filename}">下载</button></td>
       </tr>`
           )
           .join("") || "<tr><td colspan='5'>该渠道暂无已发布版本</td></tr>";

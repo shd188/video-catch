@@ -205,9 +205,22 @@ app.get("/api/admin/releases/download", adminAuth, (req, res) => {
   }
   const filePath = getReleaseFilePath(channelId, version);
   if (!filePath) {
-    return res.status(404).json({ ok: false, message: "版本文件不存在" });
+    return res.status(404).json({
+      ok: false,
+      message: `版本文件不存在（${channelId} / ${version}），请重新上传 zip`,
+    });
   }
-  res.download(filePath, path.basename(filePath));
+  const name = path.basename(filePath);
+  res.setHeader("Content-Type", "application/zip");
+  res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(name)}`);
+  res.sendFile(path.resolve(filePath), (err) => {
+    if (err) {
+      console.error("[admin] release download failed:", filePath, err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, message: "发送文件失败，请查看服务器日志" });
+      }
+    }
+  });
 });
 
 app.get("/api/admin/licenses/stats", adminAuth, (req, res) => {
