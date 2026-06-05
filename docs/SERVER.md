@@ -191,6 +191,8 @@ systemctl restart video-catch-api
 - **生成激活码**：选渠道、填数量（如 1000），生成后自动下载 CSV；页面显示该渠道「未使用」剩余数量，快用完时补生成一批
 - 激活码列表查询、上传 zip 发布版本（无需命令行）
 
+**渠道列表**（发布包 / 版本列表顶部的标签）：由 `.env` 的 `ADMIN_CHANNELS`（逗号分隔，如 `xiaoetong,tencentmeeting`）决定，并会自动合并仓库 `channels/`、`data/releases/` 子目录及数据库里出现过的渠道 ID。若后台只见「小鹅通」不见「腾讯会议」，请在服务器 `.env` 补上 `tencentmeeting` 后重启 API。
+
 统计接口：`GET /api/admin/licenses/stats?channel_id=xiaoetong`（需 `X-Admin-Key`）
 
 本地：`http://127.0.0.1:8787/admin/`

@@ -363,8 +363,8 @@
     <section id="panel-release" class="card" hidden>
       <h3>发布渠道扩展包</h3>
       <p class="section-desc">本机 <code>npm run build -- 渠道名</code> 打 zip 后上传。</p>
-      <label>渠道 ID</label>
-      <input id="relChannel" value="xiaoetong" list="channelList" />
+      <label>渠道</label>
+      <select id="relChannel"></select>
       <label>版本号</label>
       <input id="relVersion" value="2.6.9" placeholder="与 manifest.json 版本一致" />
       <label>更新说明</label>
@@ -585,17 +585,30 @@
       return hit ? hit.label : id;
     }
 
+    const DEFAULT_CHANNELS = [
+      { id: "xiaoetong", label: "小鹅通" },
+      { id: "tencentmeeting", label: "腾讯会议" },
+    ];
+
     function fillChannelSelects(channels) {
-      adminChannels = (channels.length ? channels : [{ id: "xiaoetong", label: "小鹅通" }]).map(normalizeChannel);
+      adminChannels = (channels.length ? channels : DEFAULT_CHANNELS).map(normalizeChannel);
       const opts = adminChannels
         .map((c) => `<option value="${c.id}">${c.label}（${c.id}）</option>`)
         .join("");
       const bulkSel = document.getElementById("bulkChannel");
-      const prev = bulkSel.value;
+      const prevBulk = bulkSel.value;
       bulkSel.innerHTML = opts;
-      if (prev && [...bulkSel.options].some((o) => o.value === prev)) bulkSel.value = prev;
+      if (prevBulk && [...bulkSel.options].some((o) => o.value === prevBulk)) bulkSel.value = prevBulk;
+
+      const relSel = document.getElementById("relChannel");
+      if (relSel) {
+        const prevRel = relSel.value;
+        relSel.innerHTML = opts;
+        if (prevRel && [...relSel.options].some((o) => o.value === prevRel)) relSel.value = prevRel;
+      }
+
       document.getElementById("channelList").innerHTML = adminChannels
-        .map((c) => `<option value="${c.id}"></option>`)
+        .map((c) => `<option value="${c.id}">${c.label}</option>`)
         .join("");
       refreshChannelTabs();
     }
@@ -603,7 +616,7 @@
     function mountChannelTabs(containerId, hintId, getActive, setActive, onSelect) {
       const el = document.getElementById(containerId);
       if (!el) return;
-      const list = adminChannels.length ? adminChannels : [{ id: "xiaoetong", label: "小鹅通" }];
+      const list = adminChannels.length ? adminChannels : DEFAULT_CHANNELS;
       let active = getActive();
       if (!active || !list.some((c) => c.id === active)) {
         active = list[0].id;
@@ -1016,10 +1029,7 @@
       if (e.key === "Enter") document.getElementById("loginBtn").click();
     });
 
-    fillChannelSelects([
-      { id: "xiaoetong", label: "小鹅通" },
-      { id: "tencentmeeting", label: "腾讯会议" },
-    ]);
+    fillChannelSelects(DEFAULT_CHANNELS);
     setAuthenticated(false);
     showTab((location.hash || "#bulk").slice(1) || "bulk");
     tryAutoLogin();
