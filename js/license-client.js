@@ -146,17 +146,20 @@ async function licenseCheck(force = false) {
 
   const installationId = await licenseGetInstallationId();
   const manifest = chrome.runtime.getManifest();
+  const strictMode = cfg.strict === true;
   const result = await licenseApiPost("/api/v1/check", {
     license_key: licenseKey,
     channel_id: channelId,
     installation_id: installationId,
     current_version: manifest.version,
+    strict: strictMode,
   });
 
   chrome.storage.local.set({ [LicenseStorage.lastCheck]: Date.now() });
-  LicenseState.active = !!result.active;
+  const updatesAllowed = !!result.updates_allowed || (!strictMode && !!result.ever_activated);
+  LicenseState.active = !!result.active || updatesAllowed;
   LicenseState.expiresAt = result.expires_at;
-  LicenseState.update = result.update_available
+  LicenseState.update = result.update_available && result.download_url
     ? {
         version: result.latest_version,
         notes: result.release_notes,

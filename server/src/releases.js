@@ -129,12 +129,20 @@ export function sanitizeReleaseFilename(name) {
   return path.basename(name).replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-export function buildDownloadUrl(publicBaseUrl, channelId, version, licenseKey, installationId) {
+export function buildDownloadUrl(
+  publicBaseUrl,
+  channelId,
+  version,
+  licenseKey,
+  installationId,
+  { strict = false } = {}
+) {
   const q = new URLSearchParams({
     channel: channelId,
     version,
     key: licenseKey,
     installation_id: installationId,
+    strict: strict ? "1" : "0",
   });
   return `${publicBaseUrl.replace(/\/$/, "")}/api/v1/download?${q}`;
 }

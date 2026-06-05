@@ -88,6 +88,20 @@ export function activateLicense({ licenseKey, channelId, installationId, userAge
   };
 }
 
+/** 本设备安装过该渠道的任意激活码（用于「仅首次激活、更新不限制」） */
+export function hasInstallActivatedOnChannel(installationId, channelId) {
+  if (!installationId || !channelId) return false;
+  const row = getDb()
+    .prepare(
+      `SELECT a.id FROM activations a
+       INNER JOIN licenses l ON l.id = a.license_id
+       WHERE a.installation_id = ? AND l.channel_id = ?
+       LIMIT 1`
+    )
+    .get(installationId, channelId);
+  return !!row;
+}
+
 export function checkLicense({ licenseKey, channelId, installationId }) {
   const license = findLicenseByKey(licenseKey);
   if (!license) {

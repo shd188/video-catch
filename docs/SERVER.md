@@ -155,6 +155,8 @@ sudo certbot --nginx -d api.yourdomain.com
 }
 ```
 
+`strict: false`（推荐）：**每个渠道仅首次使用需激活码**；本机一旦激活过该渠道，后续版本更新与下载不再重复校验激活状态。`strict: true` 则每次检查与下载都需有效激活。
+
 重新构建：
 
 ```bash

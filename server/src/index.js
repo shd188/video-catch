@@ -8,6 +8,7 @@ import multer from "multer";
 import {
   activateLicense,
   checkLicense,
+  hasInstallActivatedOnChannel,
   createLicense,
   createLicensesBulk,
   licenseStats,
@@ -113,35 +114,45 @@ app.post("/api/v1/activate", (req, res) => {
 });
 
 app.post("/api/v1/check", (req, res) => {
-  const { license_key, channel_id, installation_id, current_version } = req.body || {};
+  const { license_key, channel_id, installation_id, current_version, strict } = req.body || {};
   if (!license_key || !channel_id || !installation_id) {
     return res.status(400).json({ active: false, message: "缺少参数" });
   }
+  const channelId = String(channel_id).trim();
+  const installationId = String(installation_id).trim();
+  const licenseKey = String(license_key).trim();
+  const strictMode = strict === true || strict === 1 || strict === "1";
   const status = checkLicense({
-    licenseKey: String(license_key).trim(),
-    channelId: String(channel_id).trim(),
-    installationId: String(installation_id).trim(),
+    licenseKey,
+    channelId,
+    installationId,
   });
-  const latest = getLatestRelease(String(channel_id).trim());
+  const everActivated = hasInstallActivatedOnChannel(installationId, channelId);
+  const updatesAllowed = status.active || (!strictMode && everActivated);
+  const latest = getLatestRelease(channelId);
   const manifestVersion = current_version || null;
   let update_available = false;
-  if (latest && status.active && manifestVersion) {
+  if (latest && updatesAllowed && manifestVersion) {
     update_available = manifestVersion !== latest.version;
   }
   const payload = {
     ...status,
+    strict: strictMode,
+    ever_activated: everActivated,
+    updates_allowed: updatesAllowed,
     current_version: manifestVersion,
     latest_version: latest?.version || null,
     release_notes: latest?.release_notes || null,
     update_available,
   };
-  if (latest && status.active && update_available) {
+  if (latest && updatesAllowed && update_available) {
     payload.download_url = buildDownloadUrl(
       PUBLIC_BASE_URL,
-      channel_id,
+      channelId,
       latest.version,
-      license_key,
-      installation_id
+      licenseKey,
+      installationId,
+      { strict: strictMode }
     );
   }
   res.json(payload);
@@ -152,12 +163,15 @@ app.get("/api/v1/download", (req, res) => {
   const channel_id = String(req.query.channel || "");
   const version = String(req.query.version || "");
   const installation_id = String(req.query.installation_id || "");
+  const strictMode = req.query.strict === "true" || req.query.strict === "1";
   const status = checkLicense({
     licenseKey: license_key,
     channelId: channel_id,
     installationId: installation_id,
   });
-  if (!status.active) {
+  const everActivated = hasInstallActivatedOnChannel(installation_id, channel_id);
+  const allowed = status.active || (!strictMode && everActivated);
+  if (!allowed) {
     return res.status(403).send("License not active");
   }
   const filePath = getReleaseFilePath(channel_id, version);

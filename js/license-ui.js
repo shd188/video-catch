@@ -12,9 +12,9 @@ async function licenseUiInitInstallPage() {
   box.id = "licenseActivateBox";
   box.className = "policy-section";
   box.innerHTML = `
-    <div class="section-title">订阅激活（可选）</div>
+    <div class="section-title">渠道激活（首次使用）</div>
     <div class="content-box lang-zh active">
-      <p>若您已购买本渠道技术支持，请输入激活码以接收版本更新通知与下载链接。</p>
+      <p>每个渠道<strong>首次使用</strong>时请输入激活码（每设备一次）。激活后扩展可正常使用；后续版本更新不再重复校验激活码。</p>
       <p><input type="text" id="licenseKeyInput" class="ch-input" placeholder="CC-XXXX-XXXX-XXXX" autocomplete="off" /></p>
       <div class="ch-actions">
         <button type="button" class="btn btn-primary" id="licenseActivateBtn">激活</button>
