@@ -1,0 +1,66 @@
+{
+  "id": "tencentmeeting",
+  "channelNameZh": "腾讯会议",
+  "displayName": "腾讯会议视频下载",
+  "description": "基于 Cat-Catch (GPL-3.0)。仅在腾讯会议相关域名下嗅探媒体。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
+  "repositoryUrl": "https://github.com/shd188/video-catch",
+  "license": {
+    "apiBase": "https://api.shentongxue.online",
+    "checkIntervalHours": 24,
+    "strict": false
+  },
+  "installPage": "channel-install.html",
+  "lockOptions": ["blockUrl", "blockUrlWhite", "deepSearch", "M3u8Ffmpeg", "M3u8Mp4", "iframeFFmpeg"],
+  "versionSuffix": "",
+  "manifest": {
+    "description": "腾讯会议回放视频下载，仅限自有或已获授权的内容。"
+  },
+  "locales": {
+    "zh_CN": {
+      "catCatch": "腾讯会议视频下载",
+      "description": "腾讯会议回放视频下载，仅限自有或已获授权的内容。",
+      "noData": "还没找到视频哦~",
+      "popupChannelAllowed": "当前页面在白名单内，可嗅探",
+      "popupChannelBlocked": "当前页面不在渠道白名单内，不会嗅探",
+      "popupChannelPatterns": "白名单规则",
+      "popupChannelHost": "当前域名"
+    },
+    "en": {
+      "catCatch": "Tencent Meeting Video Download",
+      "description": "Tencent Meeting replay download. For your own or authorized content only.",
+      "popupChannelAllowed": "This page is on the channel whitelist",
+      "popupChannelBlocked": "This page is not on the channel whitelist — sniffing disabled",
+      "popupChannelPatterns": "Whitelist rules",
+      "popupChannelHost": "Host"
+    }
+  },
+  "optionLists": {
+    "blockUrlWhite": true,
+    "blockUrl": [
+      {
+        "url": "https://meeting.tencent.com/*",
+        "state": true,
+        "comment": "腾讯会议 Web 主域"
+      },
+      {
+        "url": "https://*.meeting.tencent.com/*",
+        "state": true,
+        "comment": "腾讯会议子域"
+      },
+      {
+        "url": "https://voovmeeting.com/*",
+        "state": true,
+        "comment": "VooV Meeting 国际版"
+      }
+    ],
+    "deepSearch": false,
+    "enable": true,
+    "M3u8Ffmpeg": false,
+    "M3u8Mp4": true,
+    "iframeFFmpeg": false
+  },
+  "pilot": {
+    "referenceCourseUrl": "https://meeting.tencent.com/",
+    "notes": "请按实际回放页域名补充白名单"
+  }
+}

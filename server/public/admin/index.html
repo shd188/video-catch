@@ -245,6 +245,35 @@
     .err { color: #d70015; font-size: var(--text-sm); margin-top: var(--space-2); }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
     .preset-row { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; }
+    .channel-tabs {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .channel-tabs button {
+      background: var(--bg);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-pill);
+      padding: 6px 14px;
+      font-size: var(--text-sm);
+      font-weight: 500;
+    }
+    .channel-tabs button.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .channel-tabs button:hover:not(.active) { background: var(--surface); }
+    .releases-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+      flex-wrap: wrap;
+    }
     code {
       font-family: var(--mono);
       font-size: 12px;
@@ -384,11 +413,16 @@
 
     <section id="panel-releases" class="card" hidden>
       <h3>已发布版本</h3>
-      <button type="button" class="secondary" id="refreshRelBtn" data-require-auth>刷新</button>
+      <p class="section-desc">按渠道查看已上传的扩展 zip，可直接下载。</p>
+      <div id="releaseChannelTabs" class="channel-tabs"></div>
+      <div class="releases-toolbar">
+        <span id="releaseChannelHint" class="section-desc" style="margin:0"></span>
+        <button type="button" class="secondary btn-sm" id="refreshRelBtn" data-require-auth>刷新</button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>渠道</th><th>版本</th><th>文件</th><th>说明</th><th>发布时间</th></tr>
+            <tr><th>版本</th><th>文件</th><th>说明</th><th>发布时间</th><th>操作</th></tr>
           </thead>
           <tbody id="relTable"></tbody>
         </table>
@@ -403,6 +437,8 @@
     const REMEMBER_KEY = "video_admin_remember";
     let lastBulkDownload = null;
     let isAuthenticated = false;
+    let adminChannels = [];
+    let activeReleaseChannel = "";
 
     document.getElementById("pageUrl").textContent = location.origin + "/admin/";
 
@@ -522,14 +558,56 @@
     document.getElementById("rememberLogin").checked =
       localStorage.getItem(REMEMBER_KEY) === "1" || localStorage.getItem(REMEMBER_KEY) === null;
 
+    function normalizeChannel(c) {
+      if (typeof c === "string") return { id: c, label: c };
+      return { id: c.id, label: c.label || c.id };
+    }
+
+    function channelLabel(id) {
+      const hit = adminChannels.find((c) => c.id === id);
+      return hit ? hit.label : id;
+    }
+
     function fillChannelSelects(channels) {
-      const opts = channels.map((c) => `<option value="${c}">${c}</option>`).join("");
+      adminChannels = (channels.length ? channels : [{ id: "xiaoetong", label: "小鹅通" }]).map(normalizeChannel);
+      const opts = adminChannels
+        .map((c) => `<option value="${c.id}">${c.label}（${c.id}）</option>`)
+        .join("");
       const bulkSel = document.getElementById("bulkChannel");
       const prev = bulkSel.value;
-      bulkSel.innerHTML = opts || '<option value="xiaoetong">xiaoetong</option>';
+      bulkSel.innerHTML = opts;
       if (prev && [...bulkSel.options].some((o) => o.value === prev)) bulkSel.value = prev;
-      document.getElementById("channelList").innerHTML =
-        (channels.length ? channels : ["xiaoetong"]).map((c) => `<option value="${c}"></option>`).join("");
+      document.getElementById("channelList").innerHTML = adminChannels
+        .map((c) => `<option value="${c.id}"></option>`)
+        .join("");
+      renderReleaseChannelTabs();
+    }
+
+    function renderReleaseChannelTabs() {
+      const el = document.getElementById("releaseChannelTabs");
+      if (!el) return;
+      const list = adminChannels.length ? adminChannels : [{ id: "xiaoetong", label: "小鹅通" }];
+      if (!activeReleaseChannel || !list.some((c) => c.id === activeReleaseChannel)) {
+        activeReleaseChannel = list[0].id;
+      }
+      el.innerHTML = list
+        .map(
+          (c) =>
+            `<button type="button" class="${c.id === activeReleaseChannel ? "active" : ""}" data-ch="${c.id}">${c.label}</button>`
+        )
+        .join("");
+      el.querySelectorAll("button").forEach((btn) => {
+        btn.onclick = () => {
+          activeReleaseChannel = btn.dataset.ch;
+          renderReleaseChannelTabs();
+          loadReleases();
+        };
+      });
+      const hint = document.getElementById("releaseChannelHint");
+      if (hint) {
+        const cur = list.find((c) => c.id === activeReleaseChannel);
+        hint.textContent = cur ? `当前：${cur.label}（${cur.id}）` : "";
+      }
     }
 
     async function loadChannels() {
@@ -752,24 +830,70 @@
       }
     };
 
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    async function downloadRelease(channelId, version, filename) {
+      if (!requireAuth()) return;
+      const res = await fetch(
+        `/api/admin/releases/download?channel_id=${encodeURIComponent(channelId)}&version=${encodeURIComponent(version)}`,
+        { headers: { "X-Admin-Key": getKey() } }
+      );
+      if (res.status === 401) {
+        clearAuth();
+        throw new Error("登录已失效");
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "下载失败");
+      }
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename || `${channelId}-${version}.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
     async function loadReleases() {
       if (!requireAuth()) return;
-      const ch = document.getElementById("relChannel").value.trim();
-      const q = ch ? `?channel_id=${encodeURIComponent(ch)}` : "";
+      if (!activeReleaseChannel && adminChannels.length) {
+        activeReleaseChannel = adminChannels[0].id;
+      }
+      const ch = activeReleaseChannel || "xiaoetong";
+      const q = `?channel_id=${encodeURIComponent(ch)}`;
       const { releases } = await api("/api/admin/releases" + q);
       document.getElementById("relTable").innerHTML =
         releases
           .map(
             (r) => `<tr>
-        <td>${r.channel_id}</td>
-        <td>${r.version}</td>
-        <td class="mono">${r.filename}</td>
-        <td>${r.release_notes || "—"}</td>
-        <td>${r.published_at || ""}</td>
+        <td><b>${escapeHtml(r.version)}</b></td>
+        <td class="mono">${escapeHtml(r.filename)}</td>
+        <td>${escapeHtml(r.release_notes || "—")}</td>
+        <td>${escapeHtml(r.published_at || "")}</td>
+        <td><button type="button" class="secondary btn-sm btn-dl" data-ch="${escapeHtml(r.channel_id)}" data-ver="${escapeHtml(r.version)}" data-file="${escapeHtml(r.filename)}">下载</button></td>
       </tr>`
           )
-          .join("") || "<tr><td colspan='5'>暂无</td></tr>";
+          .join("") || "<tr><td colspan='5'>该渠道暂无已发布版本</td></tr>";
     }
+
+    document.getElementById("relTable").addEventListener("click", async (e) => {
+      const btn = e.target.closest(".btn-dl");
+      if (!btn) return;
+      btn.disabled = true;
+      try {
+        await downloadRelease(btn.dataset.ch, btn.dataset.ver, btn.dataset.file);
+      } catch (err) {
+        alert(err.message || "下载失败");
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     document.getElementById("refreshRelBtn").onclick = loadReleases;
 
@@ -806,7 +930,10 @@
       if (e.key === "Enter") document.getElementById("loginBtn").click();
     });
 
-    fillChannelSelects(["xiaoetong"]);
+    fillChannelSelects([
+      { id: "xiaoetong", label: "小鹅通" },
+      { id: "tencentmeeting", label: "腾讯会议" },
+    ]);
     setAuthenticated(false);
     showTab((location.hash || "#bulk").slice(1) || "bulk");
     tryAutoLogin();

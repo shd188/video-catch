@@ -29,6 +29,7 @@ import {
   hasConfiguredPassword,
   verifyAdminKey,
 } from "./admin-auth.js";
+import { getAdminChannelList } from "./admin-channels.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
@@ -38,10 +39,11 @@ const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "0.0.0.0";
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "";
-const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "xiaoetong")
+const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "xiaoetong,tencentmeeting")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
+const ADMIN_CHANNEL_LABELS = process.env.ADMIN_CHANNEL_LABELS || "";
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 app.use(express.json({ limit: "64kb" }));
@@ -189,7 +191,23 @@ app.post("/api/admin/password", adminAuth, (req, res) => {
 });
 
 app.get("/api/admin/channels", adminAuth, (_req, res) => {
-  res.json({ ok: true, channels: ADMIN_CHANNELS });
+  res.json({
+    ok: true,
+    channels: getAdminChannelList(ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS),
+  });
+});
+
+app.get("/api/admin/releases/download", adminAuth, (req, res) => {
+  const channelId = String(req.query.channel_id || "").trim();
+  const version = String(req.query.version || "").trim();
+  if (!channelId || !version) {
+    return res.status(400).json({ ok: false, message: "请指定 channel_id 与 version" });
+  }
+  const filePath = getReleaseFilePath(channelId, version);
+  if (!filePath) {
+    return res.status(404).json({ ok: false, message: "版本文件不存在" });
+  }
+  res.download(filePath, path.basename(filePath));
 });
 
 app.get("/api/admin/licenses/stats", adminAuth, (req, res) => {
