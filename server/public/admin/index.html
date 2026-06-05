@@ -330,7 +330,7 @@
       <label>渠道 ID</label>
       <input id="relChannel" value="xiaoetong" list="channelList" />
       <label>版本号</label>
-      <input id="relVersion" placeholder="2.6.9" />
+      <input id="relVersion" value="2.6.9" placeholder="与 manifest.json 版本一致" />
       <label>更新说明</label>
       <textarea id="relNotes" rows="2"></textarea>
       <label>扩展 zip</label>
@@ -694,6 +694,14 @@
 
     document.getElementById("refreshLicBtn").onclick = loadLicenses;
 
+    document.getElementById("relFile").addEventListener("change", () => {
+      const file = document.getElementById("relFile").files[0];
+      const verInput = document.getElementById("relVersion");
+      if (!file || verInput.value.trim()) return;
+      const m = file.name.match(/(\d+\.\d+(?:\.\d+)?(?:\.\d+)?)/);
+      if (m) verInput.value = m[1];
+    });
+
     document.getElementById("publishBtn").onclick = async () => {
       if (!requireAuth()) return;
       const err = document.getElementById("relErr");
@@ -705,15 +713,26 @@
         err.textContent = "请选择 zip";
         return;
       }
+      const channelId = document.getElementById("relChannel").value.trim();
+      const version = document.getElementById("relVersion").value.trim();
+      if (!channelId) {
+        err.textContent = "请填写渠道 ID（如 xiaoetong）";
+        return;
+      }
+      if (!version) {
+        err.textContent = "请填写版本号（与 zip 内 manifest.json 一致）";
+        return;
+      }
       const fd = new FormData();
-      fd.append("channel_id", document.getElementById("relChannel").value.trim());
-      fd.append("version", document.getElementById("relVersion").value.trim());
+      fd.append("channel_id", channelId);
+      fd.append("version", version);
       fd.append("release_notes", document.getElementById("relNotes").value.trim());
       fd.append("file", file);
+      const qs = new URLSearchParams({ channel_id: channelId, version });
       const btn = document.getElementById("publishBtn");
       btn.disabled = true;
       try {
-        const res = await fetch("/api/admin/releases/upload", {
+        const res = await fetch(`/api/admin/releases/upload?${qs}`, {
           method: "POST",
           headers: { "X-Admin-Key": getKey() },
           body: fd,

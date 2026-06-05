@@ -46,19 +46,26 @@ const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "xiaoetong")
 app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 app.use(express.json({ limit: "64kb" }));
 
+function releaseUploadMeta(req) {
+  const channelId = String(req.body?.channel_id || req.query?.channel_id || "").trim();
+  const version = String(req.body?.version || req.query?.version || "").trim();
+  return { channelId, version };
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination(req, _file, cb) {
-      const channel = String(req.body.channel_id || "default").trim();
+      const { channelId } = releaseUploadMeta(req);
+      const channel = channelId || "default";
       const dir = path.join(getReleasesDir(), channel);
       fs.mkdirSync(dir, { recursive: true });
       cb(null, dir);
     },
     filename(req, file, cb) {
-      const version = String(req.body.version || "0").trim();
+      const { channelId, version } = releaseUploadMeta(req);
       const base = sanitizeReleaseFilename(file.originalname);
       const name = base.endsWith(".zip") ? base : `${base}.zip`;
-      cb(null, `${req.body.channel_id || "app"}-${version}-${name}`);
+      cb(null, `${channelId || "app"}-${version || "0"}-${name}`);
     },
   }),
   limits: { fileSize: 500 * 1024 * 1024 },
@@ -257,8 +264,7 @@ app.post("/api/admin/releases/upload", adminAuth, upload.single("file"), (req, r
     if (!req.file) {
       return res.status(400).json({ ok: false, message: "请上传 zip 文件" });
     }
-    const channelId = String(req.body.channel_id || "").trim();
-    const version = String(req.body.version || "").trim();
+    const { channelId, version } = releaseUploadMeta(req);
     if (!channelId || !version) {
       return res.status(400).json({ ok: false, message: "请填写渠道与版本号" });
     }
