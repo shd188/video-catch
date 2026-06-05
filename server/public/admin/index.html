@@ -378,12 +378,21 @@
 
     <section id="panel-licenses" class="card" hidden>
       <h3>激活码查询</h3>
-      <label><input type="checkbox" id="unusedOnly" checked /> 仅显示未使用</label>
-      <button type="button" class="secondary" id="refreshLicBtn" data-require-auth>刷新</button>
+      <p class="section-desc">按渠道查看激活码使用情况。</p>
+      <div id="licenseChannelTabs" class="channel-tabs"></div>
+      <div class="releases-toolbar">
+        <span id="licenseChannelHint" class="section-desc" style="margin:0"></span>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label style="margin:0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary)">
+            <input type="checkbox" id="unusedOnly" checked /> 仅显示未使用
+          </label>
+          <button type="button" class="secondary btn-sm" id="refreshLicBtn" data-require-auth>刷新</button>
+        </div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>激活码</th><th>渠道</th><th>状态</th><th>一次性</th><th>过期</th><th>备注</th><th>创建</th></tr>
+            <tr><th>激活码</th><th>状态</th><th>一次性</th><th>过期</th><th>备注</th><th>创建</th></tr>
           </thead>
           <tbody id="licTable"></tbody>
         </table>
@@ -446,6 +455,7 @@
     let isAuthenticated = false;
     let adminChannels = [];
     let activeReleaseChannel = "";
+    let activeLicenseChannel = "";
 
     document.getElementById("pageUrl").textContent = location.origin + "/admin/";
 
@@ -587,34 +597,53 @@
       document.getElementById("channelList").innerHTML = adminChannels
         .map((c) => `<option value="${c.id}"></option>`)
         .join("");
-      renderReleaseChannelTabs();
+      refreshChannelTabs();
     }
 
-    function renderReleaseChannelTabs() {
-      const el = document.getElementById("releaseChannelTabs");
+    function mountChannelTabs(containerId, hintId, getActive, setActive, onSelect) {
+      const el = document.getElementById(containerId);
       if (!el) return;
       const list = adminChannels.length ? adminChannels : [{ id: "xiaoetong", label: "小鹅通" }];
-      if (!activeReleaseChannel || !list.some((c) => c.id === activeReleaseChannel)) {
-        activeReleaseChannel = list[0].id;
+      let active = getActive();
+      if (!active || !list.some((c) => c.id === active)) {
+        active = list[0].id;
+        setActive(active);
       }
       el.innerHTML = list
         .map(
           (c) =>
-            `<button type="button" class="${c.id === activeReleaseChannel ? "active" : ""}" data-ch="${c.id}">${c.label}</button>`
+            `<button type="button" class="${c.id === active ? "active" : ""}" data-ch="${c.id}">${c.label}</button>`
         )
         .join("");
       el.querySelectorAll("button").forEach((btn) => {
         btn.onclick = () => {
-          activeReleaseChannel = btn.dataset.ch;
-          renderReleaseChannelTabs();
-          loadReleases();
+          setActive(btn.dataset.ch);
+          mountChannelTabs(containerId, hintId, getActive, setActive, onSelect);
+          onSelect();
         };
       });
-      const hint = document.getElementById("releaseChannelHint");
+      const hint = hintId && document.getElementById(hintId);
       if (hint) {
-        const cur = list.find((c) => c.id === activeReleaseChannel);
+        const cur = list.find((c) => c.id === getActive());
         hint.textContent = cur ? `当前：${cur.label}（${cur.id}）` : "";
       }
+    }
+
+    function refreshChannelTabs() {
+      mountChannelTabs(
+        "releaseChannelTabs",
+        "releaseChannelHint",
+        () => activeReleaseChannel,
+        (id) => { activeReleaseChannel = id; },
+        loadReleases
+      );
+      mountChannelTabs(
+        "licenseChannelTabs",
+        "licenseChannelHint",
+        () => activeLicenseChannel,
+        (id) => { activeLicenseChannel = id; },
+        loadLicenses
+      );
     }
 
     async function loadChannels() {
@@ -757,27 +786,32 @@
 
     async function loadLicenses() {
       if (!requireAuth()) return;
-      const ch = document.getElementById("bulkChannel").value.trim();
+      if (!activeLicenseChannel && adminChannels.length) {
+        activeLicenseChannel = adminChannels[0].id;
+      }
+      const ch = activeLicenseChannel || "xiaoetong";
       const unused = document.getElementById("unusedOnly").checked ? "&unused=1" : "";
-      const q = ch ? `?channel_id=${encodeURIComponent(ch)}${unused}&limit=200` : `?${unused.slice(1)}&limit=200`;
+      const q = `?channel_id=${encodeURIComponent(ch)}${unused}&limit=200`;
       const { licenses } = await api("/api/admin/licenses" + q);
       document.getElementById("licTable").innerHTML =
         licenses
           .map(
             (l) => `<tr>
-        <td class="mono">${l.license_key}</td>
-        <td>${l.channel_id}</td>
+        <td class="mono">${escapeHtml(l.license_key)}</td>
         <td>${l.devices_used > 0 ? "已使用" : "未使用"}</td>
         <td>${l.single_use ? "是" : "否"}</td>
-        <td>${l.expires_at || "—"}</td>
-        <td>${l.note || "—"}</td>
-        <td>${l.created_at || ""}</td>
+        <td>${escapeHtml(l.expires_at || "—")}</td>
+        <td>${escapeHtml(l.note || "—")}</td>
+        <td>${escapeHtml(l.created_at || "")}</td>
       </tr>`
           )
-          .join("") || "<tr><td colspan='7'>暂无</td></tr>";
+          .join("") || "<tr><td colspan='6'>该渠道暂无激活码</td></tr>";
     }
 
     document.getElementById("refreshLicBtn").onclick = loadLicenses;
+    document.getElementById("unusedOnly").addEventListener("change", () => {
+      if (isAuthenticated) loadLicenses();
+    });
 
     document.getElementById("relFile").addEventListener("change", () => {
       const file = document.getElementById("relFile").files[0];
