@@ -6,6 +6,7 @@ const LicenseStorage = {
   key: "licenseKey",
   installationId: "installationId",
   lastCheck: "licenseLastCheck",
+  activatedOnce: "licenseActivatedOnce",
 };
 
 /** 不依赖 G 的订阅状态（安装页 / background 共用） */
@@ -78,6 +79,21 @@ function licenseApplyCheckResult(result, cfg) {
   }
 }
 
+async function licenseHasLocalActivation() {
+  const items = await new Promise((resolve) => {
+    chrome.storage.local.get(
+      [LicenseStorage.key, LicenseStorage.activatedOnce],
+      (data) => resolve(data || {})
+    );
+  });
+  return !!(items[LicenseStorage.key] || items[LicenseStorage.activatedOnce]);
+}
+
+function licenseApplyLocalActivationHint() {
+  LicenseState.active = true;
+  licenseSyncToG();
+}
+
 async function licenseBootstrap() {
   await licenseAwaitStorageReady();
   const cfg = await licenseGetConfig();
@@ -86,7 +102,18 @@ async function licenseBootstrap() {
     licenseSyncToG();
     return { skipped: true };
   }
-  return licenseCheck(true);
+  if (await licenseHasLocalActivation()) {
+    licenseApplyLocalActivationHint();
+  }
+  try {
+    return await licenseCheck(true);
+  } catch (e) {
+    if (await licenseHasLocalActivation()) {
+      licenseApplyLocalActivationHint();
+      return { cached: true, active: true, offline: true };
+    }
+    throw e;
+  }
 }
 
 function licenseGetUpdate() {
@@ -184,6 +211,7 @@ async function licenseActivate(licenseKey) {
     LicenseState.active = true;
     LicenseState.expiresAt = result.expires_at;
     licenseSyncToG();
+    chrome.storage.local.set({ [LicenseStorage.activatedOnce]: true });
   }
   return result;
 }
@@ -206,16 +234,28 @@ async function licenseCheck(force = false) {
   const installationId = await licenseGetInstallationId();
   const manifest = chrome.runtime.getManifest();
   const strictMode = cfg.strict === true;
-  const result = await licenseApiPost("/api/v1/check", {
-    license_key: licenseKey || "",
-    channel_id: channelId,
-    installation_id: installationId,
-    current_version: manifest.version,
-    strict: strictMode,
-  });
+  let result;
+  try {
+    result = await licenseApiPost("/api/v1/check", {
+      license_key: licenseKey || "",
+      channel_id: channelId,
+      installation_id: installationId,
+      current_version: manifest.version,
+      strict: strictMode,
+    });
+  } catch (e) {
+    if (await licenseHasLocalActivation()) {
+      licenseApplyLocalActivationHint();
+      return { cached: true, active: true, offline: true };
+    }
+    throw e;
+  }
 
   chrome.storage.local.set({ [LicenseStorage.lastCheck]: Date.now() });
   licenseApplyCheckResult(result, cfg);
+  if (LicenseState.active) {
+    chrome.storage.local.set({ [LicenseStorage.activatedOnce]: true });
+  }
 
   return result;
 }
@@ -225,6 +265,7 @@ function licensePreserveKeys() {
     LicenseStorage.key,
     LicenseStorage.installationId,
     LicenseStorage.lastCheck,
+    LicenseStorage.activatedOnce,
     "updateDismissedVersion",
     "updatePromptShownVersion",
     "pendingUpdate",

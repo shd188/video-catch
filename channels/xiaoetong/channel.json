@@ -10,7 +10,7 @@
     "strict": false
   },
   "installPage": "channel-install.html",
-  "lockOptions": ["blockUrl", "blockUrlWhite", "deepSearch", "M3u8Ffmpeg", "M3u8Mp4", "iframeFFmpeg"],
+  "lockOptions": ["blockUrl", "blockUrlWhite", "enable", "deepSearch", "M3u8Ffmpeg", "M3u8Mp4", "iframeFFmpeg"],
   "versionSuffix": "",
   "manifest": {
     "description": "小鹅通回放视频下载，仅限自有或已获授权的内容。",

@@ -24,6 +24,7 @@ import {
   listReleases,
   registerRelease,
   sanitizeReleaseFilename,
+  releaseDownloadFilename,
 } from "./releases.js";
 import { getReleasesDir } from "./db.js";
 import {
@@ -187,7 +188,7 @@ app.get("/api/v1/download", (req, res) => {
   if (!filePath) {
     return res.status(404).send("Release file not found");
   }
-  res.download(filePath, path.basename(filePath));
+  res.download(filePath, releaseDownloadFilename(channel_id));
 });
 
 function adminAuth(req, res, next) {
@@ -234,7 +235,7 @@ app.get("/api/admin/releases/download", adminAuth, (req, res) => {
       message: `版本文件不存在（${channelId} / ${version}），请重新上传 zip`,
     });
   }
-  const name = path.basename(filePath);
+  const name = releaseDownloadFilename(channelId);
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(name)}`);
   res.sendFile(path.resolve(filePath), (err) => {

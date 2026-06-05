@@ -5,6 +5,7 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "node scripts/build-channel.mjs",
+    "pack": "node scripts/pack-channel-zip.mjs",
     "server:init-db": "npm run init-db --prefix server",
     "server:start": "npm start --prefix server"
   },

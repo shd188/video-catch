@@ -33,11 +33,17 @@ npm run build -- xiaoetong
 
 用户升级时应：**覆盖原 `dist/<channel>/` 目录后重新加载**，或 **先移除旧扩展再加载新目录**（不要保留两个同时启用）。
 
-## 打 crx / zip（可选）
+## 打 zip（发布用）
 
 ```bash
-cd dist/xiaoetong && zip -r ../../releases/xiaoetong-$(node -p "require('./manifest.json').version").zip . -x "server/*"
+npm run build -- xiaoetong
+npm run pack -- xiaoetong
 ```
+
+产物：`releases/xiaoetong-<version>.zip`（服务器存档用，含版本号）。
+
+- zip **内部根目录**为渠道名：`xiaoetong/manifest.json` …（解压后文件夹名固定为 `xiaoetong`，无版本号）
+- 用户从升级页/API 下载时文件名为 **`xiaoetong.zip`**（由服务端 `Content-Disposition` 指定）
 
 打 crx（与解压版同 ID，可拖入覆盖升级）：
 

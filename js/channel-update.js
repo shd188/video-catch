@@ -38,7 +38,10 @@ window.addEventListener("DOMContentLoaded", async function () {
         return;
     }
 
-    root.innerHTML = licenseBuildUpdateDialogHtml(upd);
+    const folder = typeof licenseUpdateGetChannelFolder === "function"
+        ? await licenseUpdateGetChannelFolder()
+        : "xiaoetong";
+    root.innerHTML = licenseBuildUpdateDialogHtml(upd, folder);
     licenseBindUpdateDialog(root, upd, {
         onClose: function (dismissed) {
             if (dismissed) {

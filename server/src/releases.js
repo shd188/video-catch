@@ -129,6 +129,12 @@ export function sanitizeReleaseFilename(name) {
   return path.basename(name).replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
+/** 用户下载时的文件名：仅渠道名，不含版本号 */
+export function releaseDownloadFilename(channelId) {
+  const id = String(channelId || "").trim();
+  return id ? `${id}.zip` : "extension.zip";
+}
+
 export function buildDownloadUrl(
   publicBaseUrl,
   channelId,

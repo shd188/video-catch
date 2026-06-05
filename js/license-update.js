@@ -31,6 +31,20 @@ function licenseUpdateGetExtensionName() {
   }
 }
 
+async function licenseUpdateGetChannelFolder() {
+  if (typeof G !== "undefined" && G.channelId) {
+    return G.channelId;
+  }
+  try {
+    const res = await fetch(chrome.runtime.getURL("channel-build.json"));
+    if (res.ok) {
+      const info = await res.json();
+      if (info.channelId) return info.channelId;
+    }
+  } catch (e) { /* ignore */ }
+  return "xiaoetong";
+}
+
 function licenseDismissUpdate(version) {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [UpdateStorage.dismissed]: version }, resolve);
@@ -62,8 +76,9 @@ function licenseStartDownload(url) {
   chrome.tabs.create({ url });
 }
 
-function licenseBuildUpdateDialogHtml(upd) {
+function licenseBuildUpdateDialogHtml(upd, channelFolder) {
   const current = licenseUpdateGetCurrentVersion();
+  const folder = channelFolder || "xiaoetong";
   const notes = upd.notes
     ? `<div class="ch-update-notes">${licenseUpdateEscapeHtml(upd.notes).replace(/\n/g, "<br>")}</div>`
     : "";
@@ -79,9 +94,9 @@ function licenseBuildUpdateDialogHtml(upd) {
           <span>新版 <b>${licenseUpdateEscapeHtml(upd.version)}</b></span>
         </div>
         <ol class="ch-update-steps">
-          <li>点击下方 <b>下载更新</b>，将 zip 保存到电脑（建议记住保存位置）。</li>
-          <li>解压 zip，得到扩展文件夹（内含 <code>manifest.json</code>）。</li>
-          <li>打开你<strong>当初加载本扩展时选中的那个文件夹</strong>（例如 <code>dist/xiaoetong</code>），用解压出的文件<strong>全部覆盖</strong>原目录（替换同名文件）。</li>
+          <li>点击下方 <b>下载更新</b>，保存为 <code>${licenseUpdateEscapeHtml(folder)}.zip</code>（文件名无版本号）。</li>
+          <li>解压 zip，得到 <code>${licenseUpdateEscapeHtml(folder)}</code> 文件夹（内含 <code>manifest.json</code>）。</li>
+          <li>打开你<strong>当初在「加载已解压的扩展程序」时选中的文件夹</strong>，用解压出的 <code>${licenseUpdateEscapeHtml(folder)}</code> 内文件<strong>全部覆盖</strong>（替换同名文件）。</li>
           <li>在浏览器地址栏输入 <code>chrome://extensions</code> 并回车，打开扩展管理页。</li>
           <li>找到「${licenseUpdateEscapeHtml(licenseUpdateGetExtensionName())}」，点击卡片上的 <b>重新加载</b> 按钮（圆形箭头图标）。</li>
           <li>确认版本号已变为 <b>${licenseUpdateEscapeHtml(upd.version)}</b>，即可继续使用。</li>
@@ -135,7 +150,7 @@ function licenseShowPopupUpdateModal() {
   if (!upd?.download_url) return Promise.resolve(false);
   if (document.getElementById("channelUpdateOverlay")) return Promise.resolve(true);
 
-  return licenseShouldPromptUpdate(upd).then(function (should) {
+  return licenseShouldPromptUpdate(upd).then(async function (should) {
     if (!should) return false;
 
     if (!document.getElementById("ch-update-styles")) {
@@ -146,9 +161,10 @@ function licenseShowPopupUpdateModal() {
       document.head.appendChild(link);
     }
 
+    const folder = await licenseUpdateGetChannelFolder();
     const wrap = document.createElement("div");
     wrap.id = "channelUpdateOverlay";
-    wrap.innerHTML = licenseBuildUpdateDialogHtml(upd);
+    wrap.innerHTML = licenseBuildUpdateDialogHtml(upd, folder);
     document.body.appendChild(wrap);
 
     licenseBindUpdateDialog(wrap, upd, {
