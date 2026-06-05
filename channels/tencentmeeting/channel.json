@@ -2,7 +2,7 @@
   "id": "tencentmeeting",
   "channelNameZh": "腾讯会议",
   "displayName": "腾讯会议视频下载",
-  "description": "基于 Cat-Catch (GPL-3.0)。仅在腾讯会议相关域名下嗅探媒体。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
+  "description": "基于 Cat-Catch (GPL-3.0)。仅在腾讯会议相关域名下嗅探媒体，供回放学习备份使用。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
   "repositoryUrl": "https://github.com/shd188/video-catch",
   "license": {
     "apiBase": "https://api.shentongxue.online",
@@ -13,7 +13,8 @@
   "lockOptions": ["blockUrl", "blockUrlWhite", "deepSearch", "M3u8Ffmpeg", "M3u8Mp4", "iframeFFmpeg"],
   "versionSuffix": "",
   "manifest": {
-    "description": "腾讯会议回放视频下载，仅限自有或已获授权的内容。"
+    "description": "腾讯会议回放视频下载，仅限自有或已获授权的内容。",
+    "homepage_url": "https://github.com/shd188/video-catch"
   },
   "locales": {
     "zh_CN": {
@@ -40,17 +41,12 @@
       {
         "url": "https://meeting.tencent.com/*",
         "state": true,
-        "comment": "腾讯会议 Web 主域"
+        "comment": "腾讯会议 Web 主域（含回放页 /crm/ 等路径）"
       },
       {
         "url": "https://*.meeting.tencent.com/*",
         "state": true,
         "comment": "腾讯会议子域"
-      },
-      {
-        "url": "https://voovmeeting.com/*",
-        "state": true,
-        "comment": "VooV Meeting 国际版"
       }
     ],
     "deepSearch": false,
