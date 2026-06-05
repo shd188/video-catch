@@ -50,7 +50,13 @@ function scheduleLicenseCheckAlarm() {
     }).catch(function () { });
 }
 
-scheduleLicenseCheckAlarm();
+// 等待 onInstalled 完成（升级时保留激活存储）后再 bootstrap；普通 SW 唤醒走超时兜底
+setTimeout(function () {
+    if (typeof licenseFinishStorageMigration === "function") {
+        licenseFinishStorageMigration();
+    }
+    scheduleLicenseCheckAlarm();
+}, 0);
 
 // onBeforeRequest 浏览器发送请求之前使用正则匹配发送请求的URL
 // chrome.webRequest.onBeforeRequest.addListener(

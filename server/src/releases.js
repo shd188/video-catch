@@ -140,9 +140,11 @@ export function buildDownloadUrl(
   const q = new URLSearchParams({
     channel: channelId,
     version,
-    key: licenseKey,
     installation_id: installationId,
     strict: strict ? "1" : "0",
   });
+  if (licenseKey) {
+    q.set("key", licenseKey);
+  }
   return `${publicBaseUrl.replace(/\/$/, "")}/api/v1/download?${q}`;
 }

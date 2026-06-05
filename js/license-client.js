@@ -16,6 +16,25 @@ const LicenseState = {
 };
 
 let _licenseConfigCache = null;
+let _licenseStorageReady = Promise.resolve();
+let _licenseStorageReadyResolve = null;
+
+function licenseBeginStorageMigration() {
+  _licenseStorageReady = new Promise((resolve) => {
+    _licenseStorageReadyResolve = resolve;
+  });
+}
+
+function licenseFinishStorageMigration() {
+  if (_licenseStorageReadyResolve) {
+    _licenseStorageReadyResolve();
+    _licenseStorageReadyResolve = null;
+  }
+}
+
+async function licenseAwaitStorageReady() {
+  await _licenseStorageReady;
+}
 
 function licenseSyncToG() {
   if (typeof G === "undefined") return;
@@ -37,22 +56,35 @@ function licenseOpenInstallPage() {
   chrome.tabs.create({ url: page });
 }
 
+function licenseApplyCheckResult(result, cfg) {
+  const strictMode = cfg?.strict === true;
+  const updatesAllowed = !!result.updates_allowed || (!strictMode && !!result.ever_activated);
+  LicenseState.active = !!result.active || updatesAllowed;
+  LicenseState.expiresAt = result.expires_at ?? null;
+  LicenseState.update = result.update_available && result.download_url
+    ? {
+        version: result.latest_version,
+        notes: result.release_notes,
+        download_url: result.download_url,
+      }
+    : null;
+  licenseSyncToG();
+
+  if (typeof licensePersistPendingUpdate === "function") {
+    licensePersistPendingUpdate(LicenseState.update);
+  }
+  if (LicenseState.update && typeof licenseMaybePromptUpdate === "function") {
+    licenseMaybePromptUpdate();
+  }
+}
+
 async function licenseBootstrap() {
+  await licenseAwaitStorageReady();
   const cfg = await licenseGetConfig();
   if (!cfg?.apiBase) {
     LicenseState.active = true;
     licenseSyncToG();
     return { skipped: true };
-  }
-  const key = await licenseGetStoredKey();
-  if (!key) {
-    LicenseState.active = false;
-    LicenseState.update = null;
-    licenseSyncToG();
-    if (typeof licensePersistPendingUpdate === "function") {
-      licensePersistPendingUpdate(null);
-    }
-    return { active: false, code: "NO_KEY" };
   }
   return licenseCheck(true);
 }
@@ -157,26 +189,17 @@ async function licenseActivate(licenseKey) {
 }
 
 async function licenseCheck(force = false) {
+  await licenseAwaitStorageReady();
   const cfg = await licenseGetConfig();
   const channelId = await licenseGetChannelId();
   if (!cfg?.apiBase || !channelId) return { skipped: true };
 
   const licenseKey = await licenseGetStoredKey();
-  if (!licenseKey) {
-    LicenseState.active = false;
-    LicenseState.update = null;
-    licenseSyncToG();
-    if (typeof licensePersistPendingUpdate === "function") {
-      licensePersistPendingUpdate(null);
-    }
-    return { active: false, code: "NO_KEY" };
-  }
-
   const last = await new Promise((r) => {
     chrome.storage.local.get([LicenseStorage.lastCheck], (i) => r(i[LicenseStorage.lastCheck] || 0));
   });
   const intervalMs = (cfg.checkIntervalHours ?? 24) * 3600 * 1000;
-  if (!force && Date.now() - last < intervalMs) {
+  if (!force && Date.now() - last < intervalMs && (licenseKey || LicenseState.active)) {
     return { cached: true, active: LicenseState.active, update: LicenseState.update };
   }
 
@@ -184,7 +207,7 @@ async function licenseCheck(force = false) {
   const manifest = chrome.runtime.getManifest();
   const strictMode = cfg.strict === true;
   const result = await licenseApiPost("/api/v1/check", {
-    license_key: licenseKey,
+    license_key: licenseKey || "",
     channel_id: channelId,
     installation_id: installationId,
     current_version: manifest.version,
@@ -192,24 +215,7 @@ async function licenseCheck(force = false) {
   });
 
   chrome.storage.local.set({ [LicenseStorage.lastCheck]: Date.now() });
-  const updatesAllowed = !!result.updates_allowed || (!strictMode && !!result.ever_activated);
-  LicenseState.active = !!result.active || updatesAllowed;
-  LicenseState.expiresAt = result.expires_at;
-  LicenseState.update = result.update_available && result.download_url
-    ? {
-        version: result.latest_version,
-        notes: result.release_notes,
-        download_url: result.download_url,
-      }
-    : null;
-  licenseSyncToG();
-
-  if (typeof licensePersistPendingUpdate === "function") {
-    licensePersistPendingUpdate(LicenseState.update);
-  }
-  if (LicenseState.update && typeof licenseMaybePromptUpdate === "function") {
-    licenseMaybePromptUpdate();
-  }
+  licenseApplyCheckResult(result, cfg);
 
   return result;
 }

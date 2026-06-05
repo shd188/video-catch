@@ -432,33 +432,34 @@ chrome.runtime.onInstalled.addListener(function (details) {
         }
     };
 
+    const afterLicenseStorageReady = function () {
+        if (typeof licenseFinishStorageMigration === "function") {
+            licenseFinishStorageMigration();
+        }
+        typeof scheduleLicenseCheckAlarm === "function" && scheduleLicenseCheckAlarm();
+    };
+
     if (details.reason == "update") {
-        if (channelLicensed && typeof licensePreserveKeys === "function") {
-            chrome.storage.local.get(licensePreserveKeys(), function (saved) {
-                chrome.storage.local.clear(function () {
-                    const keep = {};
-                    for (const k of licensePreserveKeys()) {
-                        if (saved[k] !== undefined) { keep[k] = saved[k]; }
-                    }
-                    chrome.storage.local.set(keep, function () {
-                        finishLocalInit();
-                        if (!keep.licenseKey && typeof licenseOpenInstallPage === "function") {
-                            licenseOpenInstallPage();
-                        }
-                    });
-                });
-            });
+        if (channelLicensed) {
+            // 渠道版升级：保留 local 中的激活码与设备 ID，避免升级后重复激活
+            if (typeof licenseBeginStorageMigration === "function") {
+                licenseBeginStorageMigration();
+            }
+            finishLocalInit();
+            afterLicenseStorageReady();
         } else {
-            chrome.storage.local.clear(finishLocalInit);
+            chrome.storage.local.clear(function () {
+                finishLocalInit();
+                afterLicenseStorageReady();
+            });
         }
         chrome.alarms.create("nowClear", { when: Date.now() + 3000 });
-    }
-    if (details.reason == "install") {
-        const installPage = (G.channelInstallPage && String(G.channelInstallPage)) || "install.html";
-        chrome.tabs.create({ url: installPage });
-    }
-    if (details.reason == "install" || details.reason == "update") {
-        typeof scheduleLicenseCheckAlarm === "function" && scheduleLicenseCheckAlarm();
+    } else {
+        if (details.reason == "install") {
+            const installPage = (G.channelInstallPage && String(G.channelInstallPage)) || "install.html";
+            chrome.tabs.create({ url: installPage });
+        }
+        afterLicenseStorageReady();
     }
 
     // 注册右键

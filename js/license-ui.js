@@ -12,6 +12,26 @@ async function licenseUiInitInstallPage() {
   const slot = document.getElementById("licenseActivateSlot");
   if (!slot || document.getElementById("licenseActivateBox")) return;
 
+  if (typeof licenseBootstrap === "function") {
+    await licenseBootstrap();
+  }
+
+  if (LicenseState.active) {
+    const box = document.createElement("div");
+    box.id = "licenseActivateBox";
+    box.className = "policy-section";
+    box.innerHTML = `
+      <div class="section-title">🔑 渠道激活</div>
+      <div class="content-box lang-zh active">
+        <p class="ch-hint ok">本设备已激活。版本升级后<strong>无需</strong>重新输入激活码。</p>
+        <p id="licenseUpdateHint" class="ch-hint" style="display:none;margin-top:12px"></p>
+      </div>
+    `;
+    slot.replaceWith(box);
+    licenseUiShowUpdateHint();
+    return;
+  }
+
   const box = document.createElement("div");
   box.id = "licenseActivateBox";
   box.className = "policy-section";
