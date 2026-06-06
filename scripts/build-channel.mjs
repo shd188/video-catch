@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * GPL-3.0 — Channel extension build
- * Usage: node scripts/build-channel.mjs <channel-id>
+ * Usage: node scripts/build-channel.mjs <channel-id>  
  */
 import fs from "fs";
 import path from "path";
@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const CHANNEL_SIGNING_KEY = path.join(ROOT, "channels", "_signing", "extension-key.b64");
+const LEGACY_SIGNING_KEY = path.join(ROOT, "channels", "_signing", "extension-key.b64");
 
 const channelId = process.argv[2];
 if (!channelId) {
@@ -120,17 +120,30 @@ function channelExtensionName(cfg) {
     return cfg.manifest?.name ?? cfg.displayName ?? cfg.id;
 }
 
-function readChannelSigningKey() {
-    if (!fs.existsSync(CHANNEL_SIGNING_KEY)) return null;
-    const key = fs.readFileSync(CHANNEL_SIGNING_KEY, "utf8").trim();
-    return key || null;
+function channelSigningKeyPath(id) {
+    return path.join(ROOT, "channels", id, "signing", "extension-key.b64");
+}
+
+function readChannelSigningKey(id = channelId) {
+    const candidates = [
+        channelSigningKeyPath(id),
+        LEGACY_SIGNING_KEY,
+    ];
+    for (const filePath of candidates) {
+        if (!fs.existsSync(filePath)) continue;
+        const key = fs.readFileSync(filePath, "utf8").trim();
+        if (key) {
+            return { key, source: path.relative(ROOT, filePath) };
+        }
+    }
+    return null;
 }
 
 function patchManifest(manifest, cfg) {
     const m = { ...manifest, ...(cfg.manifest ?? {}) };
-    const signingKey = readChannelSigningKey();
-    if (signingKey) {
-        m.key = signingKey;
+    const signing = readChannelSigningKey();
+    if (signing?.key) {
+        m.key = signing.key;
     }
     if (cfg.channelNameZh) {
         m.name = channelExtensionName(cfg);
@@ -232,6 +245,7 @@ console.log("Done.");
 console.log(`  Load unpacked: ${outDir}`);
 console.log(`  Name: ${manifest.name}`);
 console.log(`  Version: ${manifest.version}`);
-if (readChannelSigningKey()) {
-    console.log("  Extension ID: fixed (channels/_signing/extension-key.b64)");
+const signingInfo = readChannelSigningKey();
+if (signingInfo?.key) {
+    console.log(`  Extension ID: fixed (${signingInfo.source})`);
 }

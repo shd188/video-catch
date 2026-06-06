@@ -158,28 +158,58 @@ export function licenseStats(channelId) {
   };
 }
 
-export function listLicenses(channelId, { limit = 500, unusedOnly = false } = {}) {
-  const usedClause = unusedOnly
-    ? `AND (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) = 0`
-    : "";
-  if (channelId) {
-    return getDb()
-      .prepare(
-        `SELECT l.*,
-          (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) AS devices_used
-         FROM licenses l WHERE channel_id = ? ${usedClause}
-         ORDER BY l.id DESC LIMIT ?`
-      )
-      .all(channelId, limit);
-  }
-  return getDb()
-    .prepare(
-      `SELECT l.*,
-        (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) AS devices_used
-       FROM licenses l WHERE 1=1 ${usedClause}
-       ORDER BY l.id DESC LIMIT ?`
-    )
-    .all(limit);
+const LICENSE_ACTIVATION_COUNT_SQL = `(SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id)`;
+const LICENSE_FIRST_ACTIVATED_SQL = `(SELECT MIN(a.created_at) FROM activations a WHERE a.license_id = l.id)`;
+
+function unusedOnlyClause(unusedOnly) {
+  return unusedOnly ? `AND ${LICENSE_ACTIVATION_COUNT_SQL} = 0` : "";
+}
+
+function mapLicenseRow(row) {
+  const activation_count = Number(row.activation_count ?? row.devices_used ?? 0);
+  return {
+    ...row,
+    activation_count,
+    devices_used: activation_count,
+    is_used: activation_count > 0,
+    single_use: Number(row.single_use) === 1,
+    first_activated_at: row.first_activated_at || null,
+  };
+}
+
+export function countLicenses(channelId, { unusedOnly = false } = {}) {
+  const usedClause = unusedOnlyClause(unusedOnly);
+  const row = channelId
+    ? getDb()
+        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE channel_id = ? ${usedClause}`)
+        .get(channelId)
+    : getDb()
+        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE 1=1 ${usedClause}`)
+        .get();
+  return Number(row?.c ?? 0);
+}
+
+export function listLicenses(channelId, { limit = 50, offset = 0, unusedOnly = false } = {}) {
+  const usedClause = unusedOnlyClause(unusedOnly);
+  const selectSql = `SELECT l.*,
+          ${LICENSE_ACTIVATION_COUNT_SQL} AS activation_count,
+          ${LICENSE_ACTIVATION_COUNT_SQL} AS devices_used,
+          ${LICENSE_FIRST_ACTIVATED_SQL} AS first_activated_at
+         FROM licenses l`;
+  const rows = channelId
+    ? getDb()
+        .prepare(
+          `${selectSql} WHERE channel_id = ? ${usedClause}
+         ORDER BY l.id DESC LIMIT ? OFFSET ?`
+        )
+        .all(channelId, limit, offset)
+    : getDb()
+        .prepare(
+          `${selectSql} WHERE 1=1 ${usedClause}
+       ORDER BY l.id DESC LIMIT ? OFFSET ?`
+        )
+        .all(limit, offset);
+  return rows.map(mapLicenseRow);
 }
 
 function insertLicenseRow({

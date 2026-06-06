@@ -13,6 +13,7 @@ import {
   createLicensesBulk,
   licenseStats,
   listLicenses,
+  countLicenses,
 } from "./licenses.js";
 import { isVersionNewer } from "./version.js";
 import {
@@ -259,8 +260,21 @@ app.get("/api/admin/licenses/stats", adminAuth, (req, res) => {
 app.get("/api/admin/licenses", adminAuth, (req, res) => {
   const channelId = req.query.channel_id ? String(req.query.channel_id) : null;
   const unusedOnly = req.query.unused === "1";
-  const limit = Math.min(parseInt(req.query.limit, 10) || 500, 5000);
-  res.json({ ok: true, licenses: listLicenses(channelId, { limit, unusedOnly }) });
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const pageSize = Math.min(Math.max(parseInt(req.query.page_size, 10) || 50, 1), 200);
+  const offset = (page - 1) * pageSize;
+  const total = countLicenses(channelId, { unusedOnly });
+  const licenses = listLicenses(channelId, { limit: pageSize, offset, unusedOnly });
+  res.json({
+    ok: true,
+    licenses,
+    pagination: {
+      page,
+      page_size: pageSize,
+      total,
+      total_pages: Math.max(1, Math.ceil(total / pageSize)),
+    },
+  });
 });
 
 app.post("/api/admin/licenses", adminAuth, (req, res) => {

@@ -281,6 +281,31 @@
       margin-bottom: var(--space-3);
       flex-wrap: wrap;
     }
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-top: var(--space-3);
+      flex-wrap: wrap;
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+    .pagination-actions { display: flex; gap: var(--space-2); }
+    .lic-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .lic-status.used { background: var(--warn-soft); color: #b25000; }
+    .lic-status.unused { background: var(--success-soft); color: #248a3d; }
+    .filter-hint {
+      margin: 0 0 var(--space-3);
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
     code {
       font-family: var(--mono);
       font-size: 12px;
@@ -389,14 +414,16 @@
           <button type="button" class="secondary btn-sm" id="refreshLicBtn" data-require-auth>刷新</button>
         </div>
       </div>
+      <p id="licenseFilterHint" class="filter-hint" hidden>已勾选「仅显示未使用」时，已激活的码不会出现在列表中；取消勾选可查看全部并核对状态。</p>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>激活码</th><th>状态</th><th>一次性</th><th>过期</th><th>备注</th><th>创建</th></tr>
+            <tr><th>激活码</th><th>状态</th><th>一次性</th><th>首次使用</th><th>过期</th><th>备注</th><th>创建</th></tr>
           </thead>
           <tbody id="licTable"></tbody>
         </table>
       </div>
+      <div id="licPagination" class="pagination"></div>
     </section>
 
     <section id="panel-license" class="card" hidden>
@@ -456,6 +483,10 @@
     let adminChannels = [];
     let activeReleaseChannel = "";
     let activeLicenseChannel = "";
+    let licensePage = 1;
+    const licensePageSize = 50;
+    let licensePage = 1;
+    const licensePageSize = 50;
 
     document.getElementById("pageUrl").textContent = location.origin + "/admin/";
 
@@ -654,7 +685,10 @@
         "licenseChannelTabs",
         "licenseChannelHint",
         () => activeLicenseChannel,
-        (id) => { activeLicenseChannel = id; },
+        (id) => {
+          activeLicenseChannel = id;
+          licensePage = 1;
+        },
         loadLicenses
       );
     }
@@ -797,32 +831,79 @@
       }
     };
 
+    function licenseRowIsUsed(l) {
+      return !!(l.is_used || Number(l.activation_count ?? l.devices_used ?? 0) > 0);
+    }
+
+    function renderLicensePagination(pagination) {
+      const el = document.getElementById("licPagination");
+      if (!el) return;
+      if (!pagination || pagination.total === 0) {
+        el.innerHTML = "";
+        return;
+      }
+      const { page, total_pages, total, page_size } = pagination;
+      el.innerHTML = `
+        <span class="pagination-meta">共 <b>${total}</b> 条，每页 ${page_size} 条，第 <b>${page}</b> / ${total_pages} 页</span>
+        <div class="pagination-actions">
+          <button type="button" class="secondary btn-sm" id="licPrevBtn" ${page <= 1 ? "disabled" : ""}>上一页</button>
+          <button type="button" class="secondary btn-sm" id="licNextBtn" ${page >= total_pages ? "disabled" : ""}>下一页</button>
+        </div>`;
+      document.getElementById("licPrevBtn")?.addEventListener("click", () => {
+        if (licensePage > 1) {
+          licensePage -= 1;
+          loadLicenses();
+        }
+      });
+      document.getElementById("licNextBtn")?.addEventListener("click", () => {
+        if (licensePage < total_pages) {
+          licensePage += 1;
+          loadLicenses();
+        }
+      });
+    }
+
     async function loadLicenses() {
       if (!requireAuth()) return;
       if (!activeLicenseChannel && adminChannels.length) {
         activeLicenseChannel = adminChannels[0].id;
       }
       const ch = activeLicenseChannel || "xiaoetong";
-      const unused = document.getElementById("unusedOnly").checked ? "&unused=1" : "";
-      const q = `?channel_id=${encodeURIComponent(ch)}${unused}&limit=200`;
-      const { licenses } = await api("/api/admin/licenses" + q);
+      const unusedOnly = document.getElementById("unusedOnly").checked;
+      const filterHint = document.getElementById("licenseFilterHint");
+      if (filterHint) filterHint.hidden = !unusedOnly;
+      const unused = unusedOnly ? "&unused=1" : "";
+      const q = `?channel_id=${encodeURIComponent(ch)}${unused}&page=${licensePage}&page_size=${licensePageSize}`;
+      const data = await api("/api/admin/licenses" + q);
+      const licenses = data.licenses || [];
+      if (data.pagination && licensePage > data.pagination.total_pages) {
+        licensePage = Math.max(1, data.pagination.total_pages);
+        return loadLicenses();
+      }
       document.getElementById("licTable").innerHTML =
         licenses
-          .map(
-            (l) => `<tr>
+          .map((l) => {
+            const used = licenseRowIsUsed(l);
+            return `<tr>
         <td class="mono">${escapeHtml(l.license_key)}</td>
-        <td>${l.devices_used > 0 ? "已使用" : "未使用"}</td>
+        <td><span class="lic-status ${used ? "used" : "unused"}">${used ? "已使用" : "未使用"}</span></td>
         <td>${l.single_use ? "是" : "否"}</td>
+        <td>${used ? escapeHtml(l.first_activated_at || "—") : "—"}</td>
         <td>${escapeHtml(l.expires_at || "—")}</td>
         <td>${escapeHtml(l.note || "—")}</td>
         <td>${escapeHtml(l.created_at || "")}</td>
-      </tr>`
-          )
-          .join("") || "<tr><td colspan='6'>该渠道暂无激活码</td></tr>";
+      </tr>`;
+          })
+          .join("") || `<tr><td colspan="7">${unusedOnly ? "该渠道暂无未使用的激活码" : "该渠道暂无激活码"}</td></tr>`;
+      renderLicensePagination(data.pagination);
     }
 
-    document.getElementById("refreshLicBtn").onclick = loadLicenses;
+    document.getElementById("refreshLicBtn").onclick = () => {
+      licensePage = 1;
+      loadLicenses();
+    };
     document.getElementById("unusedOnly").addEventListener("change", () => {
+      licensePage = 1;
       if (isAuthenticated) loadLicenses();
     });
 

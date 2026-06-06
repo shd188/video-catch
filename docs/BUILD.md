@@ -29,9 +29,12 @@ npm run build -- xiaoetong
 
 ## 固定扩展 ID（避免升级装成第二个扩展）
 
-渠道构建会自动把 `channels/_signing/extension-key.b64` 写入 `manifest.json` 的 `key` 字段，使各版本 **扩展 ID 一致**。说明见 [channels/_signing/README.md](../channels/_signing/README.md)。
+渠道构建会把 `channels/<channel>/signing/extension-key.b64` 写入 `manifest.json` 的 `key` 字段：
 
-用户升级时应：**覆盖原 `dist/<channel>/` 目录后重新加载**，或 **先移除旧扩展再加载新目录**（不要保留两个同时启用）。
+- **同一渠道**各版本共用扩展 ID → 升级时覆盖原目录后重新加载
+- **不同渠道**必须使用不同密钥 → 可同时安装小鹅通与腾讯会议
+
+说明见各渠道 `channels/<channel>/signing/README.md`。
 
 ## 打 zip（发布用）
 
@@ -48,7 +51,7 @@ npm run pack -- xiaoetong
 打 crx（与解压版同 ID，可拖入覆盖升级）：
 
 ```bash
-crx3 -p channels/_signing/private.pem -o releases/xiaoetong-2.7.0.crx dist/xiaoetong/
+crx3 -p channels/xiaoetong/signing/private.pem -o releases/xiaoetong-2.6.9.crx dist/xiaoetong/
 ```
 
 ## 开发上游通用版
