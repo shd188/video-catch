@@ -35,6 +35,7 @@ import {
   verifyAdminKey,
 } from "./admin-auth.js";
 import { getAdminChannelList } from "./admin-channels.js";
+import { resolveUserGuidePath } from "./user-guide.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
@@ -99,6 +100,30 @@ app.use(
         res.setHeader("Cache-Control", "no-cache");
       }
     },
+  })
+);
+
+const guideDir = path.join(publicDir, "guide");
+function sendUserGuidePage(_req, res) {
+  res.setHeader("Cache-Control", "no-cache");
+  res.sendFile(path.join(guideDir, "index.html"));
+}
+app.get(["/guide", "/guide/", "/guide/index.html"], sendUserGuidePage);
+app.get("/guide/content.md", (_req, res) => {
+  const filePath = resolveUserGuidePath(publicDir);
+  if (!filePath) {
+    return res.status(404).type("text/plain; charset=utf-8").send("用户说明文档未找到");
+  }
+  res.setHeader("Cache-Control", "no-cache");
+  res.type("text/markdown; charset=utf-8");
+  res.sendFile(path.resolve(filePath));
+});
+app.use(
+  "/guide",
+  express.static(guideDir, {
+    index: false,
+    redirect: false,
+    maxAge: process.env.NODE_ENV === "production" ? "1h" : 0,
   })
 );
 
@@ -367,7 +392,9 @@ app.post("/api/admin/releases/upload", adminAuth, upload.single("file"), (req, r
 const server = app.listen(PORT, HOST, () => {
   fs.mkdirSync(getReleasesDir(), { recursive: true });
   console.log(`License server http://${HOST}:${PORT}`);
-  console.log(`Admin UI: ${PUBLIC_BASE_URL.replace(/\/$/, "")}/admin/`);
+  const base = PUBLIC_BASE_URL.replace(/\/$/, "");
+  console.log(`Admin UI: ${base}/admin/`);
+  console.log(`User guide: ${base}/guide/`);
   console.log(`PUBLIC_BASE_URL=${PUBLIC_BASE_URL}`);
   if (!ADMIN_API_KEY || ADMIN_API_KEY === "change-me-to-a-long-random-string") {
     console.warn("WARN: Set a strong ADMIN_API_KEY in .env");

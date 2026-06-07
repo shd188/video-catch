@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="渠道版视频下载扩展安装、激活与使用说明" />
+  <title>扩展使用说明</title>
+  <style>
+    :root {
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --border: rgba(0, 0, 0, 0.08);
+      --primary: #0071e3;
+      --radius: 12px;
+      --max: 760px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: saturate(180%) blur(12px);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    main {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    }
+    .loading { color: var(--text-secondary); }
+    .err { color: #d70015; }
+    .guide-body h1 {
+      font-size: 1.75rem;
+      margin: 0 0 1rem;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+    .guide-body h2 {
+      font-size: 1.25rem;
+      margin: 2rem 0 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .guide-body h2:first-of-type { border-top: none; padding-top: 0; }
+    .guide-body h3 {
+      font-size: 1.05rem;
+      margin: 1.25rem 0 0.5rem;
+    }
+    .guide-body p { margin: 0.75rem 0; }
+    .guide-body ul, .guide-body ol {
+      margin: 0.75rem 0;
+      padding-left: 1.35rem;
+    }
+    .guide-body li { margin: 0.35rem 0; }
+    .guide-body table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 1rem 0;
+    }
+    .guide-body th, .guide-body td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .guide-body th { background: var(--bg); font-weight: 600; }
+    .guide-body blockquote {
+      margin: 1rem 0;
+      padding: 12px 16px;
+      background: var(--bg);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 8px 8px 0;
+      color: var(--text-secondary);
+    }
+    .guide-body code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .guide-body a { color: var(--primary); }
+    .guide-body hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+    .guide-body em { color: var(--text-secondary); font-size: 14px; }
+    @media (max-width: 600px) {
+      .card { padding: 20px 18px; }
+      main { padding: 16px 12px 48px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>渠道版扩展 · 用户使用说明</h1>
+    <p>安装、激活、下载与升级</p>
+  </header>
+  <main>
+    <article class="card">
+      <div id="content" class="guide-body">
+        <p class="loading">正在加载说明文档…</p>
+      </div>
+    </article>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+  <script>
+    marked.setOptions({ gfm: true, breaks: false });
+    fetch("/guide/content.md", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("无法加载说明文档 (HTTP " + res.status + ")");
+        return res.text();
+      })
+      .then(function (md) {
+        document.getElementById("content").innerHTML = marked.parse(md);
+      })
+      .catch(function (err) {
+        document.getElementById("content").innerHTML =
+          '<p class="err">' + (err.message || "加载失败") + "</p>";
+      });
+  </script>
+</body>
+</html>

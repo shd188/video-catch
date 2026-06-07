@@ -33,6 +33,8 @@ npm run build -- xiaoetong
 
 在 Chrome / Edge 打开 `chrome://extensions` → 开启「开发者模式」→「加载已解压的扩展程序」→ 选择 `dist/xiaoetong/`。
 
+**给最终用户的安装与使用说明**（可随 zip 或邮件发给客户）：[docs/USER-GUIDE.md](docs/USER-GUIDE.md)
+
 构建其它渠道：
 
 ```bash

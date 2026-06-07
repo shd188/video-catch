@@ -137,13 +137,18 @@ function init() {
         }
     });
 
+    // 渠道构建：锁定 m3u8 解析器默认项（mp4 / 禁用在线 ffmpeg）
+    if (typeof applyChannelBuildDefaults === "function") {
+        applyChannelBuildDefaults();
+    }
+
     // 转载默认配置
     $("#thread").val(G.M3u8Thread);
-    $("#mp4").prop("checked", G.M3u8Mp4);
+    $("#mp4").prop("checked", !!G.M3u8Mp4);
     $("#onlyAudio").prop("checked", G.M3u8OnlyAudio);
     $("#skipDecrypt").prop("checked", G.M3u8SkipDecrypt);
     $("#StreamSaver").prop("checked", G.M3u8StreamSaver);
-    $("#ffmpeg").prop("checked", G.M3u8Ffmpeg);
+    $("#ffmpeg").prop("checked", !!G.M3u8Ffmpeg);
     $("#autoClose").prop("checked", autoClose && autoClose == 1 ? true : G.M3u8AutoClose);
 
     // 发送到ffmpeg取消边下边存设置
