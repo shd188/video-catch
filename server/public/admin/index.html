@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="Video-Catch 激活码与渠道包管理" />
   <title>Video-Catch 管理后台</title>
   <style>
@@ -47,11 +47,13 @@
       color: var(--text);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
     header {
       background: var(--surface);
       color: var(--text);
-      padding: var(--space-3) var(--space-5);
+      padding: max(var(--space-3), env(safe-area-inset-top)) var(--space-5) var(--space-3);
       display: flex;
       flex-wrap: wrap;
       gap: var(--space-3);
@@ -99,6 +101,13 @@
       margin: 0;
       font-size: var(--text-sm);
     }
+    #authBar .auth-link {
+      font-size: var(--text-sm);
+      color: var(--primary);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    #authBar .auth-link:hover { text-decoration: underline; }
     #authStatus {
       padding: 4px 10px;
       border-radius: var(--radius-pill);
@@ -107,7 +116,11 @@
     }
     #authStatus.ok { background: var(--success-soft); color: #248a3d; }
     #authStatus.guest { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
-    main { max-width: 920px; margin: var(--space-6) auto; padding: 0 var(--space-4) 56px; }
+    main {
+      max-width: 920px;
+      margin: var(--space-6) auto;
+      padding: 0 var(--space-4) max(56px, calc(env(safe-area-inset-bottom) + 40px));
+    }
     .card {
       background: var(--surface);
       border-radius: var(--radius-lg);
@@ -228,7 +241,14 @@
       color: #fff;
       box-shadow: var(--shadow);
     }
-    .table-wrap { overflow-x: auto; margin-top: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border); }
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: var(--space-3);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      -webkit-overflow-scrolling: touch;
+    }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); background: var(--surface); }
     table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); background: var(--surface); }
     th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
     th {
@@ -291,7 +311,30 @@
       font-size: var(--text-sm);
       color: var(--text-secondary);
     }
-    .pagination-actions { display: flex; gap: var(--space-2); }
+    .pagination-actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .pagination-jump {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin: 0;
+    }
+    .pagination-jump select {
+      width: auto;
+      min-width: 96px;
+      margin: 0;
+      padding: 6px 10px;
+      font-size: var(--text-sm);
+    }
+    .pagination-total {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
     .lic-status {
       display: inline-block;
       padding: 2px 8px;
@@ -313,10 +356,155 @@
       padding: 2px 6px;
       border-radius: var(--radius-sm);
     }
-    @media (max-width: 600px) {
+    @media (max-width: 720px) {
+      header {
+        flex-direction: column;
+        align-items: stretch;
+        padding-left: var(--space-3);
+        padding-right: var(--space-3);
+        gap: var(--space-2);
+      }
+      header h1 { font-size: var(--text-base); }
+      #authBar {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+      }
+      #authBar input[type="password"],
+      #authBar button:not(.btn-sm) {
+        width: 100%;
+        min-height: 44px;
+      }
+      #authBar label { justify-content: flex-start; }
+      main { margin-top: var(--space-4); padding-left: var(--space-3); padding-right: var(--space-3); }
+      .card { padding: var(--space-4); }
       .row2 { grid-template-columns: 1fr; }
-      #authBar input[type="password"] { width: 100%; }
-      main { padding: 0 var(--space-3) 48px; }
+      .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: var(--space-1);
+        padding: var(--space-2);
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tabs button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        min-height: 40px;
+      }
+      .channel-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin-left: calc(-1 * var(--space-1));
+        margin-right: calc(-1 * var(--space-1));
+        padding: 0 var(--space-1) var(--space-1);
+      }
+      .channel-tabs::-webkit-scrollbar { display: none; }
+      .channel-tabs button { flex: 0 0 auto; min-height: 36px; }
+      .releases-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+      }
+      .releases-toolbar > div { width: 100%; }
+      .preset-row button { flex: 1; min-width: 0; }
+      .card > button:not(.btn-sm),
+      .card > button[data-require-auth]:not(.btn-sm) {
+        width: 100%;
+        min-height: 44px;
+      }
+      #bulkBtn, #publishBtn, #createLicBtn, #changePasswordBtn {
+        width: 100%;
+        min-height: 44px;
+      }
+      input, select, textarea { font-size: 16px; }
+      .pagination {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+      }
+      .pagination-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+      }
+      .pagination-actions button {
+        flex: 1 1 calc(50% - var(--space-2));
+        min-height: 44px;
+        min-width: 0;
+      }
+      .pagination-jump {
+        flex: 1 1 100%;
+        justify-content: center;
+      }
+      .pagination-jump select {
+        flex: 1;
+        max-width: 200px;
+        min-height: 44px;
+      }
+      .table-wrap {
+        overflow-x: visible;
+        border: none;
+        margin-left: 0;
+        margin-right: 0;
+      }
+      .data-table thead { display: none; }
+      .data-table tbody tr {
+        display: block;
+        margin-bottom: var(--space-3);
+        padding: var(--space-3);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      }
+      .data-table tbody tr:last-child { margin-bottom: 0; }
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-3);
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        text-align: right;
+      }
+      .data-table td:last-child { border-bottom: none; padding-bottom: 0; }
+      .data-table td:first-child { padding-top: 0; }
+      .data-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 12px;
+        flex: 0 0 72px;
+        text-align: left;
+        line-height: 1.4;
+      }
+      .data-table td.mono { word-break: break-all; }
+      .data-table td.row-actions-cell {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: left;
+      }
+      .data-table td.row-actions-cell::before { margin-bottom: var(--space-1); }
+      .data-table td.row-actions-cell .row-actions {
+        width: 100%;
+        flex-direction: column;
+      }
+      .data-table td.row-actions-cell .row-actions button {
+        width: 100%;
+        min-height: 44px;
+      }
+      .data-table tr.empty-row td {
+        display: block;
+        text-align: center;
+        padding: var(--space-4);
+        border-bottom: none;
+      }
+      .data-table tr.empty-row td::before { display: none; }
     }
   </style>
 </head>
@@ -324,7 +512,7 @@
   <header>
     <h1>Video-Catch 管理后台</h1>
     <div id="authBar">
-      <a href="/guide/" target="_blank" rel="noopener" style="font-size:13px;color:#0071e3;text-decoration:none;white-space:nowrap">用户说明 ↗</a>
+      <a href="/guide/" target="_blank" rel="noopener" class="auth-link">用户说明 ↗</a>
       <span id="authStatus" class="guest">未登录</span>
       <input type="password" id="loginKey" placeholder="管理登录密码" autocomplete="current-password" />
       <label><input type="checkbox" id="rememberLogin" checked /> 记住登录</label>
@@ -417,7 +605,7 @@
       </div>
       <p id="licenseFilterHint" class="filter-hint" hidden>已勾选「仅显示未使用」时，已激活的码不会出现在列表中；取消勾选可查看全部并核对状态。</p>
       <div class="table-wrap">
-        <table>
+        <table class="data-table">
           <thead>
             <tr><th>激活码</th><th>状态</th><th>一次性</th><th>首次使用</th><th>过期</th><th>备注</th><th>创建</th></tr>
           </thead>
@@ -464,7 +652,7 @@
         <button type="button" class="secondary btn-sm" id="refreshRelBtn" data-require-auth>刷新</button>
       </div>
       <div class="table-wrap">
-        <table>
+        <table class="data-table">
           <thead>
             <tr><th>版本</th><th>文件</th><th>说明</th><th>发布时间</th><th>操作</th></tr>
           </thead>
@@ -834,6 +1022,13 @@
       return !!(l.is_used || Number(l.activation_count ?? l.devices_used ?? 0) > 0);
     }
 
+    function goLicensePage(target, totalPages) {
+      const n = Math.max(1, Math.min(totalPages, Number(target) || 1));
+      if (n === licensePage) return;
+      licensePage = n;
+      loadLicenses();
+    }
+
     function renderLicensePagination(pagination) {
       const el = document.getElementById("licPagination");
       if (!el) return;
@@ -842,23 +1037,28 @@
         return;
       }
       const { page, total_pages, total, page_size } = pagination;
+      const pageOptions = Array.from({ length: total_pages }, (_, i) => {
+        const p = i + 1;
+        return `<option value="${p}"${p === page ? " selected" : ""}>第 ${p} 页</option>`;
+      }).join("");
       el.innerHTML = `
-        <span class="pagination-meta">共 <b>${total}</b> 条，每页 ${page_size} 条，第 <b>${page}</b> / ${total_pages} 页</span>
+        <span class="pagination-meta">共 <b>${total}</b> 条，每页 ${page_size} 条</span>
         <div class="pagination-actions">
+          <button type="button" class="secondary btn-sm" id="licFirstBtn" ${page <= 1 ? "disabled" : ""}>首页</button>
           <button type="button" class="secondary btn-sm" id="licPrevBtn" ${page <= 1 ? "disabled" : ""}>上一页</button>
+          <label class="pagination-jump">
+            <select id="licPageSelect" aria-label="选择页码">${pageOptions}</select>
+            <span class="pagination-total">/ 共 ${total_pages} 页</span>
+          </label>
           <button type="button" class="secondary btn-sm" id="licNextBtn" ${page >= total_pages ? "disabled" : ""}>下一页</button>
+          <button type="button" class="secondary btn-sm" id="licLastBtn" ${page >= total_pages ? "disabled" : ""}>末页</button>
         </div>`;
-      document.getElementById("licPrevBtn")?.addEventListener("click", () => {
-        if (licensePage > 1) {
-          licensePage -= 1;
-          loadLicenses();
-        }
-      });
-      document.getElementById("licNextBtn")?.addEventListener("click", () => {
-        if (licensePage < total_pages) {
-          licensePage += 1;
-          loadLicenses();
-        }
+      document.getElementById("licFirstBtn")?.addEventListener("click", () => goLicensePage(1, total_pages));
+      document.getElementById("licPrevBtn")?.addEventListener("click", () => goLicensePage(page - 1, total_pages));
+      document.getElementById("licNextBtn")?.addEventListener("click", () => goLicensePage(page + 1, total_pages));
+      document.getElementById("licLastBtn")?.addEventListener("click", () => goLicensePage(total_pages, total_pages));
+      document.getElementById("licPageSelect")?.addEventListener("change", (e) => {
+        goLicensePage(e.target.value, total_pages);
       });
     }
 
@@ -884,16 +1084,16 @@
           .map((l) => {
             const used = licenseRowIsUsed(l);
             return `<tr>
-        <td class="mono">${escapeHtml(l.license_key)}</td>
-        <td><span class="lic-status ${used ? "used" : "unused"}">${used ? "已使用" : "未使用"}</span></td>
-        <td>${l.single_use ? "是" : "否"}</td>
-        <td>${used ? escapeHtml(l.first_activated_at || "—") : "—"}</td>
-        <td>${escapeHtml(l.expires_at || "—")}</td>
-        <td>${escapeHtml(l.note || "—")}</td>
-        <td>${escapeHtml(l.created_at || "")}</td>
+        <td class="mono" data-label="激活码">${escapeHtml(l.license_key)}</td>
+        <td data-label="状态"><span class="lic-status ${used ? "used" : "unused"}">${used ? "已使用" : "未使用"}</span></td>
+        <td data-label="一次性">${l.single_use ? "是" : "否"}</td>
+        <td data-label="首次使用">${used ? escapeHtml(l.first_activated_at || "—") : "—"}</td>
+        <td data-label="过期">${escapeHtml(l.expires_at || "—")}</td>
+        <td data-label="备注">${escapeHtml(l.note || "—")}</td>
+        <td data-label="创建">${escapeHtml(l.created_at || "")}</td>
       </tr>`;
           })
-          .join("") || `<tr><td colspan="7">${unusedOnly ? "该渠道暂无未使用的激活码" : "该渠道暂无激活码"}</td></tr>`;
+          .join("") || `<tr class="empty-row"><td colspan="7">${unusedOnly ? "该渠道暂无未使用的激活码" : "该渠道暂无激活码"}</td></tr>`;
       renderLicensePagination(data.pagination);
     }
 
@@ -1019,17 +1219,19 @@
         releases
           .map(
             (r) => `<tr>
-        <td><b>${escapeHtml(r.version)}</b></td>
-        <td class="mono">${escapeHtml(r.filename)}</td>
-        <td>${escapeHtml(r.release_notes || "—")}</td>
-        <td>${escapeHtml(r.published_at || "")}</td>
-        <td class="row-actions">
-          <button type="button" class="secondary btn-sm btn-dl" data-ch="${r.channel_id}" data-ver="${r.version}" data-file="${r.filename}">下载</button>
-          <button type="button" class="btn-danger btn-sm btn-del" data-ch="${r.channel_id}" data-ver="${r.version}" data-label="${escapeHtml(channelLabel(r.channel_id))}">删除</button>
+        <td data-label="版本"><b>${escapeHtml(r.version)}</b></td>
+        <td class="mono" data-label="文件">${escapeHtml(r.filename)}</td>
+        <td data-label="说明">${escapeHtml(r.release_notes || "—")}</td>
+        <td data-label="发布时间">${escapeHtml(r.published_at || "")}</td>
+        <td class="row-actions-cell" data-label="操作">
+          <div class="row-actions">
+            <button type="button" class="secondary btn-sm btn-dl" data-ch="${r.channel_id}" data-ver="${r.version}" data-file="${r.filename}">下载</button>
+            <button type="button" class="btn-danger btn-sm btn-del" data-ch="${r.channel_id}" data-ver="${r.version}" data-label="${escapeHtml(channelLabel(r.channel_id))}">删除</button>
+          </div>
         </td>
       </tr>`
           )
-          .join("") || "<tr><td colspan='5'>该渠道暂无已发布版本</td></tr>";
+          .join("") || "<tr class='empty-row'><td colspan='5'>该渠道暂无已发布版本</td></tr>";
     }
 
     async function deleteReleaseRow(channelId, version, label) {
