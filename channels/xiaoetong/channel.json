@@ -41,19 +41,49 @@
     "blockUrlWhite": true,
     "blockUrl": [
       {
-        "url": "https://appkrjfyd6q7315.h5.xiaoeknow.com/*",
-        "state": true,
-        "comment": "试点店铺 H5 域名（参考课程页）"
-      },
-      {
         "url": "https://*.h5.xiaoeknow.com/*",
         "state": true,
-        "comment": "小鹅通 H5 店铺子域"
+        "comment": "H5 店铺：app{appId}.h5.xiaoeknow.com，如 /v4/course/alive/、/p/course/video/"
+      },
+      {
+        "url": "https://*.h5.xiaoe-tech.com/*",
+        "state": true,
+        "comment": "H5 店铺（xiaoe-tech 域名，与 h5.xiaoeknow 路径规则相同）"
       },
       {
         "url": "https://*.xiaoeknow.com/*",
         "state": true,
-        "comment": "小鹅通主域及常见 CDN/API 子域"
+        "comment": "xiaoeknow 主域及子域（含静态资源、接口）"
+      },
+      {
+        "url": "https://*.xet-pc.citv.cn/*",
+        "state": true,
+        "comment": "PC 店铺 CITV 线路：app{appId}.xet-pc.citv.cn，如 /p/t_pc/course_pc_detail/video/"
+      },
+      {
+        "url": "https://*.xet.citv.cn/*",
+        "state": true,
+        "comment": "CITV 线路 H5/课程：app{appId}.xet.citv.cn，如 /p/course/column/"
+      },
+      {
+        "url": "https://*.pc.xiaoe-tech.com/*",
+        "state": true,
+        "comment": "PC 店铺官方域：app{appId}.pc.xiaoe-tech.com，路径同 xet-pc.citv.cn"
+      },
+      {
+        "url": "https://*.pc-cname.xiaoe-tech.com/*",
+        "state": true,
+        "comment": "PC 店铺腾讯云备案 CNAME：{appId}.pc-cname.xiaoe-tech.com"
+      },
+      {
+        "url": "https://*.pc-aliyun.xiaoe-tech.com/*",
+        "state": true,
+        "comment": "PC 店铺阿里云备案 CNAME：{appId}.pc-aliyun.xiaoe-tech.com"
+      },
+      {
+        "url": "https://study.xiaoe-tech.com/*",
+        "state": true,
+        "comment": "小鹅通学员版统一入口（study.xiaoe-tech.com）"
       }
     ],
     "deepSearch": false,
