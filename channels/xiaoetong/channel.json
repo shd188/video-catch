@@ -88,8 +88,8 @@
     ],
     "deepSearch": false,
     "enable": true,
-    "M3u8Ffmpeg": false,
-    "M3u8Mp4": true,
+    "M3u8Ffmpeg": true,
+    "M3u8Mp4": false,
     "iframeFFmpeg": false
   }
 }

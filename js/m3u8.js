@@ -137,7 +137,7 @@ function init() {
         }
     });
 
-    // 渠道构建：锁定 m3u8 解析器默认项（mp4 / 禁用在线 ffmpeg）
+    // 渠道构建：锁定 m3u8 解析器默认项（ffmpeg / mp4 等）
     if (typeof applyChannelBuildDefaults === "function") {
         applyChannelBuildDefaults();
     }
