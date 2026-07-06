@@ -56,10 +56,14 @@ let checkboxState = true;
 
 // 生成资源DOM
 function AddMedia(data, currentTab = true) {
+    if (typeof channelShouldIgnoreSniffedMedia === "function" && channelShouldIgnoreSniffedMedia(data)) {
+        return $();
+    }
     data._title = data.title;
     data.title = stringModify(data.title);
     //文件名
     data.name = isEmpty(data.name) ? data.title + '.' + data.ext : decodeURIComponent(stringModify(data.name));
+    channelNormalizeMediaForDownload(data);
     //截取文件名长度
     let trimName = data.name;
     if (data.name && data.name.length >= 50 && !_tabId) {
@@ -244,6 +248,9 @@ function AddMedia(data, currentTab = true) {
     });
     // 猫抓下载器 下载
     data.html.find("#catDown").click(function () {
+        if (typeof channelShouldIgnoreSniffedMedia === "function" && channelShouldIgnoreSniffedMedia(data)) {
+            return false;
+        }
         catDownload(data);
     });
     data.html.find("#catDownFFmpeg").click(function () {
@@ -268,6 +275,9 @@ function AddMedia(data, currentTab = true) {
     });
     // 下载
     data.html.find('#download').click(function (event) {
+        if (typeof channelShouldIgnoreSniffedMedia === "function" && channelShouldIgnoreSniffedMedia(data)) {
+            return false;
+        }
         if (G.m3u8dl && (isM3U8(data) || isMPD(data))) {
             if (!data.url.startsWith("blob:")) {
                 const m3u8dlArg = templates(G.m3u8dlArg, data);
@@ -315,11 +325,17 @@ function AddMedia(data, currentTab = true) {
             openParser(data, { autoDown: true });
             return false;
         }
+        if (typeof channelPreferCatDownload === "function" && channelPreferCatDownload(data)) {
+            catDownload(data);
+            return false;
+        }
         chrome.downloads.download({
             url: data.url,
             filename: data.downFileName,
             saveAs: G.saveAs
-        }, function (id) { downData[id] = data; });
+        }, function (id) {
+            downData[id] = data;
+        });
         return false;
     });
     // 调用
@@ -555,6 +571,10 @@ $('#DownFile').click(function () {
         }
         if (G.m3u8AutoDown && data.parsing == "m3u8") {
             openParser(data, { autoDown: true, autoClose: true });
+            continue;
+        }
+        if (typeof channelPreferCatDownload === "function" && channelPreferCatDownload(data)) {
+            catDownload(data);
             continue;
         }
         // 以防止popup页面被关闭 丢失下载数据 批量下载前临时修改为 后台下载
@@ -867,7 +887,8 @@ const interval = setInterval(async function () {
             return;
         }
         for (let key = 0; key < currentCount; key++) {
-            $current.append(AddMedia(data[key]));
+            const html = AddMedia(data[key]);
+            if (html.length) { $current.append(html); }
         }
         $mediaList.append($current);
         UItoggle();
@@ -878,6 +899,10 @@ const interval = setInterval(async function () {
         // 添加资源
         if (Message.Message == "popupAddData") {
             const html = AddMedia(Message.data, Message.data.tabId == G.tabId);
+            if (!html.length) {
+                sendResponse("OK");
+                return true;
+            }
             if (Message.data.tabId == G.tabId) {
                 !currentCount && $mediaList.append($current);
                 currentCount++;
@@ -1100,6 +1125,9 @@ function getCheckedData() {
     let maxSize = 0;
     getData().forEach(function (data) {
         if (data.checked) {
+            if (typeof channelShouldIgnoreSniffedMedia === "function" && channelShouldIgnoreSniffedMedia(data)) {
+                return;
+            }
             const size = data._size ?? 0;
             maxSize = size > maxSize ? size : maxSize;
             checkedData.push(data);

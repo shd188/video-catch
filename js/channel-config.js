@@ -65,3 +65,59 @@ function isCurrentTabChannelAllowed(callback) {
         callback(isLockUrl(url), url);
     });
 }
+
+const CHANNEL_VIDEO_EXTS = ["mp4", "webm", "mov", "m4v", "mkv", "m4s", "ogg", "ogv", "3gp", "mpeg"];
+
+function channelIsVideoMedia(info) {
+    if (!info) { return false; }
+    const ext = String(info.ext || "").toLowerCase();
+    if (["m3u8", "m3u", "mpd"].includes(ext)) { return false; }
+    if (info.type?.startsWith("video/")) { return true; }
+    return CHANNEL_VIDEO_EXTS.includes(ext);
+}
+
+function channelNameLacksVideoExtension(name) {
+    if (!name) { return true; }
+    return !/\.(mp4|webm|mov|m4v|mkv|m4s|mp3|m4a|wav|ogg|ogv|3gp|mpeg)$/i.test(name);
+}
+
+/** 渠道嗅探过滤：true 表示丢弃该资源 */
+function channelShouldIgnoreSniffedMedia(info) {
+    if (!info || typeof G === "undefined" || !G.channelId) {
+        return false;
+    }
+    if (G.channelId !== "tencentmeeting") { return false; }
+
+    const ext = String(info.ext || "").toLowerCase();
+    const type = String(info.type || "").toLowerCase();
+    const name = String(info.name || "").toLowerCase();
+    const url = String(info.url || "").toLowerCase();
+
+    if (ext === "txt" || ext === "plain") { return true; }
+    if (type.startsWith("text/")) { return true; }
+    if (/\.txt(\?|#|$)/.test(url) || /\.txt$/i.test(name)) { return true; }
+    if (/recording-\d+\.txt(\?|#|$)/i.test(url) || /recording-\d+\.txt$/i.test(name)) { return true; }
+
+    return false;
+}
+
+/** 腾讯会议 COS 等资源下载需携带嗅探到的请求头，不能用裸 chrome.downloads.download */
+function channelPreferCatDownload(info) {
+    if (!info || typeof G === "undefined" || G.channelId !== "tencentmeeting") { return false; }
+    const url = String(info.url || "").toLowerCase();
+    return url.includes("ylz.cos.meeting.tencent.com")
+        || url.includes("cos.meeting.tencent.com");
+}
+
+/** 渠道下载文件名修正（就地修改 info） */
+function channelNormalizeMediaForDownload(info) {
+    if (!info || typeof G === "undefined" || !G.channelId) { return; }
+    if (G.channelId === "feishu" && channelIsVideoMedia(info)) {
+        if (!info.ext || !CHANNEL_VIDEO_EXTS.includes(String(info.ext).toLowerCase())) {
+            info.ext = "mp4";
+        }
+        if (info.name && channelNameLacksVideoExtension(info.name)) {
+            info.name = info.name + ".mp4";
+        }
+    }
+}

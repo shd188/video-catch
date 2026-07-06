@@ -41,6 +41,7 @@ const excludes = [
     `${channelId}/server/*`,
     `${channelId}/.DS_Store`,
     `${channelId}/*/.DS_Store`,
+    `${channelId}/.cursor/*`,
 ].map((x) => `-x "${x}"`).join(" ");
 
 execSync(

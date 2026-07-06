@@ -1,4 +1,4 @@
-importScripts("/js/function.js", "/js/templates.js", "/js/init.js", "/js/channel-init.js", "/js/license-client.js", "/js/license-update.js");
+importScripts("/js/function.js", "/js/templates.js", "/js/init.js", "/js/channel-config.js", "/js/channel-init.js", "/js/license-client.js", "/js/license-update.js");
 
 // Service Worker 5分钟后会强制终止扩展
 // https://bugs.chromium.org/p/chromium/issues/detail?id=1271154
@@ -197,6 +197,20 @@ function findMedia(data, isRegex = false, filter = false, timer = false) {
 
     if (!filter) { return; }
 
+    const sniffPreview = {
+        name,
+        ext: data.extraExt ?? ext,
+        url: data.url,
+        type: data.mime ?? data.header?.type,
+    };
+    if (sniffPreview.ext === undefined && sniffPreview.type) {
+        const mimeExt = sniffPreview.type.split("/")[1];
+        if (mimeExt) { sniffPreview.ext = mimeExt; }
+    }
+    if (channelShouldIgnoreSniffedMedia(sniffPreview)) {
+        return;
+    }
+
     // 谜之原因 获取得资源 tabId可能为 -1 firefox中则正常
     // 检查是 -1 使用当前激活标签得tabID
     data.tabId = data.tabId == -1 ? G.tabId : data.tabId;
@@ -272,6 +286,10 @@ function findMedia(data, isRegex = false, filter = false, timer = false) {
         info.title = webInfo?.title ?? "NULL";
         info.favIconUrl = webInfo?.favIconUrl;
         info.webUrl = webInfo?.url;
+        if (channelShouldIgnoreSniffedMedia(info)) {
+            return;
+        }
+        channelNormalizeMediaForDownload(info);
         // 屏蔽资源
         if (!isRegex && G.blackList.has(data.requestId)) {
             G.blackList.delete(data.requestId);
@@ -280,6 +298,10 @@ function findMedia(data, isRegex = false, filter = false, timer = false) {
         // 发送到popup 并检查自动下载
         chrome.runtime.sendMessage({ Message: "popupAddData", data: info }, function () {
             if (G.featAutoDownTabId.size > 0 && G.featAutoDownTabId.has(info.tabId) && chrome.downloads?.State) {
+                if (channelShouldIgnoreSniffedMedia(info)) {
+                    if (chrome.runtime.lastError) { return; }
+                    return;
+                }
                 try {
                     const downDir = info.title == "NULL" ? "CatCatch/" : stringModify(info.title) + "/";
                     let fileName = isEmpty(info.name) ? stringModify(info.title) + '.' + info.ext : decodeURIComponent(stringModify(info.name));
@@ -287,6 +309,15 @@ function findMedia(data, isRegex = false, filter = false, timer = false) {
                         fileName = filterFileName(templates(G.downFileName, info));
                     } else {
                         fileName = downDir + fileName;
+                    }
+                    if (typeof channelPreferCatDownload === "function" && channelPreferCatDownload(info)) {
+                        info.downFileName = fileName;
+                        chrome.tabs.create({
+                            url: `downloader.html?JSON=${encodeURIComponent(JSON.stringify(info))}&autoClose=true`,
+                            active: false,
+                        });
+                        if (chrome.runtime.lastError) { return; }
+                        return;
                     }
                     chrome.downloads.download({
                         url: info.url,

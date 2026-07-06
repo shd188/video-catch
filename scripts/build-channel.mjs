@@ -35,6 +35,7 @@ const SKIP_DIRS = new Set([
     "releases",
     ".git",
     ".github",
+    ".cursor",
 ]);
 const SKIP_FILES = new Set(["private-key.pem"]);
 
