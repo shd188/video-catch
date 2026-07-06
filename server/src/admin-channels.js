@@ -9,9 +9,10 @@ const REPO_CHANNELS_DIR = path.join(__dirname, "..", "..", "channels");
 const LABEL_FALLBACK = {
   xiaoetong: "小鹅通",
   tencentmeeting: "腾讯会议",
+  feishu: "飞书",
 };
 
-const DEFAULT_CHANNEL_IDS = ["xiaoetong", "tencentmeeting"];
+const DEFAULT_CHANNEL_IDS = ["xiaoetong", "tencentmeeting", "feishu"];
 
 function parseLabelOverrides(envValue) {
   const map = new Map();

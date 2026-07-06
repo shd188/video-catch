@@ -1,0 +1,230 @@
+{
+  "id": "feishu",
+  "channelNameZh": "飞书",
+  "displayName": "飞书视频下载",
+  "description": "基于 Cat-Catch (GPL-3.0)。仅在飞书及相关字节配套域名下嗅探媒体，供学习备份使用。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
+  "repositoryUrl": "https://github.com/shd188/video-catch",
+  "license": {
+    "apiBase": "https://api.shentongxue.online",
+    "checkIntervalHours": 24,
+    "strict": false
+  },
+  "installPage": "channel-install.html",
+  "lockOptions": [
+    "blockUrl",
+    "blockUrlWhite",
+    "deepSearch",
+    "M3u8Ffmpeg",
+    "M3u8Mp4",
+    "iframeFFmpeg"
+  ],
+  "versionSuffix": "",
+  "manifest": {
+    "description": "飞书视频下载，仅限自有或已获授权的内容。",
+    "homepage_url": "https://github.com/shd188/video-catch"
+  },
+  "locales": {
+    "zh_CN": {
+      "catCatch": "飞书视频下载",
+      "description": "飞书视频下载，仅限自有或已获授权的内容。",
+      "noData": "还没找到视频哦~",
+      "popupChannelAllowed": "当前页面在白名单内，可嗅探",
+      "popupChannelBlocked": "当前页面不在渠道白名单内，不会嗅探",
+      "popupChannelPatterns": "白名单规则",
+      "popupChannelHost": "当前域名"
+    },
+    "en": {
+      "catCatch": "Feishu Video Download",
+      "description": "Feishu video download. For your own or authorized content only.",
+      "popupChannelAllowed": "This page is on the channel whitelist",
+      "popupChannelBlocked": "This page is not on the channel whitelist — sniffing disabled",
+      "popupChannelPatterns": "Whitelist rules",
+      "popupChannelHost": "Host"
+    }
+  },
+  "optionLists": {
+    "blockUrlWhite": true,
+    "blockUrl": [
+      {
+        "url": "https://*.feishu.net/*",
+        "state": true,
+        "comment": "飞书主域"
+      },
+      {
+        "url": "https://*.feishu.cn/*",
+        "state": true,
+        "comment": "飞书主域"
+      },
+      {
+        "url": "https://*.larkoffice.com/*",
+        "state": true,
+        "comment": "飞书办公域"
+      },
+      {
+        "url": "https://*.feishucdn.com/*",
+        "state": true,
+        "comment": "飞书 CDN"
+      },
+      {
+        "url": "https://*.zjurl.cn/*",
+        "state": true,
+        "comment": "飞书短链"
+      },
+      {
+        "url": "https://*.snssdk.com/*",
+        "state": true,
+        "comment": "字节 SDK"
+      },
+      {
+        "url": "https://*.pstatp.com/*",
+        "state": true,
+        "comment": "字节统计"
+      },
+      {
+        "url": "https://*.byteimg.com/*",
+        "state": true,
+        "comment": "字节图片 CDN"
+      },
+      {
+        "url": "https://*.bytedance.net/*",
+        "state": true,
+        "comment": "字节网络"
+      },
+      {
+        "url": "https://*.bytedance.com/*",
+        "state": true,
+        "comment": "字节主域"
+      },
+      {
+        "url": "https://*.byted-static.com/*",
+        "state": true,
+        "comment": "字节静态资源"
+      },
+      {
+        "url": "https://*.bytegoofy.com/*",
+        "state": true,
+        "comment": "字节静态"
+      },
+      {
+        "url": "https://*.feishu-3rd-party-services.com/*",
+        "state": true,
+        "comment": "飞书第三方服务"
+      },
+      {
+        "url": "https://*.bytehwm.com/*",
+        "state": true,
+        "comment": "字节 HWM"
+      },
+      {
+        "url": "https://*.ttwebview.com/*",
+        "state": true,
+        "comment": "字节 WebView"
+      },
+      {
+        "url": "https://*.bytegecko.com/*",
+        "state": true,
+        "comment": "字节 Gecko"
+      },
+      {
+        "url": "https://*.bytescm.com/*",
+        "state": true,
+        "comment": "字节 SCM"
+      },
+      {
+        "url": "https://*.kundou.cn/*",
+        "state": true,
+        "comment": "飞书配套"
+      },
+      {
+        "url": "https://*.bytetos.com/*",
+        "state": true,
+        "comment": "字节 TOS"
+      },
+      {
+        "url": "https://*.zijieapi.com/*",
+        "state": true,
+        "comment": "字节 API"
+      },
+      {
+        "url": "https://*.byteeffecttos.com/*",
+        "state": true,
+        "comment": "字节特效 TOS"
+      },
+      {
+        "url": "https://*.bytednsdoc.com/*",
+        "state": true,
+        "comment": "字节 DNS 文档"
+      },
+      {
+        "url": "https://*.bytedanceapi.com/*",
+        "state": true,
+        "comment": "字节 API"
+      },
+      {
+        "url": "https://*.volcvideo.com/*",
+        "state": true,
+        "comment": "火山视频"
+      },
+      {
+        "url": "https://*.feishuimg.com/*",
+        "state": true,
+        "comment": "飞书图片"
+      },
+      {
+        "url": "https://*.feishuapp.cn/*",
+        "state": true,
+        "comment": "飞书应用"
+      },
+      {
+        "url": "https://*.getfeishu.cn/*",
+        "state": true,
+        "comment": "飞书下载"
+      },
+      {
+        "url": "https://*.feishupkg.com/*",
+        "state": true,
+        "comment": "飞书安装包"
+      },
+      {
+        "url": "https://*.feelgood.cn/*",
+        "state": true,
+        "comment": "飞书配套"
+      },
+      {
+        "url": "https://*.baseopendev.com/*",
+        "state": true,
+        "comment": "飞书开放平台"
+      },
+      {
+        "url": "https://*.bytedapm.com/*",
+        "state": true,
+        "comment": "字节 APM"
+      },
+      {
+        "url": "https://*.ibytedapm.com/*",
+        "state": true,
+        "comment": "字节 APM"
+      },
+      {
+        "url": "https://*.larkenterprise.com/*",
+        "state": true,
+        "comment": "飞书企业版"
+      },
+      {
+        "url": "https://*.aiforce.cloud/*",
+        "state": true,
+        "comment": "飞书 AI"
+      },
+      {
+        "url": "https://*.aiforce.run/*",
+        "state": true,
+        "comment": "飞书 AI"
+      }
+    ],
+    "deepSearch": false,
+    "enable": true,
+    "M3u8Ffmpeg": true,
+    "M3u8Mp4": false,
+    "iframeFFmpeg": false
+  }
+}

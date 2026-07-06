@@ -176,8 +176,7 @@ npm run build -- xiaoetong
 **用户使用说明（公开页，无需登录）**：`https://你的API域名/guide/`  
 内容来自仓库 `docs/USER-GUIDE.md`，可发给客户。管理后台右上角也有「用户说明」链接。
 
-**渠道落地页（公开页）**：`https://你的API域名/landing/`  
-汇总各渠道入口；单渠道如 `https://你的API域名/landing/xiaoetong/`、`/landing/tencentmeeting/`。
+**渠道落地页（纯静态）**：仓库根目录 `landing/`，可单独上传到任意静态托管，见 `landing/README.md`。
 
 **管理登录密码**（`ADMIN_API_KEY`）只用于后台登录，与客户激活码无关。首次用 `.env` 中的值登录；可在后台 **「修改登录密码」** 更换（保存到数据库）。
 

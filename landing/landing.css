@@ -34,6 +34,16 @@
     linear-gradient(180deg, #eef4ff 0%, #f8fafc 42%, #ffffff 100%);
 }
 
+[data-theme="feishu"] {
+  --lp-primary: #3370ff;
+  --lp-primary-dark: #245bdb;
+  --lp-accent: #00d6b9;
+  --lp-soft: rgba(51, 112, 255, 0.08);
+  --lp-gradient: radial-gradient(ellipse 80% 60% at 18% -10%, rgba(51, 112, 255, 0.26), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 88% 5%, rgba(0, 214, 185, 0.14), transparent 50%),
+    linear-gradient(180deg, #f0f4ff 0%, #f8fafc 42%, #ffffff 100%);
+}
+
 [data-theme="hub"] {
   --lp-primary: #0071e3;
   --lp-primary-dark: #005bb5;
@@ -534,6 +544,142 @@ a { color: inherit; text-decoration: none; }
 
 .lp-error { color: #dc2626; }
 
+.lp-buy-btn {
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  line-height: 1.2;
+}
+
+.lp-buy-btn-nav {
+  flex-direction: row;
+  gap: 8px;
+  padding-top: 0;
+  padding-bottom: 0;
+  min-height: 44px;
+}
+
+.lp-buy-btn-nav .lp-buy-price {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+.lp-buy-label { font-size: 14px; font-weight: 600; }
+
+.lp-buy-price {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.lp-hero-actions .lp-buy-btn-hero .lp-buy-price {
+  font-size: 13px;
+}
+
+.lp-cta .lp-buy-btn-cta {
+  margin-bottom: 12px;
+}
+
+.lp-cta .lp-cta-guide {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.lp-cta .lp-cta-guide:hover { background: rgba(255, 255, 255, 0.25); }
+
+.lp-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.lp-modal[hidden] { display: none; }
+
+body.lp-modal-open { overflow: hidden; }
+
+.lp-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.lp-modal-panel {
+  position: relative;
+  width: min(100%, 360px);
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 24px 24px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.2);
+}
+
+.lp-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.lp-modal-close:hover { background: #e2e8f0; color: #0f172a; }
+
+.lp-modal-panel h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.lp-modal-price {
+  margin: 0 0 20px;
+  font-size: 15px;
+  color: var(--lp-muted);
+}
+
+.lp-modal-price span {
+  color: var(--lp-primary);
+  font-weight: 600;
+}
+
+.lp-modal-qr {
+  display: inline-block;
+  padding: 12px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid var(--lp-border);
+  margin-bottom: 16px;
+}
+
+.lp-modal-qr img {
+  display: block;
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.lp-modal-note {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lp-text);
+  line-height: 1.5;
+}
+
 @media (max-width: 900px) {
   .lp-hero {
     grid-template-columns: 1fr;
@@ -547,6 +693,7 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 640px) {
   .lp-nav-links .lp-btn-ghost { display: none; }
+  .lp-buy-btn-nav .lp-buy-price { display: none; }
   .lp-hero-actions { flex-direction: column; }
   .lp-hero-actions .lp-btn { width: 100%; }
   .lp-cta { padding: 36px 20px; }

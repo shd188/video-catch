@@ -23,7 +23,8 @@
 | 渠道 ID | 显示名 | 说明 |
 |---------|--------|------|
 | `xiaoetong` | 小鹅通 | 主试点渠道，见 [channels/xiaoetong/README.md](channels/xiaoetong/README.md) |
-| `tencentmeeting` | 腾讯会议 | 基础白名单骨架，见 [channels/tencentmeeting/](channels/tencentmeeting/) |
+| `tencentmeeting` | 腾讯会议 | 会议回放白名单，见 [channels/tencentmeeting/](channels/tencentmeeting/) |
+| `feishu` | 飞书 | 飞书 Web 视频白名单，见 [channels/feishu/](channels/feishu/) |
 
 ## 快速开始
 
@@ -43,6 +44,7 @@ npm run build -- xiaoetong
 
 ```bash
 npm run build -- tencentmeeting
+npm run build -- feishu
 ```
 
 详细步骤见 [docs/BUILD.md](docs/BUILD.md)。

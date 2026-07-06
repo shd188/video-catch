@@ -36,12 +36,6 @@ import {
 } from "./admin-auth.js";
 import { getAdminChannelList } from "./admin-channels.js";
 import { resolveUserGuidePath } from "./user-guide.js";
-import {
-  getLandingChannel,
-  isKnownLandingChannel,
-  listLandingChannels,
-  resolveLandingIconPath,
-} from "./landing-pages.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
@@ -51,7 +45,7 @@ const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "0.0.0.0";
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "";
-const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "xiaoetong,tencentmeeting")
+const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "xiaoetong,tencentmeeting,feishu")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
@@ -132,47 +126,6 @@ app.use(
     maxAge: process.env.NODE_ENV === "production" ? "1h" : 0,
   })
 );
-
-app.get("/api/public/landing/channels", (_req, res) => {
-  res.json({ channels: listLandingChannels(PUBLIC_BASE_URL) });
-});
-
-app.get("/api/public/landing/channels/:channelId", (req, res) => {
-  const channel = getLandingChannel(req.params.channelId, PUBLIC_BASE_URL);
-  if (!channel) {
-    return res.status(404).json({ ok: false, message: "渠道不存在" });
-  }
-  res.json(channel);
-});
-
-const landingDir = path.join(publicDir, "landing");
-function sendLandingHub(_req, res) {
-  res.setHeader("Cache-Control", "no-cache");
-  res.sendFile(path.join(landingDir, "index.html"));
-}
-function sendLandingChannel(req, res) {
-  const channelId = String(req.params.channelId || "").trim();
-  if (!isKnownLandingChannel(channelId)) {
-    return res.status(404).type("text/html; charset=utf-8").send("渠道落地页不存在");
-  }
-  res.setHeader("Cache-Control", "no-cache");
-  res.sendFile(path.join(landingDir, "channel.html"));
-}
-app.get(["/landing", "/landing/", "/landing/index.html"], sendLandingHub);
-app.get("/landing/icons/:channelId.png", (req, res) => {
-  const filePath = resolveLandingIconPath(req.params.channelId);
-  if (!filePath) return res.status(404).end();
-  res.sendFile(path.resolve(filePath));
-});
-app.use(
-  "/landing",
-  express.static(landingDir, {
-    index: false,
-    redirect: false,
-    maxAge: process.env.NODE_ENV === "production" ? "1h" : 0,
-  })
-);
-app.get(["/landing/:channelId", "/landing/:channelId/"], sendLandingChannel);
 
 app.post("/api/v1/activate", (req, res) => {
   const { license_key, channel_id, installation_id, user_agent } = req.body || {};
@@ -442,7 +395,6 @@ const server = app.listen(PORT, HOST, () => {
   const base = PUBLIC_BASE_URL.replace(/\/$/, "");
   console.log(`Admin UI: ${base}/admin/`);
   console.log(`User guide: ${base}/guide/`);
-  console.log(`Landing pages: ${base}/landing/`);
   console.log(`PUBLIC_BASE_URL=${PUBLIC_BASE_URL}`);
   if (!ADMIN_API_KEY || ADMIN_API_KEY === "change-me-to-a-long-random-string") {
     console.warn("WARN: Set a strong ADMIN_API_KEY in .env");

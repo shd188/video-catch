@@ -1,0 +1,100 @@
+/** 静态落地页配置（改链接、价格、二维码时只改这里） */
+window.LANDING_SITE = {
+  guideUrl: "https://api.shentongxue.online/guide/",
+  repositoryUrl: "https://github.com/shd188/video-catch",
+  purchase: {
+    price: "9.99",
+    priceSuffix: "永久使用",
+    wechatQr: "wechat-qr.png",
+    wechatNote: "加微信备注腾讯会议/小鹅通/飞书",
+  },
+  channels: [
+    {
+      id: "xiaoetong",
+      page: "xiaoetong.html",
+      displayName: "小鹅通视频下载",
+      channelNameZh: "小鹅通",
+      zipName: "xiaoetong.zip",
+      latestVersion: "2.6.9",
+      theme: "xiaoetong",
+      heroTitle: "小鹅通课程视频",
+      heroHighlight: "本地备份下载",
+      heroSubtitle:
+        "专为小鹅通 H5 / PC 课程页打造的 Chrome 扩展。在白名单站点自动嗅探回放与点播，合并保存到电脑，学习资料不再过期丢失。",
+      badge: "小鹅通渠道专版",
+      features: [
+        { title: "站点白名单", desc: "仅在小鹅通相关域名工作，H5 直播、PC 视频课均可覆盖，其它网站默认不嗅探。", icon: "shield" },
+        { title: "m3u8 一键合并", desc: "解析器默认在线 FFmpeg 转码，长课程也能稳定合并为可播放文件。", icon: "film" },
+        { title: "激活与更新", desc: "每设备激活一次即可；后续版本升级覆盖原目录，无需重新输入激活码。", icon: "key" },
+        { title: "本地优先", desc: "嗅探与下载在浏览器本机完成，不上传页面内容与视频文件。", icon: "lock" },
+      ],
+      steps: [
+        { title: "安装扩展", desc: "解压渠道包，在 chrome://extensions 加载已解压文件夹。" },
+        { title: "激活授权", desc: "首次打开说明页，输入服务商提供的激活码。" },
+        { title: "播放并下载", desc: "打开课程页播放视频，点击扩展图标合并下载。" },
+      ],
+      sites: [
+        "H5 店铺 *.h5.xiaoeknow.com",
+        "PC 视频课 *.xet-pc.citv.cn",
+        "PC 官方域 *.pc.xiaoe-tech.com",
+        "学员版 study.xiaoe-tech.com",
+      ],
+    },
+    {
+      id: "tencentmeeting",
+      page: "tencentmeeting.html",
+      displayName: "腾讯会议视频下载",
+      channelNameZh: "腾讯会议",
+      zipName: "tencentmeeting.zip",
+      latestVersion: "2.6.9",
+      theme: "tencentmeeting",
+      heroTitle: "腾讯会议回放",
+      heroHighlight: "本地保存",
+      heroSubtitle:
+        "面向腾讯会议 Web 回放的专用扩展。在 meeting.tencent.com 白名单内嗅探媒体流，方便已授权用户备份学习与复盘资料。",
+      badge: "腾讯会议渠道专版",
+      features: [
+        { title: "回放页专用", desc: "锁定 meeting.tencent.com 及子域，只在会议回放场景启用嗅探。", icon: "shield" },
+        { title: "m3u8 一键合并", desc: "支持回放常见流媒体格式，解析器内完成合并与转码。", icon: "film" },
+        { title: "独立扩展", desc: "与小鹅通渠道包相互独立，可同时安装、各自激活。", icon: "layers" },
+        { title: "合规提醒", desc: "仅限自有或已获授权的回放内容；请遵守平台服务条款与著作权法。", icon: "scale" },
+      ],
+      steps: [
+        { title: "安装扩展", desc: "加载 tencentmeeting 文件夹，与小鹅通包路径分开即可。" },
+        { title: "激活授权", desc: "使用腾讯会议渠道激活码，每设备首次激活一次。" },
+        { title: "打开回放", desc: "在浏览器打开会议回放页，播放后从 Popup 下载。" },
+      ],
+      sites: ["meeting.tencent.com", "*.meeting.tencent.com 子域"],
+    },
+    {
+      id: "feishu",
+      page: "feishu.html",
+      displayName: "飞书视频下载",
+      channelNameZh: "飞书",
+      zipName: "feishu.zip",
+      latestVersion: "2.6.9",
+      theme: "feishu",
+      heroTitle: "飞书视频",
+      heroHighlight: "本地备份下载",
+      heroSubtitle:
+        "面向飞书 Web 端视频与课程的专用扩展。在飞书及配套字节域名白名单内嗅探媒体流，方便已授权用户备份学习与培训资料。",
+      badge: "飞书渠道专版",
+      features: [
+        { title: "站点白名单", desc: "覆盖飞书主域、CDN 与字节配套域名，仅在白名单内启用嗅探。", icon: "shield" },
+        { title: "m3u8 一键合并", desc: "解析器默认在线 FFmpeg 转码，长视频也能稳定合并为可播放文件。", icon: "film" },
+        { title: "独立扩展", desc: "与小鹅通、腾讯会议渠道包相互独立，可同时安装、各自激活。", icon: "layers" },
+        { title: "合规提醒", desc: "仅限自有或已获授权的内容；请遵守平台服务条款与著作权法。", icon: "scale" },
+      ],
+      steps: [
+        { title: "安装扩展", desc: "解压 feishu 渠道包，在 chrome://extensions 加载已解压文件夹。" },
+        { title: "激活授权", desc: "使用飞书渠道激活码，每设备首次激活一次。" },
+        { title: "播放并下载", desc: "在飞书 Web 端打开视频页播放，从 Popup 合并下载。" },
+      ],
+      sites: [
+        "飞书主域 *.feishu.cn / *.feishu.net",
+        "办公域 *.larkoffice.com",
+        "CDN 与字节配套 *.feishucdn.com 等",
+      ],
+    },
+  ],
+};

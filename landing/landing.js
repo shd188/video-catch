@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  const SITE = window.LANDING_SITE || { channels: [], guideUrl: "#", repositoryUrl: "" };
+
   const ICONS = {
     shield:
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
@@ -26,24 +28,96 @@
       .replace(/"/g, "&quot;");
   }
 
-  function channelIdFromPath() {
-    const parts = location.pathname.replace(/\/+$/, "").split("/");
-    const idx = parts.indexOf("landing");
-    return idx >= 0 ? parts[idx + 1] || "" : "";
+  function iconSrc(id) {
+    return "icons/" + encodeURIComponent(id) + ".png";
   }
 
-  async function fetchJson(url) {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    return res.json();
+  function enrichChannel(c) {
+    return {
+      ...c,
+      guideUrl: SITE.guideUrl,
+      repositoryUrl: SITE.repositoryUrl,
+      iconUrl: iconSrc(c.id),
+    };
+  }
+
+  function findChannel(id) {
+    return SITE.channels.find((c) => c.id === id) || null;
+  }
+
+  function purchaseConfig() {
+    return SITE.purchase || {
+      price: "9.99",
+      priceSuffix: "永久使用",
+      wechatQr: "wechat-qr.svg",
+      wechatNote: "加微信备注腾讯会议/小鹅通",
+    };
+  }
+
+  function buyButtonHtml(extraClass) {
+    const p = purchaseConfig();
+    const cls = "lp-btn lp-btn-primary lp-buy-btn" + (extraClass ? " " + extraClass : "");
+    return `<button type="button" class="${cls}" data-lp-buy>
+      <span class="lp-buy-label">立即购买</span>
+      <span class="lp-buy-price">¥${escapeHtml(p.price)} ${escapeHtml(p.priceSuffix)}</span>
+    </button>`;
+  }
+
+  function ensureWechatModal() {
+    if (document.getElementById("lpWechatModal")) return;
+    const p = purchaseConfig();
+    const modal = document.createElement("div");
+    modal.id = "lpWechatModal";
+    modal.className = "lp-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="lp-modal-backdrop" data-lp-close tabindex="-1"></div>
+      <div class="lp-modal-panel" role="dialog" aria-modal="true" aria-labelledby="lpModalTitle">
+        <button type="button" class="lp-modal-close" data-lp-close aria-label="关闭">×</button>
+        <h2 id="lpModalTitle">立即购买</h2>
+        <p class="lp-modal-price">¥${escapeHtml(p.price)} <span>${escapeHtml(p.priceSuffix)}</span></p>
+        <div class="lp-modal-qr">
+          <img src="${escapeHtml(p.wechatQr)}" alt="微信二维码" width="220" height="220" />
+        </div>
+        <p class="lp-modal-note">${escapeHtml(p.wechatNote)}</p>
+      </div>`;
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll("[data-lp-close]").forEach((el) => {
+      el.addEventListener("click", closeWechatModal);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeWechatModal();
+    });
+  }
+
+  function openWechatModal() {
+    ensureWechatModal();
+    const modal = document.getElementById("lpWechatModal");
+    modal.hidden = false;
+    document.body.classList.add("lp-modal-open");
+    modal.querySelector(".lp-modal-close")?.focus();
+  }
+
+  function closeWechatModal() {
+    const modal = document.getElementById("lpWechatModal");
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    document.body.classList.remove("lp-modal-open");
+  }
+
+  function bindPurchaseButtons(root) {
+    root.querySelectorAll("[data-lp-buy]").forEach((btn) => {
+      btn.addEventListener("click", openWechatModal);
+    });
   }
 
   function renderChannelPage(data) {
-    document.title = data.displayName + " — 渠道落地页";
+    document.title = data.displayName + " — 产品介绍";
     document.body.dataset.theme = data.theme || data.id;
 
     const versionLine = data.latestVersion
-      ? `当前版本 v${escapeHtml(data.latestVersion)}`
+      ? "当前版本 v" + escapeHtml(data.latestVersion)
       : "联系服务商获取最新安装包";
 
     const featuresHtml = (data.features || [])
@@ -70,19 +144,17 @@
       .map((s) => `<span class="lp-pill">${escapeHtml(s)}</span>`)
       .join("");
 
-    const iconSrc = data.iconUrl || `/landing/icons/${data.id}.png`;
-
     document.getElementById("app").innerHTML = `
       <nav class="lp-nav">
         <div class="lp-nav-inner">
-          <a class="lp-brand" href="/landing/">
-            <img src="${escapeHtml(iconSrc)}" alt="" width="36" height="36" />
+          <a class="lp-brand" href="index.html">
+            <img src="${escapeHtml(data.iconUrl)}" alt="" width="36" height="36" />
             <span>${escapeHtml(data.displayName)}</span>
           </a>
           <div class="lp-nav-links">
-            <a class="lp-btn lp-btn-ghost" href="/landing/">全部渠道</a>
-            <a class="lp-btn lp-btn-ghost" href="${escapeHtml(data.guideUrl)}">使用说明</a>
-            <a class="lp-btn lp-btn-primary" href="${escapeHtml(data.guideUrl)}">开始安装</a>
+            <a class="lp-btn lp-btn-ghost" href="index.html">全部渠道</a>
+            <a class="lp-btn lp-btn-ghost" href="${escapeHtml(data.guideUrl)}" target="_blank" rel="noopener">使用说明</a>
+            ${buyButtonHtml("lp-buy-btn-nav")}
           </div>
         </div>
       </nav>
@@ -93,7 +165,8 @@
             <h1>${escapeHtml(data.heroTitle)}<br /><em>${escapeHtml(data.heroHighlight)}</em></h1>
             <p class="lp-hero-lead">${escapeHtml(data.heroSubtitle)}</p>
             <div class="lp-hero-actions">
-              <a class="lp-btn lp-btn-primary" href="${escapeHtml(data.guideUrl)}">查看安装与使用说明</a>
+              ${buyButtonHtml("lp-buy-btn-hero")}
+              <a class="lp-btn lp-btn-ghost" href="${escapeHtml(data.guideUrl)}" target="_blank" rel="noopener">查看安装与使用说明</a>
               <a class="lp-btn lp-btn-ghost" href="#features">了解功能</a>
             </div>
             <div class="lp-trust">
@@ -118,7 +191,6 @@
             </div>
           </div>
         </section>
-
         <section class="lp-section" id="features">
           <div class="lp-section-head">
             <h2>为${escapeHtml(data.channelNameZh || data.displayName)}场景优化</h2>
@@ -126,7 +198,6 @@
           </div>
           <div class="lp-grid">${featuresHtml}</div>
         </section>
-
         <section class="lp-section">
           <div class="lp-section-head">
             <h2>三步开始使用</h2>
@@ -134,7 +205,6 @@
           </div>
           <div class="lp-steps">${stepsHtml}</div>
         </section>
-
         <section class="lp-section">
           <div class="lp-section-head">
             <h2>支持的网站</h2>
@@ -142,22 +212,22 @@
           </div>
           <div class="lp-sites">${sitesHtml}</div>
         </section>
-
         <section class="lp-cta">
           <h2>准备好备份课程了吗？</h2>
-          <p>安装包与激活码由服务商发放。详细图文步骤见用户使用说明，合规使用、仅限已授权内容。</p>
-          <a class="lp-btn lp-btn-primary" href="${escapeHtml(data.guideUrl)}">打开使用说明</a>
+          <p>扫码加微信购买，获取安装包与激活码。详细步骤见用户使用说明，合规使用、仅限已授权内容。</p>
+          ${buyButtonHtml("lp-buy-btn-cta")}
+          <a class="lp-btn lp-btn-ghost lp-cta-guide" href="${escapeHtml(data.guideUrl)}" target="_blank" rel="noopener">查看使用说明</a>
         </section>
-
         <footer class="lp-footer">
           <p>
             基于 Cat-Catch（GPL-3.0）构建 ·
-            ${data.repositoryUrl ? `<a href="${escapeHtml(data.repositoryUrl)}" target="_blank" rel="noopener">源码仓库</a> · ` : ""}
-            <a href="${escapeHtml(data.guideUrl)}">用户指南</a>
+            <a href="${escapeHtml(data.repositoryUrl)}" target="_blank" rel="noopener">源码仓库</a> ·
+            <a href="${escapeHtml(data.guideUrl)}" target="_blank" rel="noopener">用户指南</a>
           </p>
           <p>请仅下载您有权访问、备份或学习的课程内容。</p>
         </footer>
       </main>`;
+    bindPurchaseButtons(document.getElementById("app"));
   }
 
   function renderHubPage(channels) {
@@ -166,15 +236,15 @@
 
     const cards = channels
       .map(
-        (c) => `<a class="lp-channel-card" href="/landing/${encodeURIComponent(c.id)}/" data-theme-card="${escapeHtml(c.theme || c.id)}">
+        (c) => `<a class="lp-channel-card" href="${escapeHtml(c.page || c.id + ".html")}">
           <div class="lp-channel-card-head">
-            <img src="${escapeHtml(c.iconUrl || `/landing/icons/${c.id}.png`)}" alt="" width="56" height="56" />
+            <img src="${escapeHtml(c.iconUrl)}" alt="" width="56" height="56" />
             <div>
               <h2>${escapeHtml(c.displayName)}</h2>
               ${c.latestVersion ? `<span style="font-size:13px;color:var(--lp-muted)">v${escapeHtml(c.latestVersion)}</span>` : ""}
             </div>
           </div>
-          <p>${escapeHtml(c.heroSubtitle || c.description)}</p>
+          <p>${escapeHtml(c.heroSubtitle)}</p>
           <span class="lp-btn lp-btn-primary" style="align-self:flex-start">进入落地页 →</span>
         </a>`
       )
@@ -183,12 +253,9 @@
     document.getElementById("app").innerHTML = `
       <nav class="lp-nav">
         <div class="lp-nav-inner">
-          <a class="lp-brand" href="/landing/">
-            <span>Video-Catch 渠道</span>
-          </a>
+          <a class="lp-brand" href="index.html"><span>Video-Catch 渠道</span></a>
           <div class="lp-nav-links">
-            <a class="lp-btn lp-btn-ghost" href="/guide/">用户使用说明</a>
-            <a class="lp-btn lp-btn-ghost" href="/admin/">管理后台</a>
+            <a class="lp-btn lp-btn-ghost" href="${escapeHtml(SITE.guideUrl)}" target="_blank" rel="noopener">用户使用说明</a>
           </div>
         </div>
       </nav>
@@ -199,38 +266,28 @@
         </section>
         <section class="lp-channel-cards">${cards}</section>
         <footer class="lp-footer" style="margin-top:48px">
-          <p><a href="/guide/">通用用户使用说明</a> · 适用于所有渠道的安装、激活与升级流程</p>
+          <p><a href="${escapeHtml(SITE.guideUrl)}" target="_blank" rel="noopener">通用用户使用说明</a> · 适用于所有渠道的安装、激活与升级流程</p>
         </footer>
       </main>`;
   }
 
-  async function initChannelPage() {
-    const id = channelIdFromPath();
-    if (!id) {
-      document.getElementById("app").innerHTML = '<p class="lp-error">缺少渠道 ID</p>';
+  function initChannelPage(channelId) {
+    const id = channelId || document.body.dataset.channel;
+    const raw = findChannel(id);
+    if (!raw) {
+      document.getElementById("app").innerHTML = '<p class="lp-error">未找到渠道：' + escapeHtml(id) + "</p>";
       return;
     }
-    try {
-      const data = await fetchJson("/api/public/landing/channels/" + encodeURIComponent(id));
-      renderChannelPage(data);
-    } catch (e) {
-      document.getElementById("app").innerHTML =
-        '<p class="lp-error">无法加载渠道信息：' + escapeHtml(e.message) + "</p>";
-    }
+    renderChannelPage(enrichChannel(raw));
   }
 
-  async function initHubPage() {
-    try {
-      const { channels } = await fetchJson("/api/public/landing/channels");
-      if (!channels?.length) {
-        document.getElementById("app").innerHTML = '<p class="lp-error">暂无可用渠道</p>';
-        return;
-      }
-      renderHubPage(channels);
-    } catch (e) {
-      document.getElementById("app").innerHTML =
-        '<p class="lp-error">无法加载渠道列表：' + escapeHtml(e.message) + "</p>";
+  function initHubPage() {
+    const channels = SITE.channels.map(enrichChannel);
+    if (!channels.length) {
+      document.getElementById("app").innerHTML = '<p class="lp-error">暂无渠道配置</p>';
+      return;
     }
+    renderHubPage(channels);
   }
 
   window.LandingPage = { initChannelPage, initHubPage };

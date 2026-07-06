@@ -110,7 +110,7 @@ PUBLIC_BASE_URL=https://api.shentongxue.online
 DATABASE_PATH=/opt/video-catch/server/data/licenses.db
 RELEASES_DIR=/opt/video-catch/server/data/releases
 CORS_ORIGIN=*
-ADMIN_CHANNELS=xiaoetong,tencentmeeting
+ADMIN_CHANNELS=xiaoetong,tencentmeeting,feishu
 EOF
 
 chmod 600 /opt/video-catch/server/.env
