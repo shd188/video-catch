@@ -83,6 +83,10 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "cat-catch-license-server" });
 });
 
+app.get("/", (_req, res) => {
+  res.redirect(302, "/guide/");
+});
+
 const adminDir = path.join(publicDir, "admin");
 function sendAdminIndex(_req, res) {
   res.setHeader("Cache-Control", "no-cache");

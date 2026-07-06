@@ -59,7 +59,7 @@ npm run init-db
 npm start
 ```
 
-管理界面：`/admin/`。部署说明见 [docs/SERVER.md](docs/SERVER.md)、[docs/DEPLOY-UBUNTU-HK.md](docs/DEPLOY-UBUNTU-HK.md)。
+管理界面：`/admin/`。**日常操作速查**见 [docs/OPS-GUIDE.md](docs/OPS-GUIDE.md)；部署说明见 [docs/SERVER.md](docs/SERVER.md)、[docs/DEPLOY-UBUNTU-HK.md](docs/DEPLOY-UBUNTU-HK.md)。
 
 ## 文档索引
 
