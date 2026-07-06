@@ -174,6 +174,30 @@ function AddMedia(data, currentTab = true) {
                         mediaInfo.append(`<br><b>${i18n.m3u8Playlist}</b>`);
                     }
                 });
+                let totalFragments = 0;
+                hls.on(Hls.Events.LEVEL_LOADED, function (event, data) {
+                    totalFragments = data.details.fragments.length;
+                });
+                // 通过前5个片段的下载大小和下载时间来估算码率
+                const fragments = [];
+                function onFragLoaded(event, data) {
+                    const frag = data.frag;
+                    const stats = frag && frag.stats;
+                    if (!frag || !stats || !frag.duration) return;
+                    const bytes = stats.total || stats.loaded || 0;
+                    const duration = frag.duration || 0;
+                    if (!bytes || !duration) return;
+                    fragments.push({ bytes, duration });
+                    if (fragments.length >= 5) {
+                        const totalBytes = fragments.reduce((sum, item) => sum + item.bytes, 0);
+                        const totalDuration = fragments.reduce((sum, item) => sum + item.duration, 0);
+                        const bps = totalBytes * 8 / totalDuration;
+                        mediaInfo.append(`<br><b>${i18n.bitrate}:</b> ${formatBitrate(bps)}`);
+                        totalFragments && mediaInfo.append(`<br><b>${i18n.estimateSize}:</b> ${byteToSize(totalBytes / fragments.length * totalFragments)}`);
+                        hls.off(Hls.Events.FRAG_LOADED, onFragLoaded);
+                    }
+                }
+                hls.on(Hls.Events.FRAG_LOADED, onFragLoaded);
             } else if (data.isPlay) {
                 setRequestHeaders(data.requestHeaders, function () {
                     preview.attr("src", data.url);
@@ -190,13 +214,22 @@ function AddMedia(data, currentTab = true) {
                 preview.show();
                 if (this.duration && this.duration != Infinity) {
                     data.duration = this.duration;
-                    mediaInfo.append(`<br><b>${i18n.duration}:</b> ` + secToTime(this.duration));
+                    mediaInfo.append(`<br><b>${i18n.duration}:</b> ${secToTime(this.duration)}`);
                 }
                 if (this.videoHeight && this.videoWidth) {
-                    mediaInfo.append(`<br><b>${i18n.resolution}:</b> ` + this.videoWidth + "x" + this.videoHeight);
+                    mediaInfo.append(`<br><b>${i18n.resolution}:</b> ${this.videoWidth}x${this.videoHeight}`);
                     data.videoWidth = this.videoWidth;
                     data.videoHeight = this.videoHeight;
                 }
+                !isM3U8(data) && getRemoteFileSize(data.url)
+                    .then(function (size) {
+                        if (!size || isNaN(size) || size < 1024) return;
+                        const bps = (size * 8) / data.duration;
+                        mediaInfo.append(`<br><b>${i18n.bitrate}:</b> ${formatBitrate(bps)}`);
+                    })
+                    .catch(function (error) {
+                        console.warn(error);
+                    });
             });
         }
         if (event.target.id == "play") {
@@ -237,7 +270,7 @@ function AddMedia(data, currentTab = true) {
     data.html.find('#download').click(function (event) {
         if (G.m3u8dl && (isM3U8(data) || isMPD(data))) {
             if (!data.url.startsWith("blob:")) {
-                const m3u8dlArg = data.m3u8dlArg ?? templates(G.m3u8dlArg, data);
+                const m3u8dlArg = templates(G.m3u8dlArg, data);
                 const url = 'm3u8dl:' + (G.m3u8dl == 1 ? Base64.encode(m3u8dlArg) : m3u8dlArg);
                 if (url.length >= 2046) {
                     navigator.clipboard.writeText(m3u8dlArg);
@@ -245,7 +278,7 @@ function AddMedia(data, currentTab = true) {
                     return false;
                 }
                 // 下载前确认参数
-                if (G.m3u8dlConfirm && event.originalEvent && event.originalEvent.isTrusted) {
+                if (G.m3u8dlConfirm) {
                     data.html.find('.confirm').remove();
                     const confirm = $(`<div class="confirm">
                         <textarea type="text" class="width100" rows="10">${m3u8dlArg}</textarea>
@@ -253,9 +286,15 @@ function AddMedia(data, currentTab = true) {
                         <button class="button2" id="close">${i18n.close}</button>
                     </div>`);
                     confirm.find("#confirm").click(function () {
-                        data.m3u8dlArg = confirm.find("textarea").val();
-                        data.html.find('#download').click();
-                        confirm.hide();
+                        const textarea = confirm.find("textarea").val();
+                        const url = 'm3u8dl:' + (G.m3u8dl == 1 ? Base64.encode(textarea) : textarea);
+                        confirm.remove();
+                        if (G.isFirefox) {
+                            window.location.href = url;
+                            return false;
+                        }
+                        chrome.tabs.update({ url: url });
+                        return false;
                     });
                     confirm.find("#close").click(function () {
                         confirm.remove();
@@ -285,10 +324,10 @@ function AddMedia(data, currentTab = true) {
     });
     // 调用
     data.html.find('.invoke').click(function (event) {
-        const url = data.invoke ?? templates(G.invokeText, data);
+        const url = templates(G.invokeText, data);
 
         // 下载前确认参数
-        if (G.invokeConfirm && event.originalEvent && event.originalEvent.isTrusted) {
+        if (G.invokeConfirm) {
             data.html.find('.confirm').remove();
             const confirm = $(`<div class="confirm">
                         <textarea type="text" class="width100" rows="10">${url}</textarea>
@@ -296,9 +335,14 @@ function AddMedia(data, currentTab = true) {
                         <button class="button2" id="close">${i18n.close}</button>
                     </div>`);
             confirm.find("#confirm").click(function () {
-                data.invoke = confirm.find("textarea").val();
-                data.html.find('.invoke').click();
-                confirm.hide();
+                const url = confirm.find("textarea").val();
+                confirm.remove();
+                if (G.isFirefox) {
+                    window.location.href = url;
+                    return false;
+                }
+                chrome.tabs.update({ url: url });
+                return false;
             });
             confirm.find("#close").click(function () {
                 confirm.remove();
@@ -309,9 +353,9 @@ function AddMedia(data, currentTab = true) {
 
         if (G.isFirefox) {
             window.location.href = url;
-        } else {
-            chrome.tabs.update({ url: url });
+            return false;
         }
+        chrome.tabs.update({ url: url });
         return false;
     });
     //播放
@@ -753,6 +797,18 @@ $("#send2localSelect").click(function () {
         }
     });
 });
+
+// 复制所有疑似密钥
+$("#maybeKeyCopy").click(function () {
+    const keys = [];
+    $("#maybeKey .name").each(function () {
+        keys.push(`base64: ${$(this).text()}\nhex: ${base64ToHex($(this).text())}`);
+    });
+    if (keys.length == 0) { return; }
+    navigator.clipboard.writeText(keys.join("\n\n"));
+    Tips(i18n.copiedToClipboard);
+});
+
 async function getPageDOM() {
     try {
         const result = await new Promise((resolve, reject) => {
@@ -765,9 +821,8 @@ async function getPageDOM() {
             });
         });
 
-        return new DOMParser().parseFromString(result, 'text/html');
+        return result ? new DOMParser().parseFromString(result, 'text/html') : null;
     } catch (error) {
-        console.error('Error getting page:', error);
         return null;
     }
 }
@@ -786,13 +841,17 @@ const interval = setInterval(async function () {
         G.tabId = _tabId;
         $("body").css("width", "100%");
         $("#down").css("justify-content", "center").find("button").css("margin-left", "5px");
-        $("#popup").hide();
         _type == "window" && $("#currentPage").show();
     }
 
     // 获取页面DOM
     if (G.getHtmlDOM) {
-        pageDOM = getPageDOM();
+        // pageDOM = getPageDOM();
+        getPageDOM().then(dom => {
+            pageDOM = dom;
+        }).catch(error => {
+            console.error('Error getting page DOM:', error);
+        });
     }
     // 填充数据
     chrome.runtime.sendMessage(chrome.runtime.id, { Message: "getData", tabId: G.tabId }, function (data) {
@@ -846,7 +905,7 @@ const interval = setInterval(async function () {
                 if (tabId == -1 || tabId == G.tabId) {
                     $maybeKey.append(AddKey(Message.data));
                 }
-                !$("#maybeKey .panel").length && $("#maybeKey").append($maybeKey);
+                !$("#maybeKey .panel").length && $("#maybeKeyCopy").before($maybeKey);
             });
             sendResponse("OK");
             return true;
@@ -862,7 +921,7 @@ const interval = setInterval(async function () {
 
     const observer = new MutationObserver(updateDownHeight);
     observer.observe($down[0], { childList: true, subtree: true, attributes: true });
-    setInterval(() => { updateDownHeight(); }, 233);
+    setTimeout(updateDownHeight, 500);
     // 疑似密钥
     chrome.webNavigation.getAllFrames({ tabId: G.tabId }, function (frames) {
         if (!frames) { return; }
@@ -873,7 +932,7 @@ const interval = setInterval(async function () {
                 for (let key of result) {
                     $maybeKey.append(AddKey(key));
                 }
-                $("#maybeKey").append($maybeKey);
+                $("#maybeKeyCopy").before($maybeKey);
                 UItoggle();
             });
         }

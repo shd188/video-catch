@@ -49,7 +49,7 @@
             <button id="stop" ${buttonStyle} data-i18n="stopRecording">停止录制</button>
             <button id="save" ${buttonStyle} data-i18n="save">保存</button>
             <button id="hide" ${buttonStyle} data-i18n="hide">隐藏</button>
-            <!--button id="close" ${buttonStyle} data-i18n="close">关闭</button-->
+            <button id="close" ${buttonStyle} data-i18n="close">关闭</button>
         </div>
     </div>
     `;
@@ -96,11 +96,11 @@
     $stop.style.display = 'none';
 
     // 关闭
-    // CatCatch.querySelector("#close").addEventListener('click', function (event) {
-    //     recorder?.state && recorder.stop();
-    //     CatCatch.style.display = "none";
-    //     window.postMessage({ action: "catCatchToBackground", Message: "script", script: "webrtc.js", refresh: true });
-    // });
+    CatCatch.querySelector("#close").addEventListener('click', function (event) {
+        recorder?.state && recorder.stop();
+        CatCatch.style.display = "none";
+        window.postMessage({ action: "catCatchCloseScript", script: "webrtc.js" });
+    });
 
     // 隐藏
     CatCatch.querySelector("#hide").addEventListener('click', function (event) {
@@ -319,7 +319,7 @@
     });
 
     // i18n
-    if (window.CatCatchI18n) {
+    if (window.CatCatchI18n && CatCatch) {
         CatCatch.querySelectorAll('[data-i18n]').forEach(function (element) {
             element.innerHTML = window.CatCatchI18n[element.dataset.i18n][language];
         });
@@ -328,7 +328,7 @@
         });
     }
     function i18n(key, original = "") {
-        if (!window.CatCatchI18n) { return original };
+        if (!window.CatCatchI18n || !CatCatch) { return original };
         return window.CatCatchI18n[key][language];
     }
 })();

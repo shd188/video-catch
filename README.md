@@ -1,3 +1,5 @@
+<p align="center"> [中文] | [<a href="README_en.md">English</a>] | [<a href="README_es.md">Español</a>] | [<a href="README_ru.md">Русский</a>] · 渠道版说明见下文</p>
+
 # Video-Catch · 渠道版视频下载扩展
 
 基于开源浏览器扩展 [Cat-Catch（猫抓）](https://github.com/xifangczy/cat-catch) 的 **GPL 渠道构建**：按站点白名单打包、定制 UI 与文案，并配套激活与版本发布后台，用于合法场景下的课程/会议视频辅助下载。
@@ -13,6 +15,8 @@
 | 渠道白名单 | 仅对 `channels/<id>/` 中配置的域名启用扩展能力，降低误用风险 |
 | 渠道定制 | 扩展名、图标、安装说明、Popup/设置页 UI（见 [docs/UI-CUSTOMIZATION.md](docs/UI-CUSTOMIZATION.md)） |
 | 激活与更新 | 可选联网校验激活码、检查新版本（`server/` 专有后台，不随 GPL 扩展强制分发） |
+
+上游猫抓用户文档：<https://cat-catch.94cat.com/>
 
 ### 当前渠道
 

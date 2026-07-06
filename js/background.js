@@ -1,4 +1,4 @@
-importScripts("/js/function.js", "/js/init.js", "/js/channel-init.js", "/js/license-client.js", "/js/license-update.js");
+importScripts("/js/function.js", "/js/templates.js", "/js/init.js", "/js/channel-init.js", "/js/license-client.js", "/js/license-update.js");
 
 // Service Worker 5分钟后会强制终止扩展
 // https://bugs.chromium.org/p/chromium/issues/detail?id=1271154
@@ -574,6 +574,19 @@ chrome.runtime.onMessage.addListener(function (Message, sender, sendResponse) {
     }
     if (Message.Message == "damnUrlHas") {
         sendResponse(G.damnUrlSet.has(Message.tabId));
+        return true;
+    }
+    if (Message.Message == "closeScript") {
+        if (!Message.script || !G.scriptList.has(Message.script)) {
+            sendResponse("error");
+            return false;
+        }
+        const script = G.scriptList.get(Message.script);
+        const scriptTabid = script.tabId;
+        if (scriptTabid.has(Message.tabId)) {
+            scriptTabid.delete(Message.tabId);
+        }
+        sendResponse("ok");
         return true;
     }
 });

@@ -1039,5 +1039,8 @@
   },
   "contextMenus": {
     "message": "Right-click menu"
+  },
+  "dataPreprocessing": {
+    "message": "Data Preprocessing"
   }
 }

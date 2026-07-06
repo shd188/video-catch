@@ -46,7 +46,8 @@
                     loop: video.loop,
                     speed: video.playbackRate,
                     muted: video.muted,
-                    type: video.tagName.toLowerCase()
+                    type: video.tagName.toLowerCase(),
+                    videoStatus: videoObj.map(v => v.paused ? 1 : 0)
                 });
                 return true;
             }
@@ -55,7 +56,9 @@
         }
         // 速度控制
         if (Message.Message == "speed") {
-            _videoObj[Message.index].playbackRate = Message.speed;
+            if (_videoObj[Message.index]?.playbackRate !== undefined) {
+                _videoObj[Message.index].playbackRate = Message.speed;
+            }
             return true;
         }
         // 画中画
@@ -84,34 +87,41 @@
         }
         // 播放
         if (Message.Message == "play") {
-            _videoObj[Message.index].play();
+            _videoObj[Message.index]?.play();
             return true;
         }
         // 暂停
         if (Message.Message == "pause") {
-            _videoObj[Message.index].pause();
+            _videoObj[Message.index]?.pause();
             return true;
         }
         // 循环播放
         if (Message.Message == "loop") {
-            _videoObj[Message.index].loop = Message.action;
+            if (_videoObj[Message.index]?.loop !== undefined) {
+                _videoObj[Message.index].loop = Message.action;
+            }
             return true;
         }
         // 设置音量
         if (Message.Message == "setVolume") {
-            _videoObj[Message.index].volume = Message.volume;
+            if (_videoObj[Message.index]?.volume !== undefined) {
+                _videoObj[Message.index].volume = Message.volume;
+            }
             sendResponse("ok");
             return true;
         }
         // 静音
         if (Message.Message == "muted") {
-            _videoObj[Message.index].muted = Message.action;
+            if (_videoObj[Message.index]?.muted !== undefined) {
+                _videoObj[Message.index].muted = Message.action;
+            }
             return true;
         }
         // 设置视频进度
         if (Message.Message == "setTime") {
-            const time = Message.time * _videoObj[Message.index].duration / 100;
-            _videoObj[Message.index].currentTime = time;
+            if (_videoObj[Message.index]?.currentTime !== undefined && _videoObj[Message.index]?.duration !== undefined) {
+                _videoObj[Message.index].currentTime = Message.time * _videoObj[Message.index].duration / 100;
+            }
             sendResponse("ok");
             return true;
         }
@@ -178,6 +188,13 @@
             sendResponse("");
             return true;
         }
+        if (Message.Message == "getM3u8Cache") {
+            fetch(Message.url, { method: "GET", cache: "force-cache" })
+                .then(response => response.text())
+                .then(text => sendResponse({ success: true, data: text }))
+                .catch(() => sendResponse({ success: false, error: "Failed to fetch" }));
+            return true;
+        }
     });
 
     // Heart Beat
@@ -215,7 +232,7 @@
         });
     };
     window.addEventListener("message", (event) => {
-        const action = ["catCatchAddMedia", "catCatchAddKey", "catCatchFFmpeg", "catCatchFFmpegResult"];
+        const action = ["catCatchAddMedia", "catCatchAddKey", "catCatchFFmpeg", "catCatchFFmpegResult", "catCatchCloseScript"];
         if (!event.data || !event.data.action || event.origin !== window.location.origin || !action.includes(event.data.action)) { return; }
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -276,6 +293,10 @@
         if (event.data.action == "catCatchFFmpegResult") {
             if (!event.data.state || !event.data.tabId) { return; }
             chrome.runtime.sendMessage({ Message: "catCatchFFmpegResult", ...event.data });
+        }
+        if (event.data.action == "catCatchCloseScript") {
+            if (!event.data.script || !event.isTrusted) { return; }
+            chrome.runtime.sendMessage({ Message: "closeScript", ...event.data });
         }
 
     }, { capture: true });

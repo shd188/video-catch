@@ -2,7 +2,7 @@
 if (chrome.i18n.getMessage === undefined) {
     chrome.i18n.getMessage = (key) => key;
     fetch(chrome.runtime.getURL("_locales/zh_CN/messages.json")).then(res => res.json()).then(data => {
-        chrome.i18n.getMessage = (key) => data[key].messages;
+        chrome.i18n.getMessage = (key) => data[key].message;
     }).catch((e) => { console.error(e); });
 }
 /**
@@ -125,7 +125,7 @@ G.OptionLists = {
     TitleName: false,
     Player: "",
     ShowWebIco: !G.isMobile,
-    MobileUserAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+    MobileUserAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
     m3u8dl: 0,
     m3u8dlArg: `"\${url}" --save-dir "%USERPROFILE%\\Downloads\\m3u8dl" --save-name "\${title}_\${now}" \${referer|exists:'-H "Referer:*"'} \${cookie|exists:'-H "Cookie:*"'} --no-log`,
     m3u8dlConfirm: false,
@@ -144,12 +144,18 @@ G.OptionLists = {
     downActive: !G.isMobile,    // 手机端默认不启用 后台下载
     downAutoClose: true,
     downStream: false,
+
+    // Aria2
     aria2Rpc: "http://localhost:6800/jsonrpc",
     enableAria2Rpc: false,
     enableAria2RpcReferer: true,
     aria2RpcToken: "",
+    aria2RpcDir: "",
+
     m3u8AutoDown: true,
     badgeNumber: true,
+
+    // 发送到本地
     send2local: false,
     send2localManual: false,
     send2localURL: "http://127.0.0.1:8000/",
@@ -157,11 +163,15 @@ G.OptionLists = {
     send2localBody: '{"action": "${action}", "data": ${data}, "tabId": "${tabId}"}',
     send2localType: 0,
     send2localHeaders: "",
+
     popup: false,
     popupMode: 0, // 0:preview.html 1:popup.html 2:window preview.html 3: window popup.html
+
+    // 远程调用
     invoke: false,
     invokeText: `m3u8dlre:"\${url}" --save-dir "%USERPROFILE%\\Downloads" --del-after-done --save-name "\${title}_\${now}" --auto-select \${referer|exists:'-H "Referer: *"'}`,
     invokeConfirm: false,
+
     // m3u8解析器默认参数
     M3u8Thread: 6,
     M3u8Mp4: false,
@@ -170,6 +180,7 @@ G.OptionLists = {
     M3u8StreamSaver: false,
     M3u8Ffmpeg: true,
     M3u8AutoClose: false,
+
     // 第三方服务地址
     onlineServiceAddress: 0,
     chromeLimitSize: 1.8 * 1024 * 1024 * 1024,
@@ -192,6 +203,7 @@ G.OptionLists = {
     mqttQos: 0,
     mqttTitleLength: 100,
     mqttDataFormat: "",
+
     getHtmlDOM: false,
     damn: false,
     iframeFFmpeg: false,
@@ -240,7 +252,7 @@ G.streamSaverConfig = {
 const reFilename = /filename="?([^"]+)"?/;
 const reStringModify = /[<>:"\/\\|?*~]/g;
 const reFilterFileName = /[<>:"|?*~]/g;
-const reTemplates = /\${([^}|]+)(?:\|([^}]+))?}/g;
+// const reTemplates = /\${([^}|]+)(?:\|([^}]+))?}/g;
 const reJSONparse = /([{,]\s*)([\w-]+)(\s*:)/g;
 
 // 防抖
@@ -325,11 +337,8 @@ function InitOptions() {
         chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: items.sidePanel });
 
         // 右键菜单注册
-        chrome.contextMenus.update("cat-catch", {
-            visible: items.contextMenus
-        }, () => {
-            chrome.runtime.lastError && console.log(chrome.runtime.lastError);
-        });
+        contextMenusInit(items.contextMenus);
+
         G = { ...items, ...G };
 
         if (typeof applyChannelBuildDefaults === "function") {
@@ -410,16 +419,60 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             continue;
         }
         if (key == "contextMenus") {
-            chrome.contextMenus.update("cat-catch", {
-                visible: newValue
-            }, () => {
-                chrome.runtime.lastError && console.error(chrome.runtime.lastError);
-            });
+            contextMenusInit(newValue);
             continue;
         }
         G[key] = newValue;
     }
 });
+
+function contextMenusInit(visible = false) {
+    // 注册右键
+    chrome.contextMenus.removeAll(() => {
+        chrome.contextMenus.create({
+            id: "cat-catch",
+            title: i18n.catCatch,
+            contexts: ["page", "image"],
+            visible: visible
+        });
+        chrome.contextMenus.create({
+            id: "image-save",
+            parentId: "cat-catch",
+            title: i18n.save,
+            contexts: ["image"]
+        });
+        chrome.contextMenus.create({
+            id: "enable",
+            parentId: "cat-catch",
+            title: `${i18n.enable} / ${i18n.disable}`,
+            contexts: ["page", "image"]
+        });
+        chrome.contextMenus.create({
+            id: "preview",
+            parentId: "cat-catch",
+            title: i18n.preview,
+            contexts: ["page", "image"]
+        });
+        chrome.contextMenus.create({
+            id: "deepSearch",
+            parentId: "cat-catch",
+            title: i18n.deepSearch,
+            contexts: ["page", "image"]
+        });
+        chrome.contextMenus.create({
+            id: "catch",
+            parentId: "cat-catch",
+            title: i18n.cacheCapture,
+            contexts: ["page", "image"]
+        });
+        chrome.contextMenus.create({
+            id: "auto_down",
+            parentId: "cat-catch",
+            title: i18n.autoDownload,
+            contexts: ["page", "image"]
+        });
+    });
+}
 
 // 扩展升级，清空本地储存
 chrome.runtime.onInstalled.addListener(function (details) {
@@ -461,52 +514,6 @@ chrome.runtime.onInstalled.addListener(function (details) {
         }
         afterLicenseStorageReady();
     }
-
-    // 注册右键
-    chrome.contextMenus.removeAll(() => {
-        chrome.contextMenus.create({
-            id: "cat-catch",
-            title: i18n.catCatch,
-            contexts: ["page", "image"],
-            visible: false
-        });
-        chrome.contextMenus.create({
-            id: "image-save",
-            parentId: "cat-catch",
-            title: i18n.save,
-            contexts: ["image"]
-        });
-        chrome.contextMenus.create({
-            id: "enable",
-            parentId: "cat-catch",
-            title: `${i18n.enable} / ${i18n.disable}`,
-            contexts: ["page", "image"]
-        });
-        chrome.contextMenus.create({
-            id: "preview",
-            parentId: "cat-catch",
-            title: i18n.preview,
-            contexts: ["page", "image"]
-        });
-        chrome.contextMenus.create({
-            id: "deepSearch",
-            parentId: "cat-catch",
-            title: i18n.deepSearch,
-            contexts: ["page", "image"]
-        });
-        chrome.contextMenus.create({
-            id: "catch",
-            parentId: "cat-catch",
-            title: i18n.cacheCapture,
-            contexts: ["page", "image"]
-        });
-        chrome.contextMenus.create({
-            id: "auto_down",
-            parentId: "cat-catch",
-            title: i18n.autoDownload,
-            contexts: ["page", "image"]
-        });
-    });
 });
 
 /**

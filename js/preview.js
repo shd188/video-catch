@@ -268,12 +268,13 @@ class FilePreview {
      */
     deleteItem(data = null) {
         data = data ? [data] : this.getSelectedItems();
-        data.forEach(item => {
-            const index = this.originalItems.findIndex(originalItem => originalItem.requestId === item.requestId);
-            if (index !== -1) {
-                this.originalItems.splice(index, 1);
-            }
+
+        const deleteIds = new Set(data.map(item => item.requestId));
+        const deleteNames = this.deleteDuplicateFilenames ? new Set(data.map(item => item.name)) : new Set();
+        this.originalItems = this.originalItems.filter(item => {
+            return !deleteIds.has(item.requestId) && !(this.deleteDuplicateFilenames && deleteNames.has(item.name));
         });
+
         this.updateFileList();
     }
     /**
@@ -423,7 +424,7 @@ class FilePreview {
                 <img src="img/mqtt.svg" class="icon mqtt ${G.mqttEnable ? "" : "hide"}" title="${i18n.send2MQTT}">
             </div>`;
         // 添加文件信息
-        if (item.size && item.size >= 1024) {
+        if (item.size && item.size >= 1024 && !isM3U8(item)) {
             item.html.querySelector('.file-info').textContent += ` / ${byteToSize(item.size)}`;
         }
         item.html.addEventListener('click', (event) => {
