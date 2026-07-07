@@ -128,6 +128,11 @@ app.use(
     index: false,
     redirect: false,
     maxAge: process.env.NODE_ENV === "production" ? "1h" : 0,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith(".mp4")) {
+        res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+      }
+    },
   })
 );
 

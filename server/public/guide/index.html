@@ -130,13 +130,111 @@
       font-size: 14px;
     }
     .video-topics li { margin: 0.25rem 0; }
-    .video-player {
-      display: block;
-      width: 100%;
+    .video-source-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    .video-source-tab {
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg);
+      color: var(--text-secondary);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .video-source-tab:hover { color: var(--text); border-color: rgba(0, 113, 227, 0.35); }
+    .video-source-tab[aria-selected="true"] {
+      background: var(--primary-soft);
+      border-color: rgba(0, 113, 227, 0.45);
+      color: var(--primary);
+    }
+    .video-source-tab .badge {
+      display: inline-block;
+      margin-left: 4px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #34c759;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .video-speed-tip {
+      margin: 0 0 1rem;
+      padding: 10px 14px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .video-shell {
+      position: relative;
       border-radius: 10px;
+      overflow: hidden;
       border: 1px solid var(--border);
       background: #000;
     }
+    .video-player {
+      display: block;
+      width: 100%;
+      background: #000;
+    }
+    .video-shell .video-play-trigger {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 0;
+      padding: 24px;
+      border: none;
+      background: rgba(0, 0, 0, 0.72);
+      color: #fff;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .video-shell .video-play-trigger:hover { background: rgba(0, 0, 0, 0.82); }
+    .video-shell .video-play-trigger span {
+      font-size: 13px;
+      font-weight: 400;
+      opacity: 0.85;
+    }
+    .video-shell.is-ready .video-play-trigger { display: none; }
+    .video-shell.is-loading .video-play-trigger {
+      cursor: wait;
+      pointer-events: none;
+    }
+    .bilibili-shell {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+    }
+    .bilibili-shell iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .video-player-wrap[hidden],
+    .bilibili-wrap[hidden] { display: none; }
     .video-meta {
       margin-top: 0.75rem;
       font-size: 13px;
@@ -259,22 +357,33 @@
           <li>打开课程页、嗅探媒体资源</li>
           <li>下载与合并 m3u8 / mp4 课程视频</li>
         </ul>
-        <video
-          id="guide-video"
-          class="video-player"
-          controls
-          playsinline
-          preload="metadata"
-          src="/guide/xet-video-catch.mp4"
-        >
-          您的浏览器不支持视频播放，请
-          <a href="/guide/xet-video-catch.mp4">下载视频</a>
-          观看。
-        </video>
-        <p class="video-meta">
-          小鹅通扩展：嗅探与下载操作演示 ·
-          <a href="/guide/xet-video-catch.mp4" download>下载视频文件</a>
+        <p class="video-speed-tip" id="video-speed-tip">
+          视频约 35MB，从香港服务器加载可能较慢。请优先选择下方<strong>加载更快</strong>的观看方式；或直接使用「文字说明」。
         </p>
+        <div class="video-source-tabs" id="video-source-tabs" role="tablist" aria-label="视频来源"></div>
+        <div class="bilibili-wrap" id="bilibili-wrap" hidden>
+          <div class="bilibili-shell">
+            <iframe id="bilibili-player" title="B站视频教程" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="video-player-wrap" id="video-player-wrap">
+          <div class="video-shell" id="video-shell">
+            <button type="button" class="video-play-trigger" id="video-play-trigger">
+              点击加载并播放
+              <span id="video-play-hint">首次需下载视频数据，请稍候</span>
+            </button>
+            <video
+              id="guide-video"
+              class="video-player"
+              controls
+              playsinline
+              preload="none"
+            >
+              您的浏览器不支持视频播放。
+            </video>
+          </div>
+        </div>
+        <p class="video-meta" id="video-meta"></p>
       </section>
 
       <section id="panel-text" class="guide-panel" role="tabpanel" aria-labelledby="tab-text" hidden>
@@ -288,14 +397,214 @@
       </section>
     </article>
   </main>
+  <script src="/guide/video-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
   <script>
     (function () {
+      var cfg = window.GUIDE_VIDEO_CONFIG || {};
       var tabs = document.querySelectorAll(".guide-tab");
       var panelVideo = document.getElementById("panel-video");
       var panelText = document.getElementById("panel-text");
       var guideVideo = document.getElementById("guide-video");
       var linkToVideo = document.getElementById("link-to-video");
+      var videoShell = document.getElementById("video-shell");
+      var videoPlayTrigger = document.getElementById("video-play-trigger");
+      var videoPlayHint = document.getElementById("video-play-hint");
+      var videoSourceTabs = document.getElementById("video-source-tabs");
+      var bilibiliWrap = document.getElementById("bilibili-wrap");
+      var bilibiliPlayer = document.getElementById("bilibili-player");
+      var videoPlayerWrap = document.getElementById("video-player-wrap");
+      var videoMeta = document.getElementById("video-meta");
+      var videoSpeedTip = document.getElementById("video-speed-tip");
+
+      var sources = [];
+      var activeSourceId = null;
+      var mp4Loaded = false;
+      var webMp4Available = null;
+
+      function pushSource(id, label, badge, kind, url) {
+        if (!url) return;
+        sources.push({ id: id, label: label, badge: badge, kind: kind, url: url });
+      }
+
+      function buildSources() {
+        sources = [];
+        pushSource("bilibili", "哔哩哔哩", "推荐", "bilibili", cfg.bilibiliBvid);
+        pushSource("cdn", "CDN 加速", "推荐", "mp4", cfg.cdnUrl);
+        if (cfg.webMp4) {
+          pushSource("web", "本页播放（精简版）", "较快", "mp4", cfg.webMp4);
+        }
+        pushSource("full", "本页播放（原画）", "", "mp4", cfg.fallbackMp4 || "/guide/xet-video-catch.mp4");
+      }
+
+      function bilibiliEmbedUrl(bvid) {
+        var id = String(bvid || "").trim();
+        if (!id) return "";
+        if (/^https?:\/\//i.test(id)) return id;
+        return "https://player.bilibili.com/player.html?bvid=" + encodeURIComponent(id) + "&high_quality=1&danmaku=0";
+      }
+
+      function bilibiliPageUrl(bvid) {
+        var id = String(bvid || "").trim();
+        if (!/^BV/i.test(id)) return "";
+        return "https://www.bilibili.com/video/" + id;
+      }
+
+      function renderSourceTabs() {
+        videoSourceTabs.innerHTML = "";
+        sources.forEach(function (src, index) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "video-source-tab";
+          btn.setAttribute("role", "tab");
+          btn.setAttribute("data-source-id", src.id);
+          btn.setAttribute("aria-selected", index === 0 ? "true" : "false");
+          btn.textContent = src.label;
+          if (src.badge) {
+            var badge = document.createElement("span");
+            badge.className = "badge";
+            badge.textContent = src.badge;
+            btn.appendChild(badge);
+          }
+          btn.addEventListener("click", function () {
+            selectSource(src.id);
+          });
+          videoSourceTabs.appendChild(btn);
+        });
+        if (sources.length) {
+          selectSource(sources[0].id);
+        }
+      }
+
+      function getSource(id) {
+        for (var i = 0; i < sources.length; i++) {
+          if (sources[i].id === id) return sources[i];
+        }
+        return null;
+      }
+
+      function resetMp4Player() {
+        mp4Loaded = false;
+        videoShell.classList.remove("is-ready", "is-loading");
+        guideVideo.pause();
+        guideVideo.removeAttribute("src");
+        guideVideo.load();
+      }
+
+      function updatePlayHint(src) {
+        if (!videoPlayHint || !src) return;
+        if (src.id === "web") {
+          videoPlayHint.textContent = "精简版约 " + (cfg.webSizeMb || 12) + " MB，加载较快";
+        } else if (src.id === "full") {
+          videoPlayHint.textContent = "原画约 " + (cfg.fallbackSizeMb || 35) + " MB，首次加载可能较慢";
+        } else {
+          videoPlayHint.textContent = "首次需下载视频数据，请稍候";
+        }
+      }
+
+      function updateMeta(src) {
+        if (!videoMeta) return;
+        var title = cfg.title || "操作演示";
+        var parts = [title];
+        if (src && src.kind === "bilibili") {
+          var page = bilibiliPageUrl(src.url);
+          if (page) {
+            parts.push('<a href="' + page + '" target="_blank" rel="noopener">在哔哩哔哩打开</a>');
+          }
+        } else if (src && src.kind === "mp4") {
+          parts.push('<a href="' + src.url + '" download>下载视频文件</a>');
+        }
+        videoMeta.innerHTML = parts.join(" · ");
+      }
+
+      function selectSource(id) {
+        var src = getSource(id);
+        if (!src) return;
+        activeSourceId = id;
+        videoSourceTabs.querySelectorAll(".video-source-tab").forEach(function (btn) {
+          btn.setAttribute("aria-selected", btn.getAttribute("data-source-id") === id ? "true" : "false");
+        });
+        resetMp4Player();
+        updateMeta(src);
+        updatePlayHint(src);
+
+        if (src.kind === "bilibili") {
+          bilibiliWrap.hidden = false;
+          videoPlayerWrap.hidden = true;
+          bilibiliPlayer.src = bilibiliEmbedUrl(src.url);
+          return;
+        }
+
+        bilibiliWrap.hidden = true;
+        bilibiliPlayer.removeAttribute("src");
+        videoPlayerWrap.hidden = false;
+      }
+
+      function loadAndPlayMp4() {
+        var src = getSource(activeSourceId);
+        if (!src || src.kind !== "mp4") return;
+        if (mp4Loaded && guideVideo.src) {
+          guideVideo.play();
+          return;
+        }
+        videoShell.classList.add("is-loading");
+        guideVideo.src = src.url;
+        guideVideo.load();
+        var onReady = function () {
+          videoShell.classList.remove("is-loading");
+          videoShell.classList.add("is-ready");
+          mp4Loaded = true;
+          guideVideo.play().catch(function () {});
+        };
+        guideVideo.addEventListener("loadeddata", onReady, { once: true });
+        guideVideo.addEventListener("error", function () {
+          videoShell.classList.remove("is-loading");
+          if (src.id === "web" && cfg.fallbackMp4) {
+            videoPlayHint.textContent = "精简版暂未部署，请切换「原画」或「哔哩哔哩」";
+          } else {
+            videoPlayHint.textContent = "视频加载失败，请稍后重试或改用文字说明";
+          }
+        }, { once: true });
+      }
+
+      function loadAndPlayMp4() {
+        var ordered = [];
+        ["bilibili", "cdn", "web", "full"].forEach(function (id) {
+          var src = getSource(id);
+          if (src) ordered.push(src);
+        });
+        sources = ordered;
+      }
+
+      function probeWebMp4() {
+        if (!cfg.webMp4) return Promise.resolve(false);
+        return fetch(cfg.webMp4, { method: "HEAD", cache: "no-store" })
+          .then(function (res) { return res.ok; })
+          .catch(function () { return false; });
+      }
+
+      function initVideoPanel() {
+        buildSources();
+        probeWebMp4().then(function (ok) {
+          webMp4Available = ok;
+          if (!ok) {
+            sources = sources.filter(function (s) { return s.id !== "web"; });
+          }
+          reorderSourcesForSpeed();
+          if (videoSpeedTip) {
+            var hasFast = sources.some(function (s) { return s.id === "bilibili" || s.id === "cdn"; });
+            if (hasFast || ok) {
+              videoSpeedTip.innerHTML =
+                "已提供<strong>加速观看</strong>选项；若仍较慢，可切换到「文字说明」，内容相同。";
+            }
+          }
+          renderSourceTabs();
+        });
+      }
+
+      if (videoPlayTrigger) {
+        videoPlayTrigger.addEventListener("click", loadAndPlayMp4);
+      }
 
       function setMode(mode) {
         var isVideo = mode === "video";
@@ -306,8 +615,11 @@
         });
         panelVideo.hidden = !isVideo;
         panelText.hidden = isVideo;
-        if (!isVideo && guideVideo && !guideVideo.paused) {
-          guideVideo.pause();
+        if (!isVideo) {
+          if (guideVideo && !guideVideo.paused) guideVideo.pause();
+          if (bilibiliPlayer) bilibiliPlayer.removeAttribute("src");
+        } else if (activeSourceId) {
+          selectSource(activeSourceId);
         }
         var hash = isVideo ? "#video" : "#text";
         if (location.hash !== hash) {
@@ -327,6 +639,8 @@
           setMode("video");
         });
       }
+
+      initVideoPanel();
 
       var initial = location.hash === "#video" ? "video" : "text";
       setMode(initial);
