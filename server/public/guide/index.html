@@ -567,7 +567,7 @@
         }, { once: true });
       }
 
-      function loadAndPlayMp4() {
+      function reorderSourcesForSpeed() {
         var ordered = [];
         ["bilibili", "cdn", "web", "full"].forEach(function (id) {
           var src = getSource(id);
@@ -585,21 +585,27 @@
 
       function initVideoPanel() {
         buildSources();
-        probeWebMp4().then(function (ok) {
-          webMp4Available = ok;
-          if (!ok) {
-            sources = sources.filter(function (s) { return s.id !== "web"; });
-          }
-          reorderSourcesForSpeed();
-          if (videoSpeedTip) {
-            var hasFast = sources.some(function (s) { return s.id === "bilibili" || s.id === "cdn"; });
-            if (hasFast || ok) {
-              videoSpeedTip.innerHTML =
-                "已提供<strong>加速观看</strong>选项；若仍较慢，可切换到「文字说明」，内容相同。";
+        probeWebMp4()
+          .then(function (ok) {
+            webMp4Available = ok;
+            if (!ok) {
+              sources = sources.filter(function (s) { return s.id !== "web"; });
             }
-          }
-          renderSourceTabs();
-        });
+            reorderSourcesForSpeed();
+            if (videoSpeedTip) {
+              var hasFast = sources.some(function (s) { return s.id === "bilibili" || s.id === "cdn"; });
+              if (hasFast || ok) {
+                videoSpeedTip.innerHTML =
+                  "已提供<strong>加速观看</strong>选项；若仍较慢，可切换到「文字说明」，内容相同。";
+              }
+            }
+            renderSourceTabs();
+          })
+          .catch(function () {
+            sources = sources.filter(function (s) { return s.id !== "web"; });
+            reorderSourcesForSpeed();
+            renderSourceTabs();
+          });
       }
 
       if (videoPlayTrigger) {
