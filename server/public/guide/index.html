@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="渠道版视频下载扩展安装、激活与使用说明" />
+  <meta name="description" content="渠道版视频下载扩展安装、激活与使用说明（视频教程与文字说明）" />
   <title>扩展使用说明</title>
   <style>
     :root {
@@ -15,8 +15,10 @@
       --surface: #ffffff;
       --border: rgba(0, 0, 0, 0.08);
       --primary: #0071e3;
+      --primary-soft: rgba(0, 113, 227, 0.08);
       --radius: 12px;
       --max: 760px;
+      --max-video: 920px;
     }
     * { box-sizing: border-box; }
     body {
@@ -28,6 +30,7 @@
       background: var(--bg);
       -webkit-font-smoothing: antialiased;
     }
+    body.mode-video main { max-width: var(--max-video); }
     header {
       background: rgba(255, 255, 255, 0.92);
       border-bottom: 1px solid var(--border);
@@ -60,6 +63,102 @@
       padding: 28px 32px;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
     }
+    .mode-notice {
+      margin-bottom: 16px;
+      padding: 14px 18px;
+      background: var(--primary-soft);
+      border: 1px solid rgba(0, 113, 227, 0.15);
+      border-radius: var(--radius);
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .mode-notice strong { font-weight: 600; }
+    .guide-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 4px;
+      background: var(--bg);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .guide-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .guide-tab span {
+      font-size: 12px;
+      font-weight: 400;
+      opacity: 0.85;
+    }
+    .guide-tab:hover { color: var(--text); }
+    .guide-tab[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+    .guide-panel[hidden] { display: none; }
+    .video-panel h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+    }
+    .video-panel .video-lead {
+      margin: 0 0 1rem;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+    .video-topics {
+      margin: 0 0 1.25rem;
+      padding: 14px 16px 14px 2.2rem;
+      background: var(--bg);
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .video-topics li { margin: 0.25rem 0; }
+    .video-player {
+      display: block;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #000;
+    }
+    .video-meta {
+      margin-top: 0.75rem;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+    .video-meta a { color: var(--primary); }
+    .text-hint {
+      margin-bottom: 1.25rem;
+      padding: 12px 14px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .text-hint a {
+      color: var(--primary);
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .text-hint a:hover { text-decoration: underline; }
     .loading { color: var(--text-secondary); }
     .err { color: #d70015; }
     .guide-body h1 {
@@ -123,6 +222,8 @@
     @media (max-width: 600px) {
       .card { padding: 20px 18px; }
       main { padding: 16px 12px 48px; }
+      .guide-tab { padding: 10px 8px; font-size: 14px; }
+      .guide-tab span { font-size: 11px; }
     }
   </style>
 </head>
@@ -132,27 +233,124 @@
     <p>安装、激活、下载与升级</p>
   </header>
   <main>
+    <p class="mode-notice">
+      本页提供 <strong>视频教程</strong> 与 <strong>文字说明</strong> 两种形式，<strong>内容相同</strong>，请按您的习惯选择其一即可。
+    </p>
     <article class="card">
-      <div id="content" class="guide-body">
-        <p class="loading">正在加载说明文档…</p>
+      <div class="guide-tabs" role="tablist" aria-label="说明形式">
+        <button type="button" class="guide-tab" role="tab" id="tab-video" aria-controls="panel-video" data-mode="video">
+          视频教程
+          <span>跟随演示操作</span>
+        </button>
+        <button type="button" class="guide-tab" role="tab" id="tab-text" aria-controls="panel-text" data-mode="text">
+          文字说明
+          <span>分步查阅细节</span>
+        </button>
       </div>
+
+      <section id="panel-video" class="guide-panel video-panel" role="tabpanel" aria-labelledby="tab-video" hidden>
+        <h2>视频教程</h2>
+        <p class="video-lead">
+          以下为小鹅通渠道的完整操作演示。若您更喜欢边看边做，可直接播放本视频；需要查具体步骤或复制链接时，请切换到「文字说明」。
+        </p>
+        <ul class="video-topics">
+          <li>解压安装包并在 Chrome / Edge 中加载扩展</li>
+          <li>首次激活与 Popup 状态说明</li>
+          <li>打开课程页、嗅探媒体资源</li>
+          <li>下载与合并 m3u8 / mp4 课程视频</li>
+        </ul>
+        <video
+          id="guide-video"
+          class="video-player"
+          controls
+          playsinline
+          preload="metadata"
+          src="/guide/xet-video-catch.mp4"
+        >
+          您的浏览器不支持视频播放，请
+          <a href="/guide/xet-video-catch.mp4">下载视频</a>
+          观看。
+        </video>
+        <p class="video-meta">
+          小鹅通扩展：嗅探与下载操作演示 ·
+          <a href="/guide/xet-video-catch.mp4" download>下载视频文件</a>
+        </p>
+      </section>
+
+      <section id="panel-text" class="guide-panel" role="tabpanel" aria-labelledby="tab-text" hidden>
+        <p class="text-hint">
+          以下为完整文字说明。若希望跟随屏幕操作，可切换到
+          <a href="#video" id="link-to-video">视频教程</a>。
+        </p>
+        <div id="text-content" class="guide-body">
+          <p class="loading">正在加载说明文档…</p>
+        </div>
+      </section>
     </article>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
   <script>
-    marked.setOptions({ gfm: true, breaks: false });
-    fetch("/guide/content.md", { cache: "no-store" })
-      .then(function (res) {
-        if (!res.ok) throw new Error("无法加载说明文档 (HTTP " + res.status + ")");
-        return res.text();
-      })
-      .then(function (md) {
-        document.getElementById("content").innerHTML = marked.parse(md);
-      })
-      .catch(function (err) {
-        document.getElementById("content").innerHTML =
-          '<p class="err">' + (err.message || "加载失败") + "</p>";
+    (function () {
+      var tabs = document.querySelectorAll(".guide-tab");
+      var panelVideo = document.getElementById("panel-video");
+      var panelText = document.getElementById("panel-text");
+      var guideVideo = document.getElementById("guide-video");
+      var linkToVideo = document.getElementById("link-to-video");
+
+      function setMode(mode) {
+        var isVideo = mode === "video";
+        document.body.classList.toggle("mode-video", isVideo);
+        tabs.forEach(function (tab) {
+          var active = tab.getAttribute("data-mode") === mode;
+          tab.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        panelVideo.hidden = !isVideo;
+        panelText.hidden = isVideo;
+        if (!isVideo && guideVideo && !guideVideo.paused) {
+          guideVideo.pause();
+        }
+        var hash = isVideo ? "#video" : "#text";
+        if (location.hash !== hash) {
+          history.replaceState(null, "", hash);
+        }
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          setMode(tab.getAttribute("data-mode"));
+        });
       });
+
+      if (linkToVideo) {
+        linkToVideo.addEventListener("click", function (e) {
+          e.preventDefault();
+          setMode("video");
+        });
+      }
+
+      var initial = location.hash === "#video" ? "video" : "text";
+      setMode(initial);
+
+      marked.setOptions({ gfm: true, breaks: false });
+      fetch("/guide/content.md", { cache: "no-store" })
+        .then(function (res) {
+          if (!res.ok) throw new Error("无法加载说明文档 (HTTP " + res.status + ")");
+          return res.text();
+        })
+        .then(function (md) {
+          document.getElementById("text-content").innerHTML = marked.parse(md);
+        })
+        .catch(function (err) {
+          document.getElementById("text-content").innerHTML =
+            '<p class="err">' + (err.message || "加载失败") + "</p>";
+        });
+
+      window.addEventListener("hashchange", function () {
+        if (location.hash === "#video" || location.hash === "#text") {
+          setMode(location.hash === "#video" ? "video" : "text");
+        }
+      });
+    })();
   </script>
 </body>
 </html>
