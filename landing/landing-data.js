@@ -6,9 +6,39 @@ window.LANDING_SITE = {
     price: "9.99",
     priceSuffix: "永久使用",
     wechatQr: "wechat-qr.png",
-    wechatNote: "加微信备注腾讯会议/小鹅通/飞书",
+    wechatNote: "加微信备注腾讯会议/小鹅通/飞书/全能",
   },
   channels: [
+    {
+      id: "quanneng",
+      page: "quanneng.html",
+      displayName: "全能视频下载",
+      channelNameZh: "全能",
+      zipName: "quanneng.zip",
+      latestVersion: "2.6.9",
+      theme: "quanneng",
+      heroTitle: "通用网页视频",
+      heroHighlight: "本地备份下载",
+      heroSubtitle:
+        "默认通用渠道：不限定站点白名单，在普通网页上即可嗅探与下载媒体（与开源猫抓默认行为一致）。适合多平台学习备份；请仅下载自有或已获授权内容。",
+      badge: "全能渠道 · 默认通用",
+      features: [
+        { title: "不限站点白名单", desc: "除 chrome:// 等浏览器特殊页外，普通 http(s) 页面均可嗅探，无需为每个平台单独装包。", icon: "shield" },
+        { title: "m3u8 一键合并", desc: "解析器默认在线 FFmpeg 转码，长课程也能稳定合并为可播放文件。", icon: "film" },
+        { title: "激活与更新", desc: "每设备激活一次即可；后续版本升级覆盖原目录，无需重新输入激活码。", icon: "key" },
+        { title: "本地优先", desc: "嗅探与下载在浏览器本机完成，不上传页面内容与视频文件。", icon: "lock" },
+      ],
+      steps: [
+        { title: "安装扩展", desc: "解压 quanneng 渠道包，在 chrome://extensions 加载已解压文件夹。" },
+        { title: "激活授权", desc: "首次打开说明页，输入服务商提供的全能渠道激活码。" },
+        { title: "播放并下载", desc: "打开任意课程/视频页播放，点击扩展图标合并下载。" },
+      ],
+      sites: [
+        "普通 http / https 网页（默认可用）",
+        "不限单一平台域名",
+        "chrome:// 等特殊页不可用（浏览器限制）",
+      ],
+    },
     {
       id: "xiaoetong",
       page: "xiaoetong.html",

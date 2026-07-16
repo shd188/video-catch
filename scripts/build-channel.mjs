@@ -36,6 +36,8 @@ const SKIP_DIRS = new Set([
     ".git",
     ".github",
     ".cursor",
+    "asset",
+    "server",
 ]);
 const SKIP_FILES = new Set(["private-key.pem"]);
 
@@ -69,7 +71,8 @@ function generateChannelInit(cfg) {
     const lockOptions = cfg.lockOptions ?? ["blockUrl", "blockUrlWhite"];
     const lock = {};
     if (typeof opts.blockUrlWhite === "boolean") lock.blockUrlWhite = opts.blockUrlWhite;
-    if (blockUrl.length) lock.blockUrl = blockUrl;
+    // 始终锁定 blockUrl（含空数组），全能渠道等依赖「黑名单空 = 全站可用」
+    if (Array.isArray(opts.blockUrl)) lock.blockUrl = blockUrl;
     for (const key of lockOptions) {
         if (key === "blockUrl" || key === "blockUrlWhite") continue;
         if (opts[key] !== undefined) lock[key] = opts[key];
@@ -102,7 +105,7 @@ function generateChannelInit(cfg) {
     if (typeof opts.blockUrlWhite === "boolean") {
         lines.push(`    G.OptionLists.blockUrlWhite = ${opts.blockUrlWhite};`);
     }
-    if (blockUrl.length) {
+    if (Array.isArray(opts.blockUrl)) {
         lines.push(`    G.OptionLists.blockUrl = ${JSON.stringify(blockUrl, null, 4).replaceAll("\n", "\n    ")};`);
     }
     for (const [key, val] of Object.entries(opts)) {

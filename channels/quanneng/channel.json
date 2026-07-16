@@ -1,0 +1,49 @@
+{
+  "id": "quanneng",
+  "channelNameZh": "全能",
+  "displayName": "全能视频下载",
+  "description": "基于 Cat-Catch (GPL-3.0)。默认通用渠道：在普通网页上均可嗅探媒体（与上游默认行为一致），chrome:// 等特殊页面除外。完整源码见仓库；付费项为适配与技术支持，见 docs/SERVICE.md。",
+  "repositoryUrl": "https://github.com/shd188/video-catch",
+  "license": {
+    "apiBase": "https://api.shentongxue.online",
+    "checkIntervalHours": 24,
+    "strict": false
+  },
+  "installPage": "channel-install.html",
+  "lockOptions": ["blockUrl", "blockUrlWhite", "enable", "deepSearch", "M3u8Ffmpeg", "M3u8Mp4", "iframeFFmpeg"],
+  "versionSuffix": "",
+  "manifest": {
+    "description": "全能视频下载：通用网页嗅探，仅限自有或已获授权的内容。",
+    "homepage_url": "https://github.com/shd188/video-catch"
+  },
+  "locales": {
+    "zh_CN": {
+      "catCatch": "全能视频下载",
+      "description": "全能视频下载：通用网页嗅探，仅限自有或已获授权的内容。",
+      "noData": "还没找到视频哦~",
+      "channelImportStripped": "配置已导入。以下渠道锁定项未写入：${keys}",
+      "popupChannelAllowed": "全能渠道：当前页面可嗅探",
+      "popupChannelBlocked": "当前页面不可嗅探（特殊页面或已被屏蔽）",
+      "popupChannelPatterns": "屏蔽规则",
+      "popupChannelHost": "当前域名"
+    },
+    "en": {
+      "catCatch": "Quanneng Media Helper",
+      "description": "Quanneng universal media sniffing on normal web pages. For your own or authorized content only.",
+      "channelImportStripped": "Imported. Channel-locked keys were not applied: ${keys}",
+      "popupChannelAllowed": "Quanneng channel: sniffing enabled on this page",
+      "popupChannelBlocked": "Sniffing disabled on this page (special URL or blocked)",
+      "popupChannelPatterns": "Block rules",
+      "popupChannelHost": "Host"
+    }
+  },
+  "optionLists": {
+    "blockUrlWhite": false,
+    "blockUrl": [],
+    "deepSearch": false,
+    "enable": true,
+    "M3u8Ffmpeg": true,
+    "M3u8Mp4": false,
+    "iframeFFmpeg": false
+  }
+}

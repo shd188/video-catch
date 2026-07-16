@@ -45,7 +45,7 @@ const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "0.0.0.0";
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "";
-const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "xiaoetong,tencentmeeting,feishu")
+const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "quanneng,xiaoetong,tencentmeeting,feishu")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);

@@ -16,7 +16,7 @@
 | 用户说明（公开） | https://api.shentongxue.online/guide/ |
 | 静态落地页 | 仓库 `landing/`（独立托管，不依赖 API） |
 
-**当前渠道**：`xiaoetong`（小鹅通）、`tencentmeeting`（腾讯会议）、`feishu`（飞书）
+**当前渠道**：`quanneng`（全能）、`xiaoetong`（小鹅通）、`tencentmeeting`（腾讯会议）、`feishu`（飞书）
 
 **服务器**（CentOS 7）：代码 `/opt/video-catch`，API 跑在 Docker 容器 `video-catch-api`，Nginx 反代 443 → 8787。
 
@@ -36,6 +36,7 @@ cd "/Users/heidi/code/Browser Extensions/video-catch"
 npm run build -- xiaoetong
 npm run build -- tencentmeeting
 npm run build -- feishu
+npm run build -- quanneng
 ```
 
 产物：`dist/<渠道ID>/`，在 Chrome 打开 `chrome://extensions` → 开发者模式 → 加载已解压的扩展程序。
@@ -52,7 +53,7 @@ npm run pack -- xiaoetong
 ### 2.3 一次构建并打包全部渠道
 
 ```bash
-for ch in xiaoetong tencentmeeting feishu; do
+for ch in quanneng xiaoetong tencentmeeting feishu; do
   npm run build -- "$ch" && npm run pack -- "$ch"
 done
 ls -lh releases/
@@ -211,7 +212,7 @@ docker restart video-catch-api
 编辑 `/opt/video-catch/server/.env`：
 
 ```
-ADMIN_CHANNELS=xiaoetong,tencentmeeting,feishu
+ADMIN_CHANNELS=quanneng,xiaoetong,tencentmeeting,feishu
 ```
 
 然后 `docker restart video-catch-api`。

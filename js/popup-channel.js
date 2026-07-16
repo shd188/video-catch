@@ -34,10 +34,12 @@
             isCurrentTabChannelAllowed(function (allowed, tabUrl) {
                 if (allowed) {
                     $bar.removeClass("channel-blocked").addClass("channel-allowed");
-                    $bar.find(".channel-detail").html(
-                        `${i18nChannel("popupChannelAllowed", "当前页面在白名单内，可嗅探")}`
-                        + (patterns.length ? `<br><span title="${escapeAttr(patterns.join("\n"))}">${i18nChannel("popupChannelPatterns", "规则")}：${patterns.length} 条</span>` : "")
-                    );
+                    const isUniversal = G.blockUrlWhite === false;
+                    const detail = isUniversal
+                        ? i18nChannel("popupChannelAllowed", "全能渠道：当前页面可嗅探")
+                        : `${i18nChannel("popupChannelAllowed", "当前页面在白名单内，可嗅探")}`
+                            + (patterns.length ? `<br><span title="${escapeAttr(patterns.join("\n"))}">${i18nChannel("popupChannelPatterns", "规则")}：${patterns.length} 条</span>` : "");
+                    $bar.find(".channel-detail").html(detail);
                 } else {
                     $bar.removeClass("channel-allowed").addClass("channel-blocked");
                     const host = tabUrl ? tryHost(tabUrl) : "—";

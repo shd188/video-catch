@@ -6,6 +6,8 @@
 |------|------|
 | 小鹅通 | `channels/xiaoetong/signing/extension-key.b64` |
 | 腾讯会议 | `channels/tencentmeeting/signing/extension-key.b64` |
+| 飞书 | `channels/feishu/signing/extension-key.b64` |
+| 全能 | `channels/quanneng/signing/extension-key.b64` |
 
 `npm run build -- <channel-id>` 会优先读取 `channels/<channel-id>/signing/extension-key.b64`；仅当该文件不存在时，才回退读本目录的 `extension-key.b64`（兼容旧构建）。
 

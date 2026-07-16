@@ -12,7 +12,7 @@
 | 能力 | 说明 |
 |------|------|
 | 资源嗅探 | 继承猫抓核心：列出当前页面媒体资源，支持 m3u8/mp4 等常见格式 |
-| 渠道白名单 | 仅对 `channels/<id>/` 中配置的域名启用扩展能力，降低误用风险 |
+| 渠道白名单 / 全能通用 | 白名单渠道仅在配置域名启用；`quanneng`（全能）为默认通用渠道，普通网页可用 |
 | 渠道定制 | 扩展名、图标、安装说明、Popup/设置页 UI（见 [docs/UI-CUSTOMIZATION.md](docs/UI-CUSTOMIZATION.md)） |
 | 激活与更新 | 可选联网校验激活码、检查新版本（`server/` 专有后台，不随 GPL 扩展强制分发） |
 
@@ -22,7 +22,8 @@
 
 | 渠道 ID | 显示名 | 说明 |
 |---------|--------|------|
-| `xiaoetong` | 小鹅通 | 主试点渠道，见 [channels/xiaoetong/README.md](channels/xiaoetong/README.md) |
+| `quanneng` | 全能 | **默认通用**：不限站点白名单，见 [channels/quanneng/README.md](channels/quanneng/README.md) |
+| `xiaoetong` | 小鹅通 | 主试点白名单渠道，见 [channels/xiaoetong/README.md](channels/xiaoetong/README.md) |
 | `tencentmeeting` | 腾讯会议 | 会议回放白名单，见 [channels/tencentmeeting/](channels/tencentmeeting/) |
 | `feishu` | 飞书 | 飞书 Web 视频白名单，见 [channels/feishu/](channels/feishu/) |
 
@@ -45,6 +46,7 @@ npm run build -- xiaoetong
 ```bash
 npm run build -- tencentmeeting
 npm run build -- feishu
+npm run build -- quanneng
 ```
 
 详细步骤见 [docs/BUILD.md](docs/BUILD.md)。

@@ -9,6 +9,8 @@
 | `index.html` | 渠道汇总入口 |
 | `xiaoetong.html` | 小鹅通落地页 |
 | `tencentmeeting.html` | 腾讯会议落地页 |
+| `feishu.html` | 飞书落地页 |
+| `quanneng.html` | 全能落地页 |
 | `landing-data.js` | 文案与链接（改 `guideUrl` 等在此） |
 | `landing.css` / `landing.js` | 样式与渲染 |
 | `icons/` | 渠道图标 |

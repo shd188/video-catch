@@ -44,6 +44,16 @@
     linear-gradient(180deg, #f0f4ff 0%, #f8fafc 42%, #ffffff 100%);
 }
 
+[data-theme="quanneng"] {
+  --lp-primary: #0d9488;
+  --lp-primary-dark: #0f766e;
+  --lp-accent: #f59e0b;
+  --lp-soft: rgba(13, 148, 136, 0.1);
+  --lp-gradient: radial-gradient(ellipse 80% 60% at 18% -10%, rgba(13, 148, 136, 0.28), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 88% 5%, rgba(245, 158, 11, 0.14), transparent 50%),
+    linear-gradient(180deg, #f0fdfa 0%, #f8fafc 42%, #ffffff 100%);
+}
+
 [data-theme="hub"] {
   --lp-primary: #0071e3;
   --lp-primary-dark: #005bb5;

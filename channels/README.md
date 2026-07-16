@@ -37,14 +37,16 @@ channels/_template/
 npm run build -- <channel-id>
 ```
 
+## 白名单 / 全能语义
+
+- **白名单渠道**：`blockUrlWhite: true` + `blockUrl` 列表 — 仅当标签页 URL 匹配时启用嗅探（与 Cat-Catch「屏蔽网址 + 白名单模式」一致）。
+- **全能渠道**（`quanneng`）：`blockUrlWhite: false` + 空 `blockUrl` — 普通网页默认可嗅探，与上游默认行为一致；`chrome://` 等特殊页仍不可用。
+
 ## 新增渠道
 
-1. 复制 `xiaoetong/` 为模板。  
-2. 编辑 `channel.json` 中的 `optionLists.blockUrl` 与 `blockUrlWhite: true`。  
+1. 复制 `xiaoetong/`（白名单）或 `quanneng/`（通用）为模板。  
+2. 编辑 `channel.json`（白名单改 `blockUrl`；通用保持 `blockUrlWhite: false` 与空列表）。  
 3. 编写 `README.md` 说明适用站点与法律依据（用户自有/已授权内容）。  
-4. 构建并在目标站点回归测试。  
-5. 打 Git tag：`channel-id-vX.Y.Z`。  
-
-## 白名单语义
-
-与 Cat-Catch 设置「屏蔽网址 + 白名单模式」一致：仅当标签页 URL 匹配 `blockUrl` 列表时启用嗅探。
+4. 生成独立 `signing/extension-key.b64`。  
+5. 构建并在目标站点回归测试。  
+6. 打 Git tag：`channel-id-vX.Y.Z`。
