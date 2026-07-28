@@ -48,7 +48,7 @@ npm run build -- quanneng
 npm run pack -- xiaoetong
 ```
 
-生成：`releases/<渠道ID>-<版本号>.zip`（版本号来自 `manifest.json`，当前基准 **2.6.9**）。  
+生成：`releases/<渠道ID>-<版本号>.zip`（版本号来自 `manifest.json`，当前基准 **2.6.10**）。  
 解压后文件夹名与渠道 ID 一致（如 `xiaoetong/`）。
 
 ### 2.3 一次构建并打包全部渠道
