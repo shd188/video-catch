@@ -14,6 +14,7 @@
 | API 域名 | https://api.shentongxue.online |
 | 管理后台 | https://api.shentongxue.online/admin/ |
 | 用户说明（公开） | https://api.shentongxue.online/guide/ |
+| Guide 视频（OSS） | 见 [GUIDE-VIDEO-OSS.md](GUIDE-VIDEO-OSS.md) |
 | 静态落地页 | 仓库 `landing/`（独立托管，不依赖 API） |
 
 **当前渠道**：`quanneng`（全能）、`xiaoetong`（小鹅通）、`tencentmeeting`（腾讯会议）、`feishu`（飞书）
@@ -186,6 +187,36 @@ docker exec video-catch-api npm run license:create -- \
 ```
 
 （具体参数见 `server/src/cli.js`）
+
+### 5.3 兑换码（经 sph-dl 写入 KV，与激活码并存）
+
+后台页签：**生成兑换码** / **兑换码查询**。
+
+生成时调用 sph-dl 的 `POST /api/admin/codes` 写入 Cloudflare KV，本地 SQLite 仅镜像便于查询。
+
+在 `server/.env` 配置：
+
+```bash
+SPH_DL_API_BASE=https://你的-sph-dl域名
+SPH_DL_ADMIN_TOKEN=与_sph-dl_的_ADMIN_TOKEN_相同
+```
+
+- 套餐：`1` / `3` / `5` / `10` 次
+- 码格式：`SPH5-A3F9K2B1`（与 sph-dl 一致）
+- 「兑换码查询」点刷新会向 sph-dl 同步当前页剩余次数
+
+```bash
+# 生成 10 张「5 次」兑换码（走 sph-dl）
+docker exec video-catch-api npm run redeem:create -- --pack 5 --count 10 --note 2026-07-批次
+```
+
+API（需管理登录 `X-Admin-Key`）：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/admin/redeem-codes/bulk` | `{ pack, count, note? }` → 调 sph-dl 生成 |
+| GET | `/api/admin/redeem-codes` | 列表（`sync=1` 时同步剩余次数） |
+| GET | `/api/admin/redeem-codes/stats` | 本地镜像库存统计 |
 
 ---
 

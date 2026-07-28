@@ -15,6 +15,16 @@ import {
   listLicenses,
   countLicenses,
 } from "./licenses.js";
+import {
+  REDEEM_PACKS,
+  createRedeemCode,
+  createRedeemCodesBulk,
+  redeemCodeStats,
+  listRedeemCodes,
+  countRedeemCodes,
+  syncRedeemRemaining,
+} from "./redeem-codes.js";
+import { getSphDlConfig } from "./sph-dl-client.js";
 import { isVersionNewer } from "./version.js";
 import {
   getReleaseFilePath,
@@ -337,6 +347,76 @@ app.post("/api/admin/licenses/bulk", adminAuth, (req, res) => {
       expiresAt: req.body.expires_at,
       note: req.body.note,
       singleUse: req.body.single_use !== false,
+    });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    res.status(400).json({ ok: false, message: e.message });
+  }
+});
+
+app.get("/api/admin/redeem-codes/stats", adminAuth, (req, res) => {
+  const pack = req.query.pack != null && req.query.pack !== "" ? Number(req.query.pack) : null;
+  const sph = getSphDlConfig();
+  res.json({
+    ok: true,
+    stats: redeemCodeStats({ pack }),
+    packs: REDEEM_PACKS,
+    sph_dl_configured: !!(sph.apiBase && sph.adminToken),
+  });
+});
+
+app.get("/api/admin/redeem-codes", adminAuth, async (req, res) => {
+  try {
+    const pack = req.query.pack != null && req.query.pack !== "" ? Number(req.query.pack) : null;
+    const status = req.query.status ? String(req.query.status).trim() : "";
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(Math.max(parseInt(req.query.page_size, 10) || 50, 1), 200);
+    const offset = (page - 1) * pageSize;
+    const sync = req.query.sync === "1" || req.query.sync === "true";
+    let codes = listRedeemCodes({ pack, status, limit: pageSize, offset });
+    let syncResult = null;
+    if (sync && codes.length) {
+      syncResult = await syncRedeemRemaining(codes.map((c) => c.code));
+      codes = listRedeemCodes({ pack, status, limit: pageSize, offset });
+    }
+    const total = countRedeemCodes({ pack, status });
+    const sph = getSphDlConfig();
+    res.json({
+      ok: true,
+      packs: REDEEM_PACKS,
+      codes,
+      sync: syncResult,
+      sph_dl_configured: !!(sph.apiBase && sph.adminToken),
+      pagination: {
+        page,
+        page_size: pageSize,
+        total,
+        total_pages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, message: e.message });
+  }
+});
+
+app.post("/api/admin/redeem-codes", adminAuth, async (req, res) => {
+  try {
+    const row = await createRedeemCode({
+      pack: req.body.pack,
+      note: req.body.note,
+    });
+    res.json({ ok: true, code: row });
+  } catch (e) {
+    res.status(400).json({ ok: false, message: e.message });
+  }
+});
+
+app.post("/api/admin/redeem-codes/bulk", adminAuth, async (req, res) => {
+  try {
+    const result = await createRedeemCodesBulk({
+      pack: req.body.pack,
+      count: req.body.count ?? 10,
+      note: req.body.note,
     });
     res.json({ ok: true, ...result });
   } catch (e) {

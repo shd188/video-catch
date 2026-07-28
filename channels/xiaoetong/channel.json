@@ -84,6 +84,11 @@
         "url": "https://study.xiaoe-tech.com/*",
         "state": true,
         "comment": "小鹅通学员版统一入口（study.xiaoe-tech.com）"
+      },
+      {
+        "url": "https://*.h5.xet.pomoho.com/*",
+        "state": true,
+        "comment": "小鹅通学员版统一入口（*.h5.xet.pomoho.com）"
       }
     ],
     "deepSearch": false,

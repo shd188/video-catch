@@ -139,6 +139,48 @@
       color: var(--text-secondary);
       line-height: 1.5;
     }
+    .video-shell {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+    }
+    .video-player {
+      display: block;
+      width: 100%;
+      background: #000;
+      min-height: 240px;
+    }
+    .video-shell .video-play-trigger {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 0;
+      padding: 24px;
+      border: none;
+      background: rgba(0, 0, 0, 0.72);
+      color: #fff;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .video-shell .video-play-trigger span {
+      font-size: 13px;
+      font-weight: 400;
+      opacity: 0.85;
+    }
+    .video-shell.is-ready .video-play-trigger { display: none; }
+    .video-shell.is-loading .video-play-trigger {
+      cursor: wait;
+      pointer-events: none;
+    }
     .bilibili-shell {
       position: relative;
       width: 100%;
@@ -154,6 +196,18 @@
       width: 100%;
       height: 100%;
       border: none;
+    }
+    .video-wrap[hidden],
+    .bilibili-wrap[hidden],
+    .video-empty[hidden] { display: none; }
+    .video-empty {
+      margin: 0;
+      padding: 28px 20px;
+      text-align: center;
+      background: var(--bg);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
     }
     .video-meta {
       margin-top: 0.75rem;
@@ -277,12 +331,31 @@
           <li>打开课程页、嗅探媒体资源</li>
           <li>下载与合并 m3u8 / mp4 课程视频</li>
         </ul>
-        <p class="video-speed-tip">
-          视频通过<strong>哔哩哔哩</strong>播放，加载更快。需要查具体步骤时可切换到「文字说明」，内容相同。
+        <p class="video-speed-tip" id="video-speed-tip">
+          视频通过<strong>阿里云 CDN</strong>加速播放。需要查具体步骤时可切换到「文字说明」，内容相同。
         </p>
-        <div class="bilibili-shell">
-          <iframe id="bilibili-player" title="B站视频教程" allowfullscreen></iframe>
+
+        <div class="video-wrap" id="video-wrap" hidden>
+          <div class="video-shell" id="video-shell">
+            <button type="button" class="video-play-trigger" id="video-play-trigger">
+              点击加载并播放
+              <span>经 CDN 加速，首次缓冲后即可观看</span>
+            </button>
+            <video id="guide-video" class="video-player" controls playsinline preload="none"></video>
+          </div>
         </div>
+
+        <div class="bilibili-wrap" id="bilibili-wrap" hidden>
+          <div class="bilibili-shell">
+            <iframe id="bilibili-player" title="B站视频教程" allowfullscreen></iframe>
+          </div>
+        </div>
+
+        <p class="video-empty" id="video-empty" hidden>
+          视频源暂未配置。请先按文档将压缩片上传到阿里云 OSS/CDN，并在
+          <code>video-config.js</code> 填写 <code>cdnUrl</code>；或暂时使用「文字说明」。
+        </p>
+
         <p class="video-meta" id="video-meta"></p>
       </section>
 
@@ -305,9 +378,26 @@
       var tabs = document.querySelectorAll(".guide-tab");
       var panelVideo = document.getElementById("panel-video");
       var panelText = document.getElementById("panel-text");
+      var videoWrap = document.getElementById("video-wrap");
+      var bilibiliWrap = document.getElementById("bilibili-wrap");
+      var videoEmpty = document.getElementById("video-empty");
+      var videoShell = document.getElementById("video-shell");
+      var guideVideo = document.getElementById("guide-video");
+      var videoPlayTrigger = document.getElementById("video-play-trigger");
       var bilibiliPlayer = document.getElementById("bilibili-player");
       var videoMeta = document.getElementById("video-meta");
+      var videoSpeedTip = document.getElementById("video-speed-tip");
       var linkToVideo = document.getElementById("link-to-video");
+      var mp4Loaded = false;
+      var activeMode = null;
+
+      function cdnUrl() {
+        return String(cfg.cdnUrl || "").trim();
+      }
+
+      function bilibiliBvid() {
+        return String(cfg.bilibiliBvid || "").trim();
+      }
 
       function bilibiliEmbedUrl(bvid) {
         var id = String(bvid || "").trim();
@@ -322,19 +412,110 @@
         return "https://www.bilibili.com/video/" + id;
       }
 
-      function initBilibili() {
-        var bvid = cfg.bilibiliBvid;
-        var embed = bilibiliEmbedUrl(bvid);
-        var page = bilibiliPageUrl(bvid);
-        if (embed && bilibiliPlayer) {
-          bilibiliPlayer.src = embed;
+      function resetMp4() {
+        mp4Loaded = false;
+        if (!videoShell || !guideVideo) return;
+        videoShell.classList.remove("is-ready", "is-loading");
+        guideVideo.pause();
+        guideVideo.removeAttribute("src");
+        guideVideo.load();
+      }
+
+      function updateMeta(mode) {
+        if (!videoMeta) return;
+        var title = cfg.title || "操作演示";
+        if (mode === "cdn") {
+          var url = cdnUrl();
+          videoMeta.innerHTML = title + (url ? ' · <a href="' + url + '" download>下载视频文件</a>' : "");
+          return;
         }
-        if (videoMeta) {
-          var title = cfg.title || "操作演示";
+        if (mode === "bilibili") {
+          var page = bilibiliPageUrl(bilibiliBvid());
           videoMeta.innerHTML = page
             ? title + ' · <a href="' + page + '" target="_blank" rel="noopener">在哔哩哔哩打开</a>'
             : title;
+          return;
         }
+        videoMeta.textContent = title;
+      }
+
+      function showVideoSource() {
+        var cdn = cdnUrl();
+        var bvid = bilibiliBvid();
+
+        videoWrap.hidden = true;
+        bilibiliWrap.hidden = true;
+        videoEmpty.hidden = true;
+        if (bilibiliPlayer) bilibiliPlayer.removeAttribute("src");
+        resetMp4();
+
+        if (cdn) {
+          activeMode = "cdn";
+          videoWrap.hidden = false;
+          if (videoSpeedTip) {
+            videoSpeedTip.innerHTML =
+              "视频通过<strong>阿里云 CDN</strong>加速播放。需要查具体步骤时可切换到「文字说明」，内容相同。";
+          }
+          updateMeta("cdn");
+          return;
+        }
+
+        if (bvid) {
+          activeMode = "bilibili";
+          bilibiliWrap.hidden = false;
+          if (bilibiliPlayer) bilibiliPlayer.src = bilibiliEmbedUrl(bvid);
+          if (videoSpeedTip) {
+            videoSpeedTip.innerHTML =
+              "视频通过<strong>哔哩哔哩</strong>播放。需要查具体步骤时可切换到「文字说明」，内容相同。";
+          }
+          updateMeta("bilibili");
+          return;
+        }
+
+        activeMode = null;
+        videoEmpty.hidden = false;
+        if (videoSpeedTip) {
+          videoSpeedTip.innerHTML =
+            "视频源尚未配置。请上传到阿里云 OSS/CDN 后填写 <code>cdnUrl</code>，或暂时使用「文字说明」。";
+        }
+        updateMeta(null);
+      }
+
+      function loadAndPlayCdn() {
+        var url = cdnUrl();
+        if (!url || !guideVideo) return;
+        if (mp4Loaded && guideVideo.src) {
+          guideVideo.play().catch(function () {});
+          return;
+        }
+        videoShell.classList.add("is-loading");
+        guideVideo.src = url;
+        guideVideo.load();
+        guideVideo.addEventListener(
+          "loadeddata",
+          function () {
+            videoShell.classList.remove("is-loading");
+            videoShell.classList.add("is-ready");
+            mp4Loaded = true;
+            guideVideo.play().catch(function () {});
+          },
+          { once: true }
+        );
+        guideVideo.addEventListener(
+          "error",
+          function () {
+            videoShell.classList.remove("is-loading");
+            if (videoPlayTrigger) {
+              videoPlayTrigger.querySelector("span").textContent =
+                "加载失败，请检查 CDN 链接或稍后重试；也可改用文字说明";
+            }
+          },
+          { once: true }
+        );
+      }
+
+      if (videoPlayTrigger) {
+        videoPlayTrigger.addEventListener("click", loadAndPlayCdn);
       }
 
       function setMode(mode) {
@@ -347,9 +528,10 @@
         panelVideo.hidden = !isVideo;
         panelText.hidden = isVideo;
         if (isVideo) {
-          initBilibili();
-        } else if (bilibiliPlayer) {
-          bilibiliPlayer.removeAttribute("src");
+          showVideoSource();
+        } else {
+          if (guideVideo && !guideVideo.paused) guideVideo.pause();
+          if (bilibiliPlayer) bilibiliPlayer.removeAttribute("src");
         }
         var hash = isVideo ? "#video" : "#text";
         if (location.hash !== hash) {

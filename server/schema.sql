@@ -37,5 +37,19 @@ CREATE TABLE IF NOT EXISTS admin_settings (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 兑换码（按次数套餐，与激活码并存；来源：sph-dl credits 模型）
+CREATE TABLE IF NOT EXISTS redeem_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT NOT NULL UNIQUE,
+  pack INTEGER NOT NULL,
+  total INTEGER NOT NULL,
+  remaining INTEGER NOT NULL,
+  note TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_activations_license ON activations(license_id);
 CREATE INDEX IF NOT EXISTS idx_releases_channel ON releases(channel_id);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_pack ON redeem_codes(pack);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_remaining ON redeem_codes(remaining);

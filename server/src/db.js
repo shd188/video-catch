@@ -33,6 +33,20 @@ function migrate(database) {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS redeem_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      pack INTEGER NOT NULL,
+      total INTEGER NOT NULL,
+      remaining INTEGER NOT NULL,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_redeem_codes_pack ON redeem_codes(pack);
+    CREATE INDEX IF NOT EXISTS idx_redeem_codes_remaining ON redeem_codes(remaining);
+  `);
 }
 
 export function getReleasesDir() {

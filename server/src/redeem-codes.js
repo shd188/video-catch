@@ -1,0 +1,221 @@
+import { getDb } from "./db.js";
+import { sphDlCreateCodes, sphDlLookupCode, getSphDlConfig } from "./sph-dl-client.js";
+
+/** 兑换码套餐：可解析/使用次数（与 sph-dl 一致） */
+export const REDEEM_PACKS = [1, 3, 5, 10];
+
+export function normalizeRedeemCode(input) {
+  return String(input || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, "");
+}
+
+export function isValidRedeemPack(pack) {
+  return REDEEM_PACKS.includes(Number(pack));
+}
+
+export function findRedeemByCode(code) {
+  const key = normalizeRedeemCode(code);
+  if (!key) return null;
+  return getDb().prepare(`SELECT * FROM redeem_codes WHERE code = ?`).get(key);
+}
+
+function mapRedeemRow(row) {
+  if (!row) return null;
+  const remaining = Number(row.remaining);
+  const total = Number(row.total);
+  return {
+    ...row,
+    pack: Number(row.pack),
+    total,
+    remaining,
+    used: Math.max(0, total - remaining),
+    is_exhausted: remaining <= 0,
+    is_unused: remaining === total,
+  };
+}
+
+/** 将 sph-dl 返回的码写入本地镜像（便于后台查询） */
+function mirrorRedeemCodes({ pack, codes, details, note }) {
+  const p = Number(pack);
+  const batchNote = note || null;
+  const insert = getDb().prepare(
+    `INSERT INTO redeem_codes (code, pack, total, remaining, note)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(code) DO UPDATE SET
+       remaining = excluded.remaining,
+       updated_at = datetime('now'),
+       note = COALESCE(redeem_codes.note, excluded.note)`
+  );
+  const detailByCode = new Map(
+    (details || []).map((d) => [normalizeRedeemCode(d.code), d])
+  );
+  const run = getDb().transaction((list) => {
+    for (const raw of list) {
+      const code = normalizeRedeemCode(raw);
+      const d = detailByCode.get(code);
+      const total = Number(d?.total ?? p);
+      const remaining = Number(d?.remaining ?? total);
+      insert.run(code, p, total, remaining, batchNote);
+    }
+  });
+  run(codes);
+}
+
+/**
+ * 经 sph-dl 生成兑换码（写入 KV），并镜像到本地库
+ */
+export async function createRedeemCode({ pack, note } = {}) {
+  const result = await createRedeemCodesBulk({ pack, count: 1, note });
+  const code = result.codes[0];
+  return mapRedeemRow(findRedeemByCode(code));
+}
+
+/**
+ * 批量：先调 sph-dl POST /api/admin/codes，再镜像本地
+ */
+export async function createRedeemCodesBulk({ pack, count, note } = {}) {
+  const p = Number(pack);
+  if (!isValidRedeemPack(p)) {
+    throw new Error(`套餐无效，仅支持：${REDEEM_PACKS.join("/")}`);
+  }
+  const n = Math.min(Math.max(parseInt(count, 10) || 0, 1), 2000);
+  const batchNote = note || `redeem-${p}-${new Date().toISOString().slice(0, 10)}`;
+
+  const remote = await sphDlCreateCodes(p, n);
+  mirrorRedeemCodes({
+    pack: p,
+    codes: remote.codes,
+    details: remote.details,
+    note: batchNote,
+  });
+
+  const csv = ["code,pack,total,remaining,note"]
+    .concat(
+      remote.codes.map((c) => {
+        const row = findRedeemByCode(c);
+        const total = row?.total ?? p;
+        const remaining = row?.remaining ?? p;
+        return `${c},${p},${total},${remaining},${(batchNote || "").replace(/,/g, " ")}`;
+      })
+    )
+    .join("\n");
+
+  return {
+    pack: p,
+    count: remote.codes.length,
+    note: batchNote,
+    codes: remote.codes,
+    csv,
+    source: "sph-dl",
+  };
+}
+
+/** 从 sph-dl 同步一批码的剩余次数到本地镜像 */
+export async function syncRedeemRemaining(codes) {
+  const { apiBase, adminToken } = getSphDlConfig();
+  if (!apiBase || !adminToken || !codes?.length) {
+    return { synced: 0, skipped: true };
+  }
+  const update = getDb().prepare(
+    `UPDATE redeem_codes
+     SET remaining = ?, updated_at = datetime('now')
+     WHERE code = ?`
+  );
+  let synced = 0;
+  for (const raw of codes) {
+    const code = normalizeRedeemCode(raw);
+    if (!code) continue;
+    try {
+      const info = await sphDlLookupCode(code);
+      if (info?.ok && info.remaining != null) {
+        update.run(Number(info.remaining), code);
+        synced += 1;
+      }
+    } catch {
+      /* 单条失败跳过 */
+    }
+  }
+  return { synced, skipped: false };
+}
+
+export function redeemCodeStats({ pack } = {}) {
+  const packNum = pack != null && pack !== "" ? Number(pack) : null;
+  const row =
+    packNum != null && isValidRedeemPack(packNum)
+      ? getDb()
+          .prepare(
+            `SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN remaining = total THEN 1 ELSE 0 END) AS unused,
+              SUM(CASE WHEN remaining > 0 AND remaining < total THEN 1 ELSE 0 END) AS partial,
+              SUM(CASE WHEN remaining = 0 THEN 1 ELSE 0 END) AS exhausted,
+              COALESCE(SUM(remaining), 0) AS remaining_credits
+             FROM redeem_codes WHERE pack = ?`
+          )
+          .get(packNum)
+      : getDb()
+          .prepare(
+            `SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN remaining = total THEN 1 ELSE 0 END) AS unused,
+              SUM(CASE WHEN remaining > 0 AND remaining < total THEN 1 ELSE 0 END) AS partial,
+              SUM(CASE WHEN remaining = 0 THEN 1 ELSE 0 END) AS exhausted,
+              COALESCE(SUM(remaining), 0) AS remaining_credits
+             FROM redeem_codes`
+          )
+          .get();
+  return {
+    pack: packNum != null && isValidRedeemPack(packNum) ? packNum : null,
+    packs: REDEEM_PACKS,
+    total: Number(row?.total ?? 0),
+    unused: Number(row?.unused ?? 0),
+    partial: Number(row?.partial ?? 0),
+    exhausted: Number(row?.exhausted ?? 0),
+    remaining_credits: Number(row?.remaining_credits ?? 0),
+  };
+}
+
+function statusClause(status) {
+  if (status === "unused") return "AND remaining = total";
+  if (status === "partial") return "AND remaining > 0 AND remaining < total";
+  if (status === "exhausted") return "AND remaining = 0";
+  if (status === "available") return "AND remaining > 0";
+  return "";
+}
+
+export function countRedeemCodes({ pack, status } = {}) {
+  const packNum = pack != null && pack !== "" ? Number(pack) : null;
+  const st = statusClause(status);
+  if (packNum != null && isValidRedeemPack(packNum)) {
+    return Number(
+      getDb()
+        .prepare(`SELECT COUNT(*) AS c FROM redeem_codes WHERE pack = ? ${st}`)
+        .get(packNum)?.c ?? 0
+    );
+  }
+  return Number(getDb().prepare(`SELECT COUNT(*) AS c FROM redeem_codes WHERE 1=1 ${st}`).get()?.c ?? 0);
+}
+
+export function listRedeemCodes({ pack, status, limit = 50, offset = 0 } = {}) {
+  const packNum = pack != null && pack !== "" ? Number(pack) : null;
+  const st = statusClause(status);
+  const lim = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
+  const off = Math.max(parseInt(offset, 10) || 0, 0);
+  const rows =
+    packNum != null && isValidRedeemPack(packNum)
+      ? getDb()
+          .prepare(
+            `SELECT * FROM redeem_codes WHERE pack = ? ${st}
+             ORDER BY id DESC LIMIT ? OFFSET ?`
+          )
+          .all(packNum, lim, off)
+      : getDb()
+          .prepare(
+            `SELECT * FROM redeem_codes WHERE 1=1 ${st}
+             ORDER BY id DESC LIMIT ? OFFSET ?`
+          )
+          .all(lim, off);
+  return rows.map(mapRedeemRow);
+}
