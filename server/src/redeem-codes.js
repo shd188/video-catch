@@ -2,7 +2,7 @@ import { getDb } from "./db.js";
 import { sphDlCreateCodes, sphDlLookupCode, getSphDlConfig } from "./sph-dl-client.js";
 
 /** 兑换码套餐：可解析/使用次数（与 sph-dl 一致） */
-export const REDEEM_PACKS = [1, 3, 5, 10];
+export const REDEEM_PACKS = [1, 5, 10, 30, 50, 100];
 
 export function normalizeRedeemCode(input) {
   return String(input || "")

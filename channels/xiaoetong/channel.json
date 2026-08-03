@@ -51,6 +51,11 @@
         "comment": "H5 店铺（xiaoe-tech 域名，与 h5.xiaoeknow 路径规则相同）"
       },
       {
+        "url": "https://*.h5.xiaoecloud.com/*",
+        "state": true,
+        "comment": "H5 店铺（xiaoecloud 域名，与 h5.xiaoeknow 路径规则相同）"
+      },
+      {
         "url": "https://*.xiaoeknow.com/*",
         "state": true,
         "comment": "xiaoeknow 主域及子域（含静态资源、接口）"

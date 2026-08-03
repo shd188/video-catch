@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="远程安装服务前期准备说明：整理桌面、安装百度网盘与 ToDesk、预约安装时间" />
+  <title>远程安装服务 · 前期准备</title>
+  <style>
+    :root {
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --border: rgba(0, 0, 0, 0.08);
+      --primary: #0071e3;
+      --primary-soft: rgba(0, 113, 227, 0.08);
+      --ok: #248a3d;
+      --ok-soft: rgba(36, 138, 61, 0.08);
+      --warn: #b54708;
+      --warn-soft: rgba(181, 71, 8, 0.08);
+      --radius: 14px;
+      --max: 720px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: saturate(180%) blur(12px);
+    }
+    header .inner {
+      max-width: var(--max);
+      margin: 0 auto;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    main {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 20px 72px;
+    }
+    .intro {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    }
+    .intro h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+    .intro p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+    .callout {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--primary-soft);
+      border: 1px solid rgba(0, 113, 227, 0.14);
+      font-size: 14px;
+      color: var(--text);
+    }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+      opacity: 0;
+      transform: translateY(10px);
+      animation: rise 0.55s ease forwards;
+    }
+    .section:nth-child(2) { animation-delay: 0.05s; }
+    .section:nth-child(3) { animation-delay: 0.12s; }
+    .section:nth-child(4) { animation-delay: 0.18s; }
+    .section:nth-child(5) { animation-delay: 0.24s; }
+    @keyframes rise {
+      to { opacity: 1; transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .section { animation: none; opacity: 1; transform: none; }
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .badge {
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+    .section h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    .section .hint {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    ol.checklist {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+    ol.checklist li {
+      position: relative;
+      padding: 12px 12px 12px 44px;
+      border-top: 1px solid var(--border);
+      font-size: 15px;
+    }
+    ol.checklist li:first-child { border-top: none; }
+    ol.checklist li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 8px;
+      top: 14px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+    ol.checklist strong {
+      font-weight: 650;
+      color: var(--text);
+    }
+    .privacy {
+      background: var(--warn-soft);
+      border-color: rgba(181, 71, 8, 0.18);
+    }
+    .privacy .badge {
+      color: var(--warn);
+      background: rgba(181, 71, 8, 0.1);
+    }
+    .done {
+      background: var(--ok-soft);
+      border-color: rgba(36, 138, 61, 0.16);
+    }
+    .done .badge {
+      color: var(--ok);
+      background: rgba(36, 138, 61, 0.12);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 11px 16px;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .btn:hover { background: #0077ed; transform: translateY(-1px); }
+    .btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 3px;
+    }
+    .note {
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    footer {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="inner">
+      <h1>远程安装服务 · 前期准备</h1>
+      <p>预约前请完成下列事项，安装会更顺利</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro section">
+      <h2>远程安装是什么？</h2>
+      <p>
+        购买本服务后，我会通过远程软件短暂协助您完成工具安装。
+        过程中您可全程观看屏幕操作，不会单独留下后门或陌生软件。
+      </p>
+      <div class="callout">
+        为保护隐私并保证安装顺利，请在与客服约定时间前完成下方准备。
+      </div>
+    </section>
+
+    <section class="section privacy">
+      <div class="section-head">
+        <div class="badge">1</div>
+        <div>
+          <h3>整理电脑与桌面</h3>
+          <p class="hint">减少隐私暴露，方便快速找到安装文件</p>
+        </div>
+      </div>
+      <ol class="checklist">
+        <li><strong>整理桌面</strong>：把与本次安装无关的文件先收纳好。</li>
+        <li><strong>收起隐私内容</strong>：账号、合同、证件、聊天记录等，请移到 D / E / F 盘或其它非桌面文件夹。</li>
+        <li><strong>准备安装文件</strong>：将本次需要的工具安装包、说明文件等统一放在<strong>桌面</strong>上。</li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="badge">2</div>
+        <div>
+          <h3>安装并登录必备软件</h3>
+          <p class="hint">远程前请确认软件可用</p>
+        </div>
+      </div>
+      <ol class="checklist">
+        <li>
+          <strong>百度网盘</strong>：已安装，并保持<strong>已登录</strong>状态（用于接收或核对安装文件）。
+        </li>
+        <li>
+          <strong>ToDesk 远程桌面</strong>：请从官网下载安装（用户量大、连接稳定）。
+          <div>
+            <a class="btn" href="https://www.todesk.com/download.html" target="_blank" rel="noopener noreferrer">
+              打开 ToDesk 官方下载页
+            </a>
+          </div>
+          <p class="note">请勿使用来路不明的安装包。</p>
+        </li>
+        <li>
+          <strong>放到桌面</strong>：把「百度网盘」和「ToDesk」快捷方式放到桌面，便于远程时立即打开。
+        </li>
+      </ol>
+    </section>
+
+    <section class="section done">
+      <div class="section-head">
+        <div class="badge">✓</div>
+        <div>
+          <h3>预约安装时间</h3>
+          <p class="hint">准备完成后联系客服即可</p>
+        </div>
+      </div>
+      <ol class="checklist">
+        <li>完成以上准备后，请联系客服约定远程安装时间。</li>
+        <li>预约时请确保：电脑可正常上网、ToDesk 能启动，并预留约 <strong>15～30 分钟</strong>不被打断。</li>
+      </ol>
+    </section>
+
+    <footer>
+      如有疑问，请随时联系客服 ·
+      <a href="/guide/">查看扩展使用说明</a>
+    </footer>
+  </main>
+</body>
+</html>

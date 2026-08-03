@@ -146,6 +146,26 @@ app.use(
   })
 );
 
+const manualDir = path.join(publicDir, "manual");
+function sendManualIndex(_req, res) {
+  res.setHeader("Cache-Control", "no-cache");
+  res.sendFile(path.join(manualDir, "index.html"));
+}
+app.get(["/manual", "/manual/", "/manual/index.html"], sendManualIndex);
+app.use(
+  "/manual",
+  express.static(manualDir, {
+    index: false,
+    redirect: false,
+    maxAge: process.env.NODE_ENV === "production" ? "1h" : 0,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith("index.html") || filePath.endsWith(".md")) {
+        res.setHeader("Cache-Control", "no-cache");
+      }
+    },
+  })
+);
+
 app.post("/api/v1/activate", (req, res) => {
   const { license_key, channel_id, installation_id, user_agent } = req.body || {};
   if (!license_key || !channel_id || !installation_id) {
@@ -484,6 +504,7 @@ const server = app.listen(PORT, HOST, () => {
   const base = PUBLIC_BASE_URL.replace(/\/$/, "");
   console.log(`Admin UI: ${base}/admin/`);
   console.log(`User guide: ${base}/guide/`);
+  console.log(`Remote install prep: ${base}/manual/`);
   console.log(`PUBLIC_BASE_URL=${PUBLIC_BASE_URL}`);
   if (!ADMIN_API_KEY || ADMIN_API_KEY === "change-me-to-a-long-random-string") {
     console.warn("WARN: Set a strong ADMIN_API_KEY in .env");

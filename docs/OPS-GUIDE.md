@@ -201,7 +201,7 @@ SPH_DL_API_BASE=https://你的-sph-dl域名
 SPH_DL_ADMIN_TOKEN=与_sph-dl_的_ADMIN_TOKEN_相同
 ```
 
-- 套餐：`1` / `3` / `5` / `10` 次
+- 套餐：`1` / `5` / `10` / `30` / `50` / `100` 次
 - 码格式：`SPH5-A3F9K2B1`（与 sph-dl 一致）
 - 「兑换码查询」点刷新会向 sph-dl 同步当前页剩余次数
 

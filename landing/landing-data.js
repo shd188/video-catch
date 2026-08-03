@@ -65,6 +65,7 @@ window.LANDING_SITE = {
       ],
       sites: [
         "H5 店铺 *.h5.xiaoeknow.com",
+        "H5 店铺 *.h5.xiaoecloud.com",
         "PC 视频课 *.xet-pc.citv.cn",
         "PC 官方域 *.pc.xiaoe-tech.com",
         "学员版 study.xiaoe-tech.com",

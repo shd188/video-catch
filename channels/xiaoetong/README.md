@@ -14,6 +14,7 @@
 |----------|------|
 | `https://{appId}.h5.xiaoeknow.com/...` | [直播课](https://apphjf3i1rv4248.h5.xiaoeknow.com/v4/course/alive/l_608ba9dee4b09890f0e8742c?app_id=apphJf3i1rV4248&l_program=xe_know_pc) |
 | `https://{appId}.h5.xiaoe-tech.com/...` | 部分店铺使用 xiaoe-tech 域名，路径规则相同 |
+| `https://{appId}.h5.xiaoecloud.com/...` | 部分店铺使用 xiaoecloud 域名，路径规则相同 |
 
 常见路径（`{resourceId}` 为资源 ID，如 `l_608ba9…`、`v_624ff…`、`p_608ba…`）：
 
@@ -58,6 +59,7 @@
 |------|------|
 | `https://*.h5.xiaoeknow.com/*` | 各商家 H5 |
 | `https://*.h5.xiaoe-tech.com/*` | H5（xiaoe-tech 域） |
+| `https://*.h5.xiaoecloud.com/*` | H5（xiaoecloud 域） |
 | `https://*.xiaoeknow.com/*` | xiaoeknow 其它子域 |
 | `https://*.xet-pc.citv.cn/*` | PC（CITV） |
 | `https://*.xet.citv.cn/*` | CITV 课程/H5 |
