@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="渠道版视频下载扩展安装、激活与使用说明（视频教程与文字说明）" />
-  <title>扩展使用说明</title>
+  <meta name="description" content="渠道版视频下载扩展：分步安装向导、视频教程与文字说明" />
+  <title>扩展安装向导</title>
   <style>
     :root {
       --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -16,6 +16,12 @@
       --border: rgba(0, 0, 0, 0.08);
       --primary: #0071e3;
       --primary-soft: rgba(0, 113, 227, 0.08);
+      --ok: #248a3d;
+      --ok-soft: rgba(36, 138, 61, 0.1);
+      --warn: #b54708;
+      --warn-soft: rgba(181, 71, 8, 0.1);
+      --bad: #d70015;
+      --bad-soft: rgba(215, 0, 21, 0.08);
       --radius: 12px;
       --max: 760px;
       --max-video: 920px;
@@ -89,19 +95,19 @@
       flex-direction: column;
       align-items: center;
       gap: 2px;
-      padding: 12px 16px;
+      padding: 12px 10px;
       border: none;
       border-radius: 8px;
       background: transparent;
       color: var(--text-secondary);
       font: inherit;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.15s, color 0.15s, box-shadow 0.15s;
     }
     .guide-tab span {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 400;
       opacity: 0.85;
     }
@@ -112,6 +118,241 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     }
     .guide-panel[hidden] { display: none; }
+
+    /* —— Wizard —— */
+    .wiz-status {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .wiz-status.ok { background: var(--ok-soft); border-color: rgba(36, 138, 61, 0.25); color: var(--ok); }
+    .wiz-status.warn { background: var(--warn-soft); border-color: rgba(181, 71, 8, 0.25); color: var(--warn); }
+    .wiz-status.idle { color: var(--text-secondary); }
+    .wiz-status-text { flex: 1; }
+    .wiz-status button {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .wiz-browser {
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      background: var(--ok-soft);
+      border: 1px solid rgba(36, 138, 61, 0.2);
+    }
+    .wiz-browser.bad {
+      background: var(--bad-soft);
+      border-color: rgba(215, 0, 21, 0.2);
+      color: var(--bad);
+    }
+    .wiz-browser a { color: var(--primary); }
+    .wiz-step {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .wiz-step-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 14px 16px;
+      border: none;
+      background: transparent;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .wiz-step.is-current {
+      border-color: rgba(0, 113, 227, 0.35);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+    .wiz-step.is-done .wiz-num {
+      background: var(--ok);
+      color: #fff;
+    }
+    .wiz-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .wiz-step.is-current .wiz-num {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .wiz-step-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .wiz-step-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .wiz-step-body {
+      padding: 0 16px 18px 56px;
+    }
+    .wiz-step-body p { margin: 0 0 12px; font-size: 14px; color: var(--text); }
+    .wiz-step-body ol, .wiz-step-body ul {
+      margin: 0 0 14px;
+      padding-left: 1.2rem;
+      font-size: 14px;
+    }
+    .wiz-step-body li { margin: 0.35rem 0; }
+    .wiz-step-body code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .wiz-channels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .wiz-channel {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+      color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .wiz-channel strong { font-size: 14px; }
+    .wiz-channel span { font-size: 12px; color: var(--text-secondary); }
+    .wiz-channel em {
+      font-style: normal;
+      font-size: 11px;
+      color: var(--primary);
+      font-family: var(--mono);
+    }
+    .wiz-channel:hover { border-color: rgba(0, 113, 227, 0.35); }
+    .wiz-channel.is-active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.12);
+    }
+    .wiz-checks {
+      list-style: none;
+      margin: 0 0 14px;
+      padding: 0;
+    }
+    .wiz-checks li {
+      margin: 0 0 8px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .wiz-checks label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .wiz-checks input { margin-top: 3px; flex-shrink: 0; }
+    .wiz-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .wiz-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+    }
+    .wiz-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .wiz-btn.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .wiz-btn.ghost {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid rgba(0, 113, 227, 0.3);
+    }
+    .wiz-tip {
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--warn-soft);
+      border: 1px solid rgba(181, 71, 8, 0.18);
+      font-size: 13px;
+      color: var(--warn);
+    }
+    .wiz-detect {
+      margin: 0 0 14px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .wiz-detect.ok { background: var(--ok-soft); border-color: rgba(36, 138, 61, 0.25); }
+    .wiz-detect.warn { background: var(--warn-soft); border-color: rgba(181, 71, 8, 0.25); }
+    .wiz-detect.bad { background: var(--bad-soft); border-color: rgba(215, 0, 21, 0.2); }
+    .wiz-detect strong { display: block; margin-bottom: 6px; }
+    .wiz-detect p { margin: 0 0 8px; }
+    .wiz-detect ul { margin: 8px 0 0; }
+    .wiz-muted { color: var(--text-secondary); font-size: 13px; }
+    .wiz-help {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .wiz-help a { color: var(--primary); }
+
     .video-panel h2 {
       margin: 0 0 0.5rem;
       font-size: 1.35rem;
@@ -123,80 +364,50 @@
       font-size: 15px;
     }
     .video-topics {
-      margin: 0 0 1.25rem;
-      padding: 14px 16px 14px 2.2rem;
-      background: var(--bg);
-      border-radius: 10px;
+      margin: 0 0 1rem;
+      padding-left: 1.25rem;
       font-size: 14px;
+      color: var(--text-secondary);
     }
-    .video-topics li { margin: 0.25rem 0; }
     .video-speed-tip {
       margin: 0 0 1rem;
-      padding: 10px 14px;
-      background: var(--bg);
-      border-radius: 8px;
       font-size: 13px;
       color: var(--text-secondary);
-      line-height: 1.5;
     }
-    .video-shell {
+    .video-wrap, .bilibili-wrap { margin-top: 8px; }
+    .video-shell, .bilibili-shell {
       position: relative;
+      background: #000;
       border-radius: 10px;
       overflow: hidden;
-      border: 1px solid var(--border);
-      background: #000;
+      aspect-ratio: 16 / 9;
     }
-    .video-player {
-      display: block;
+    .video-player, .bilibili-shell iframe {
       width: 100%;
-      background: #000;
-      min-height: 240px;
+      height: 100%;
+      border: 0;
+      display: block;
     }
-    .video-shell .video-play-trigger {
+    .video-play-trigger {
       position: absolute;
       inset: 0;
       z-index: 2;
+      border: none;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin: 0;
-      padding: 24px;
-      border: none;
-      background: rgba(0, 0, 0, 0.72);
-      color: #fff;
-      font: inherit;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
     }
-    .video-shell .video-play-trigger span {
-      font-size: 13px;
-      font-weight: 400;
-      opacity: 0.85;
-    }
-    .video-shell.is-ready .video-play-trigger { display: none; }
-    .video-shell.is-loading .video-play-trigger {
-      cursor: wait;
-      pointer-events: none;
-    }
-    .bilibili-shell {
-      position: relative;
-      width: 100%;
-      padding-bottom: 56.25%;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: #000;
-    }
-    .bilibili-shell iframe {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+    .video-play-trigger span { font-size: 13px; font-weight: 400; opacity: 0.85; }
+    .video-shell.is-ready .video-play-trigger,
+    .video-shell.is-loading .video-play-trigger { display: none; }
     .video-wrap[hidden],
     .bilibili-wrap[hidden],
     .video-empty[hidden] { display: none; }
@@ -294,36 +505,241 @@
     @media (max-width: 600px) {
       .card { padding: 20px 18px; }
       main { padding: 16px 12px 48px; }
-      .guide-tab { padding: 10px 8px; font-size: 14px; }
-      .guide-tab span { font-size: 11px; }
+      .guide-tab { padding: 10px 6px; font-size: 13px; }
+      .guide-tab span { font-size: 10px; }
+      .wiz-channels { grid-template-columns: 1fr; }
+      .wiz-step-body { padding-left: 16px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>渠道版扩展 · 用户使用说明</h1>
-    <p>安装、激活、下载与升级</p>
+    <h1>渠道版扩展 · 安装向导</h1>
+    <p>分步安装 · 自动检测 · 视频与文字说明</p>
   </header>
   <main>
     <p class="mode-notice">
-      本页提供 <strong>视频教程</strong> 与 <strong>文字说明</strong> 两种形式，<strong>内容相同</strong>，请按您的习惯选择其一即可。
+      建议优先使用 <strong>安装向导</strong>（一步一步勾选，装好后可自动检测）。
+      也可以改用视频跟做，或查阅完整文字说明。装不好可看
+      <a href="/manual/" style="color:var(--primary);font-weight:600">远程安装准备</a>。
     </p>
     <article class="card">
       <div class="guide-tabs" role="tablist" aria-label="说明形式">
+        <button type="button" class="guide-tab" role="tab" id="tab-wizard" aria-controls="panel-wizard" data-mode="wizard">
+          安装向导
+          <span>推荐 · 可检测</span>
+        </button>
         <button type="button" class="guide-tab" role="tab" id="tab-video" aria-controls="panel-video" data-mode="video">
           视频教程
-          <span>跟随演示操作</span>
+          <span>跟随演示</span>
         </button>
         <button type="button" class="guide-tab" role="tab" id="tab-text" aria-controls="panel-text" data-mode="text">
           文字说明
-          <span>分步查阅细节</span>
+          <span>完整文档</span>
         </button>
       </div>
+
+      <section id="panel-wizard" class="guide-panel" role="tabpanel" aria-labelledby="tab-wizard" hidden>
+        <div class="wiz-status idle" id="wiz-status">
+          <div class="wiz-status-text" id="wiz-status-text">正在检测扩展…</div>
+          <button type="button" id="wiz-redetect-top">重新检测</button>
+        </div>
+        <div class="wiz-browser" id="wiz-browser"></div>
+
+        <div id="wizard-steps">
+          <!-- Step 1 -->
+          <div class="wiz-step is-current" data-step="1">
+            <button type="button" class="wiz-step-head" data-goto="1">
+              <span class="wiz-num">1</span>
+              <span>
+                <div class="wiz-step-title">选择您购买的渠道</div>
+                <div class="wiz-step-sub">不同渠道是独立扩展，请选对</div>
+              </span>
+            </button>
+            <div class="wiz-step-body">
+              <div class="wiz-channels" id="wiz-channels"></div>
+              <p class="wiz-muted">也可在链接后加 <code>?channel=xiaoetong</code> 预选渠道。</p>
+              <div class="wiz-actions">
+                <button type="button" class="wiz-btn" data-next data-need-channel data-need-browser>下一步：确认安装包</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="wiz-step" data-step="2">
+            <button type="button" class="wiz-step-head" data-goto="2">
+              <span class="wiz-num">2</span>
+              <span>
+                <div class="wiz-step-title">拿到安装包并解压</div>
+                <div class="wiz-step-sub">必须解压成文件夹，不要加载 zip</div>
+              </span>
+            </button>
+            <div class="wiz-step-body" hidden>
+              <p>您应收到 <code data-ch-zip>xiaoetong.zip</code>（渠道：<strong data-ch-name>…</strong>）。</p>
+              <ol>
+                <li>把 zip 保存到电脑（如下载文件夹）。</li>
+                <li>双击解压，得到文件夹 <code data-ch-folder>xiaoetong</code>。</li>
+                <li>记住这个文件夹位置——以后升级要覆盖<strong>同一个</strong>目录。</li>
+              </ol>
+              <p class="wiz-tip">不要把 zip 直接拖进浏览器。加载时必须选<strong>解压后的文件夹</strong>。</p>
+              <ul class="wiz-checks">
+                <li>
+                  <label>
+                    <input type="checkbox" data-check="hasZip" />
+                    <span>我已有安装包 <code data-ch-zip>…</code></span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="checkbox" data-check="unzipped" />
+                    <span>我已解压出文件夹 <code data-ch-folder>…</code></span>
+                  </label>
+                </li>
+              </ul>
+              <div class="wiz-actions">
+                <button type="button" class="wiz-btn secondary" data-prev>上一步</button>
+                <button type="button" class="wiz-btn" data-next data-need-checks="hasZip,unzipped">下一步：打开扩展页</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="wiz-step" data-step="3">
+            <button type="button" class="wiz-step-head" data-goto="3">
+              <span class="wiz-num">3</span>
+              <span>
+                <div class="wiz-step-title">打开扩展管理页</div>
+                <div class="wiz-step-sub">网页无法直接跳转 chrome://，请复制地址</div>
+              </span>
+            </button>
+            <div class="wiz-step-body" hidden>
+              <p>在浏览器<strong>地址栏</strong>粘贴并回车：</p>
+              <p><code data-ext-url>chrome://extensions</code></p>
+              <div class="wiz-actions" style="margin-bottom:14px">
+                <button type="button" class="wiz-btn ghost" data-copy="ext-url">复制扩展页地址</button>
+              </div>
+              <ul class="wiz-checks">
+                <li>
+                  <label>
+                    <input type="checkbox" data-check="openedExtPage" />
+                    <span>我已打开扩展管理页面</span>
+                  </label>
+                </li>
+              </ul>
+              <div class="wiz-actions">
+                <button type="button" class="wiz-btn secondary" data-prev>上一步</button>
+                <button type="button" class="wiz-btn" data-next data-need-checks="openedExtPage">下一步：开发者模式</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="wiz-step" data-step="4">
+            <button type="button" class="wiz-step-head" data-goto="4">
+              <span class="wiz-num">4</span>
+              <span>
+                <div class="wiz-step-title">打开开发者模式并加载</div>
+                <div class="wiz-step-sub">加载「已解压」的文件夹</div>
+              </span>
+            </button>
+            <div class="wiz-step-body" hidden>
+              <ol>
+                <li>打开右上角 <strong>「开发者模式」</strong> 开关。</li>
+                <li>点击 <strong>「加载已解压的扩展程序」</strong>。</li>
+                <li>选择文件夹 <code data-ch-folder>…</code>（里面应能看到 <code>manifest.json</code>）。</li>
+                <li>列表中出现 <strong data-ch-name>…</strong> 即表示加载成功。</li>
+              </ol>
+              <p class="wiz-tip">若解压后多了一层目录，请选到<strong>含 manifest.json 的那一层</strong>，不要选外层空壳文件夹。</p>
+              <ul class="wiz-checks">
+                <li>
+                  <label>
+                    <input type="checkbox" data-check="devMode" />
+                    <span>我已打开「开发者模式」</span>
+                  </label>
+                </li>
+                <li>
+                  <label>
+                    <input type="checkbox" data-check="loaded" />
+                    <span>扩展已出现在列表中（或点下方自动检测）</span>
+                  </label>
+                </li>
+              </ul>
+              <div class="wiz-actions">
+                <button type="button" class="wiz-btn secondary" data-prev>上一步</button>
+                <button type="button" class="wiz-btn ghost" data-redetect>重新检测扩展</button>
+                <button type="button" class="wiz-btn" data-next data-need-checks="devMode,loaded">下一步：激活</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5 -->
+          <div class="wiz-step" data-step="5">
+            <button type="button" class="wiz-step-head" data-goto="5">
+              <span class="wiz-num">5</span>
+              <span>
+                <div class="wiz-step-title">激活并确认</div>
+                <div class="wiz-step-sub">本页可自动检测是否装好、是否已激活</div>
+              </span>
+            </button>
+            <div class="wiz-step-body" hidden>
+              <div class="wiz-detect" id="wiz-detect-result"></div>
+              <ol>
+                <li>首次加载通常会自动打开「安装说明」页。</li>
+                <li>在「渠道激活」输入服务商给的激活码，点「激活」。</li>
+                <li>成功后回到<strong>本向导页</strong>，点「重新检测」。</li>
+              </ol>
+              <ul class="wiz-checks">
+                <li>
+                  <label>
+                    <input type="checkbox" data-check="activated" />
+                    <span>我已激活成功（检测通过会自动勾选）</span>
+                  </label>
+                </li>
+              </ul>
+              <div class="wiz-actions">
+                <button type="button" class="wiz-btn secondary" data-prev>上一步</button>
+                <button type="button" class="wiz-btn ghost" data-redetect>重新检测</button>
+                <button type="button" class="wiz-btn" data-next data-need-checks="activated">完成</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 6 -->
+          <div class="wiz-step" data-step="6">
+            <button type="button" class="wiz-step-head" data-goto="6">
+              <span class="wiz-num">6</span>
+              <span>
+                <div class="wiz-step-title">开始使用</div>
+                <div class="wiz-step-sub">打开对应网站播放视频即可嗅探</div>
+              </span>
+            </button>
+            <div class="wiz-step-body" hidden>
+              <p>安装与激活已完成。接下来：</p>
+              <ol>
+                <li>打开渠道对应的网站（<span data-ch-name>…</span>）。</li>
+                <li><strong>开始播放</strong>视频，再点浏览器工具栏里的扩展图标查看资源列表。</li>
+                <li>m3u8 可在解析页合并下载；详情见「文字说明」。</li>
+              </ol>
+              <div class="wiz-actions">
+                <button type="button" class="wiz-btn secondary" data-prev>返回</button>
+                <button type="button" class="wiz-btn ghost" data-mode-jump="video">看视频复习</button>
+                <button type="button" class="wiz-btn ghost" data-mode-jump="text">打开文字说明</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="wiz-help">
+          自己装不上？可按
+          <a href="/manual/">远程安装服务前期准备</a>
+          整理桌面并预约代装。升级时请覆盖原文件夹后点「重新加载」，不要加载成第二个扩展。
+        </p>
+      </section>
 
       <section id="panel-video" class="guide-panel video-panel" role="tabpanel" aria-labelledby="tab-video" hidden>
         <h2>视频教程</h2>
         <p class="video-lead">
-          以下为小鹅通渠道的完整操作演示。若您更喜欢边看边做，可直接播放本视频；需要查具体步骤或复制链接时，请切换到「文字说明」。
+          以下为小鹅通渠道的完整操作演示。若您更喜欢边看边做，可直接播放本视频；需要查具体步骤或复制链接时，请切换到「文字说明」或「安装向导」。
         </p>
         <ul class="video-topics">
           <li>解压安装包并在 Chrome / Edge 中加载扩展</li>
@@ -353,7 +769,7 @@
 
         <p class="video-empty" id="video-empty" hidden>
           视频源暂未配置。请先按文档将压缩片上传到阿里云 OSS/CDN，并在
-          <code>video-config.js</code> 填写 <code>cdnUrl</code>；或暂时使用「文字说明」。
+          <code>video-config.js</code> 填写 <code>cdnUrl</code>；或暂时使用「文字说明」/「安装向导」。
         </p>
 
         <p class="video-meta" id="video-meta"></p>
@@ -361,7 +777,9 @@
 
       <section id="panel-text" class="guide-panel" role="tabpanel" aria-labelledby="tab-text" hidden>
         <p class="text-hint">
-          以下为完整文字说明。若希望跟随屏幕操作，可切换到
+          以下为完整文字说明。首次安装建议先走
+          <a href="#wizard" id="link-to-wizard">安装向导</a>；
+          若希望跟随屏幕操作，可切换到
           <a href="#video" id="link-to-video">视频教程</a>。
         </p>
         <div id="text-content" class="guide-body">
@@ -371,11 +789,13 @@
     </article>
   </main>
   <script src="/guide/video-config.js"></script>
+  <script src="/guide/wizard.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
   <script>
     (function () {
       var cfg = window.GUIDE_VIDEO_CONFIG || {};
       var tabs = document.querySelectorAll(".guide-tab");
+      var panelWizard = document.getElementById("panel-wizard");
       var panelVideo = document.getElementById("panel-video");
       var panelText = document.getElementById("panel-text");
       var videoWrap = document.getElementById("video-wrap");
@@ -388,6 +808,7 @@
       var videoMeta = document.getElementById("video-meta");
       var videoSpeedTip = document.getElementById("video-speed-tip");
       var linkToVideo = document.getElementById("link-to-video");
+      var linkToWizard = document.getElementById("link-to-wizard");
       var mp4Loaded = false;
       var activeMode = null;
 
@@ -454,7 +875,7 @@
           videoWrap.hidden = false;
           if (videoSpeedTip) {
             videoSpeedTip.innerHTML =
-              "视频通过<strong>阿里云 CDN</strong>加速播放。需要查具体步骤时可切换到「文字说明」，内容相同。";
+              "视频通过<strong>阿里云 CDN</strong>加速播放。需要查具体步骤时可切换到「文字说明」或「安装向导」。";
           }
           updateMeta("cdn");
           return;
@@ -466,7 +887,7 @@
           if (bilibiliPlayer) bilibiliPlayer.src = bilibiliEmbedUrl(bvid);
           if (videoSpeedTip) {
             videoSpeedTip.innerHTML =
-              "视频通过<strong>哔哩哔哩</strong>播放。需要查具体步骤时可切换到「文字说明」，内容相同。";
+              "视频通过<strong>哔哩哔哩</strong>播放。需要查具体步骤时可切换到「文字说明」或「安装向导」。";
           }
           updateMeta("bilibili");
           return;
@@ -476,7 +897,7 @@
         videoEmpty.hidden = false;
         if (videoSpeedTip) {
           videoSpeedTip.innerHTML =
-            "视频源尚未配置。请上传到阿里云 OSS/CDN 后填写 <code>cdnUrl</code>，或暂时使用「文字说明」。";
+            "视频源尚未配置。请上传到阿里云 OSS/CDN 后填写 <code>cdnUrl</code>，或暂时使用「文字说明」/「安装向导」。";
         }
         updateMeta(null);
       }
@@ -507,7 +928,7 @@
             videoShell.classList.remove("is-loading");
             if (videoPlayTrigger) {
               videoPlayTrigger.querySelector("span").textContent =
-                "加载失败，请检查 CDN 链接或稍后重试；也可改用文字说明";
+                "加载失败，请检查 CDN 链接或稍后重试；也可改用文字说明或安装向导";
             }
           },
           { once: true }
@@ -519,21 +940,28 @@
       }
 
       function setMode(mode) {
+        if (mode !== "wizard" && mode !== "video" && mode !== "text") mode = "wizard";
         var isVideo = mode === "video";
+        var isWizard = mode === "wizard";
+        var isText = mode === "text";
         document.body.classList.toggle("mode-video", isVideo);
         tabs.forEach(function (tab) {
           var active = tab.getAttribute("data-mode") === mode;
           tab.setAttribute("aria-selected", active ? "true" : "false");
         });
+        panelWizard.hidden = !isWizard;
         panelVideo.hidden = !isVideo;
-        panelText.hidden = isVideo;
+        panelText.hidden = !isText;
         if (isVideo) {
           showVideoSource();
         } else {
           if (guideVideo && !guideVideo.paused) guideVideo.pause();
           if (bilibiliPlayer) bilibiliPlayer.removeAttribute("src");
         }
-        var hash = isVideo ? "#video" : "#text";
+        if (isWizard && window.GuideWizard && typeof window.GuideWizard.requestBeacon === "function") {
+          window.GuideWizard.requestBeacon();
+        }
+        var hash = "#" + mode;
         if (location.hash !== hash) {
           history.replaceState(null, "", hash);
         }
@@ -551,8 +979,22 @@
           setMode("video");
         });
       }
+      if (linkToWizard) {
+        linkToWizard.addEventListener("click", function (e) {
+          e.preventDefault();
+          setMode("wizard");
+        });
+      }
 
-      var initial = location.hash === "#video" ? "video" : "text";
+      document.getElementById("panel-wizard").addEventListener("click", function (e) {
+        var jump = e.target.closest("[data-mode-jump]");
+        if (jump) {
+          setMode(jump.getAttribute("data-mode-jump"));
+        }
+      });
+
+      var hash = (location.hash || "").replace("#", "");
+      var initial = hash === "video" || hash === "text" || hash === "wizard" ? hash : "wizard";
       setMode(initial);
 
       marked.setOptions({ gfm: true, breaks: false });
@@ -570,8 +1012,9 @@
         });
 
       window.addEventListener("hashchange", function () {
-        if (location.hash === "#video" || location.hash === "#text") {
-          setMode(location.hash === "#video" ? "video" : "text");
+        var h = (location.hash || "").replace("#", "");
+        if (h === "video" || h === "text" || h === "wizard") {
+          setMode(h);
         }
       });
     })();
