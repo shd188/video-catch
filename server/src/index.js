@@ -358,7 +358,7 @@ app.post("/api/v1/check", (req, res) => {
   const installationId = String(installation_id).trim();
   const licenseKey = String(license_key || "").trim();
   const strictMode = strict === true || strict === 1 || strict === "1";
-  const everActivated = hasInstallActivatedOnChannel(installationId, channelId);
+  let everActivated = hasInstallActivatedOnChannel(installationId, channelId);
 
   let status;
   if (licenseKey) {
@@ -367,6 +367,11 @@ app.post("/api/v1/check", (req, res) => {
     status = { active: true, ever_activated: true, code: "EVER_ACTIVATED" };
   } else {
     status = { active: false, code: "NO_KEY" };
+  }
+
+  if (status.code === "REVOKED") {
+    everActivated = false;
+    status = { ...status, active: false };
   }
 
   const updatesAllowed = status.active || (!strictMode && everActivated);
@@ -458,7 +463,10 @@ app.get("/api/v1/download", (req, res) => {
       channelId: channel_id,
       installationId: installation_id,
     });
-    allowed = status.active || (!strictMode && everActivated);
+    allowed =
+      status.code === "REVOKED"
+        ? false
+        : status.active || (!strictMode && everActivated);
   }
   if (!allowed) {
     return res.status(403).send("License not active");

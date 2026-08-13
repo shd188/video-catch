@@ -183,6 +183,7 @@ export function hasInstallActivatedOnChannel(installationId, channelId) {
       `SELECT a.id FROM activations a
        INNER JOIN licenses l ON l.id = a.license_id
        WHERE a.installation_id = ? AND l.channel_id = ?
+         AND ifnull(l.revoked, 0) = 0
        LIMIT 1`
     )
     .get(installationId, channelId);
@@ -198,7 +199,7 @@ export function checkLicense({ licenseKey, channelId, installationId }) {
     return { active: false, code: "CHANNEL_MISMATCH" };
   }
   if (isLicenseRevoked(license)) {
-    return { active: false, code: "REVOKED" };
+    return { active: false, code: "REVOKED", message: "激活码已作废" };
   }
   if (isLicenseExpired(license)) {
     return { active: false, code: "EXPIRED", expires_at: license.expires_at };
