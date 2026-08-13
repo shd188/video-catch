@@ -87,22 +87,29 @@ export function activateLicense({ licenseKey, channelId, installationId, userAge
 
   const order = normalizeOrder(orderNo);
   if (channelId === COURSE_DL_CHANNEL) {
-    if (!order || order.length < 4) {
-      return { ok: false, code: "BAD_ORDER", message: "请填写完整订单号" };
-    }
-    if (license.order_no && license.order_no !== order) {
+    const bound = license.order_no || "";
+    if (bound) {
+      if (order && order !== bound) {
+        return {
+          ok: false,
+          code: "ORDER_MISMATCH",
+          message: "请使用领取该激活码时填写的小红书订单号",
+        };
+      }
+    } else if (!order || order.length < 4) {
       return {
         ok: false,
-        code: "ORDER_MISMATCH",
-        message: "请使用首次激活时填写的订单号",
+        code: "BAD_ORDER",
+        message: "请先在发货页用小红书订单号领取激活码",
       };
     }
+    const orderToBind = bound || order;
     const used = getDb()
       .prepare(
         `SELECT license_key FROM licenses
          WHERE channel_id = ? AND order_no = ? AND license_key != ?`
       )
-      .get(channelId, order, license.license_key);
+      .get(channelId, orderToBind, license.license_key);
     if (used) {
       return {
         ok: false,
@@ -556,13 +563,145 @@ const VERIFY_ERRORS = {
   NOT_ACTIVATED: "尚未激活",
 };
 
+const XHS_ORDER_RE = /^P\d{10,24}$/;
+
+export function normalizeXhsOrder(s) {
+  return String(s || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .toUpperCase();
+}
+
+/**
+ * 发货页：用小红书订单号领取激活码。
+ * 已领过同一订单则返回原码；否则绑定一条未发未激活库存，库存空则自动生成 1 个。
+ */
+export function claimCourseDlByOrder(orderNo) {
+  const order = normalizeXhsOrder(orderNo);
+  if (!XHS_ORDER_RE.test(order)) {
+    return {
+      ok: false,
+      code: "BAD_ORDER",
+      error: "请填写小红书订单号，格式如 P802096514294231571",
+      message: "请填写小红书订单号，格式如 P802096514294231571",
+    };
+  }
+
+  const db = getDb();
+  const existing = db
+    .prepare(
+      `SELECT * FROM licenses WHERE channel_id = ? AND order_no = ?`
+    )
+    .get(COURSE_DL_CHANNEL, order);
+  if (existing) {
+    if (isLicenseRevoked(existing)) {
+      return {
+        ok: false,
+        code: "REVOKED",
+        error: "该订单对应激活码已作废，请联系卖家",
+        message: "该订单对应激活码已作废，请联系卖家",
+      };
+    }
+    return {
+      ok: true,
+      license_key: existing.license_key,
+      order_no: order,
+      reused: true,
+      message: "该订单已领取过激活码",
+    };
+  }
+
+  let claimed;
+  try {
+    claimed = db.transaction(() => {
+      let row = db
+        .prepare(
+          `SELECT l.id, l.license_key FROM licenses l
+           WHERE l.channel_id = ?
+             AND ifnull(l.revoked, 0) = 0
+             AND l.sent_at IS NULL
+             AND (l.order_no IS NULL OR l.order_no = '')
+             AND ${LICENSE_ACTIVATION_COUNT_SQL} = 0
+           ORDER BY l.id ASC
+           LIMIT 1`
+        )
+        .get(COURSE_DL_CHANNEL);
+
+      if (!row) {
+        const created = insertLicenseRow({
+          channelId: COURSE_DL_CHANNEL,
+          maxDevices: 1,
+          singleUse: 1,
+          note: "auto-claim",
+        });
+        row = { id: created.id, license_key: created.license_key };
+      }
+
+      const result = db
+        .prepare(
+          `UPDATE licenses
+           SET sent_at = datetime('now'), order_no = ?
+           WHERE id = ? AND (order_no IS NULL OR order_no = '')`
+        )
+        .run(order, row.id);
+      if (result.changes !== 1) return null;
+      return { license_key: row.license_key };
+    })();
+  } catch (err) {
+    const msg = String(err && err.message ? err.message : err);
+    if (/UNIQUE|constraint/i.test(msg)) {
+      const again = db
+        .prepare(
+          `SELECT license_key FROM licenses WHERE channel_id = ? AND order_no = ?`
+        )
+        .get(COURSE_DL_CHANNEL, order);
+      if (again) {
+        return {
+          ok: true,
+          license_key: again.license_key,
+          order_no: order,
+          reused: true,
+          message: "该订单已领取过激活码",
+        };
+      }
+    }
+    return {
+      ok: false,
+      code: "CLAIM_FAILED",
+      error: "领取失败，请稍后重试",
+      message: "领取失败，请稍后重试",
+    };
+  }
+
+  if (!claimed) {
+    return {
+      ok: false,
+      code: "CLAIM_FAILED",
+      error: "领取失败，请稍后重试",
+      message: "领取失败，请稍后重试",
+    };
+  }
+
+  return {
+    ok: true,
+    license_key: claimed.license_key,
+    order_no: order,
+    reused: false,
+    message: "领取成功",
+  };
+}
+
 export function activateCourseDl({ code, deviceId, orderNo, userAgent }) {
   const licenseKey = String(code || "").trim().toUpperCase();
   const installationId = String(deviceId || "")
     .trim()
     .toUpperCase();
-  if (!licenseKey || !installationId || !normalizeOrder(orderNo)) {
-    return { ok: false, error: "请填写激活码、机器码和订单号", message: "请填写激活码、机器码和订单号" };
+  if (!licenseKey || !installationId) {
+    return {
+      ok: false,
+      error: "请填写激活码和机器码",
+      message: "请填写激活码和机器码",
+    };
   }
   const result = activateLicense({
     licenseKey,

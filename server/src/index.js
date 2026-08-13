@@ -20,6 +20,8 @@ import {
   unbindLicense,
   activateCourseDl,
   verifyCourseDl,
+  claimCourseDlByOrder,
+  COURSE_DL_CHANNEL,
   getCourseDlConfig,
   setCourseDlConfig,
 } from "./licenses.js";
@@ -398,6 +400,22 @@ app.post("/api/v1/check", (req, res) => {
 });
 
 /** course-dl 桌面端兼容接口（与 Cloudflare Worker 版路径一致） */
+app.post("/api/claim", (req, res) => {
+  const body = req.body || {};
+  const orderNo = body.order_no || body.orderNo || body.order;
+  const rate = checkClaimRateLimit(clientIp(req), COURSE_DL_CHANNEL, { maxPerDay: 30 });
+  if (!rate.ok) {
+    return res.status(429).json({
+      ok: false,
+      error: rate.message || "领取过于频繁，请稍后再试",
+      message: rate.message || "领取过于频繁，请稍后再试",
+    });
+  }
+  const result = claimCourseDlByOrder(orderNo);
+  const status = result.ok ? 200 : result.code === "BAD_ORDER" ? 400 : 403;
+  res.status(status).json(result);
+});
+
 app.post("/api/activate", (req, res) => {
   const body = req.body || {};
   const result = activateCourseDl({

@@ -126,6 +126,29 @@ th { color: var(--muted); font-weight: 500; }
 .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
 .toolbar input, .toolbar select { width: auto; min-width: 140px; }
 .hint { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+.reveal {
+  display: none;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(62, 207, 142, 0.35);
+  background: rgba(62, 207, 142, 0.08);
+}
+.reveal.show { display: block; }
+.reveal h3 { margin: 0 0 8px; font-size: 0.95rem; color: var(--ok); }
+.reveal .code-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.reveal .code-box strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  word-break: break-all;
+}
 footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
 
 .os-grid {
