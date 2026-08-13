@@ -1,6 +1,9 @@
 /**
  * GPL-3.0 — Announce channel install/activation status to the public /guide/ page.
  * Only runs on paths under /guide so normal sites stay unaffected.
+ *
+ * Uses DOM CustomEvent + attribute so the page script can detect us even when
+ * window.postMessage listeners are flaky across isolated worlds.
  */
 (function () {
     "use strict";
@@ -14,6 +17,12 @@
         return;
     }
 
+    // Avoid double-binding if background also injects into an open tab
+    if (window.__vcGuideBeaconBound) {
+        return;
+    }
+    window.__vcGuideBeaconBound = true;
+
     const PING = "VIDEO_CATCH_GUIDE_PING";
     const PONG = "VIDEO_CATCH_GUIDE_PONG";
 
@@ -21,7 +30,7 @@
         return new Promise((resolve) => {
             try {
                 chrome.storage.local.get(
-                    ["licenseKey", "licenseActivatedOnce"],
+                    ["licenseKey", "licenseActivatedOnce", "licenseInvalidated"],
                     (items) => {
                         if (chrome.runtime.lastError) {
                             resolve({});
@@ -58,7 +67,7 @@
             channelId: build?.channelId || null,
             displayName: build?.displayName || build?.extensionName || null,
             version,
-            activated: !!(items.licenseKey || items.licenseActivatedOnce),
+            activated: !items.licenseInvalidated && !!(items.licenseKey || items.licenseActivatedOnce),
             extensionId: chrome.runtime.id,
             at: Date.now(),
         };
@@ -75,11 +84,20 @@
                 JSON.stringify(payload)
             );
         } catch (_) {}
+        try {
+            document.documentElement.dispatchEvent(
+                new CustomEvent("vc-guide-pong", { detail: payload, bubbles: true })
+            );
+        } catch (_) {}
     }
 
     window.addEventListener("message", function (e) {
         if (e.source !== window) return;
         if (!e.data || e.data.type !== PING) return;
+        announce();
+    });
+
+    document.addEventListener("vc-guide-ping", function () {
         announce();
     });
 

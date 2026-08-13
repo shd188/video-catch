@@ -7,14 +7,10 @@
  * 上传步骤见 docs/GUIDE-VIDEO-OSS.md
  */
 window.GUIDE_VIDEO_CONFIG = {
-  title: "小鹅通扩展：嗅探与下载操作演示",
+  title: "安装与使用演示",
 
-  /**
-   * 阿里云 CDN / OSS 公网直链，例如：
-   * "https://cdn.example.com/guide/xet-video-catch-web.mp4"
-   * 上传前请先用 scripts/compress-guide-video.sh 压到约 5–12MB
-   */
-  cdnUrl: "",
+  /** 阿里云 OSS 公共读直链 */
+  cdnUrl: "https://downloadtool.oss-cn-beijing.aliyuncs.com/guide-web.mp4",
 
   /** B 站 BV 号（已下架可留空） */
   bilibiliBvid: "",

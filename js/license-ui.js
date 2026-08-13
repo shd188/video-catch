@@ -72,6 +72,13 @@ async function licenseUiInitInstallPage() {
   const stored = await licenseGetStoredKey();
   if (stored) {
     document.getElementById("licenseKeyInput").value = stored;
+    if (typeof LicenseState !== "undefined" && LicenseState.code === "REVOKED") {
+      const msg = document.getElementById("licenseActivateMsg");
+      if (msg) {
+        msg.textContent = "该激活码已作废，请更换新的激活码";
+        msg.className = "ch-hint err";
+      }
+    }
     licenseUiShowUpdateHint();
   }
 }

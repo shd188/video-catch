@@ -26,7 +26,7 @@
 
 向服务商索取时，通常包括：
 
-1. **扩展安装包**：`quanneng.zip`、`xiaoetong.zip`、`tencentmeeting.zip` 或 `feishu.zip`（解压后得到同名文件夹）。
+1. **扩展安装包（解压后文件夹名）**：`quanneng`、`xiaoetong`、`tencentmeeting` 或 `feishu`。
 2. **激活码**：格式类似 `CC-XXXX-XXXX-XXXX`，**每个设备首次使用需要激活一次**。
 3. **本说明**：在线阅读链接（示例）<https://api.shentongxue.online/guide/>（以服务商实际域名为准）。
 
@@ -52,8 +52,17 @@
 ### 2.2 在浏览器中加载
 
 1. 地址栏输入 `chrome://extensions` 并回车（Edge 可用 `edge://extensions`）。
+![Chrome 扩展管理页](../img/image.png)
+![Edge 扩展管理页](../img/edge.png)
+
 2. 打开右上角 **「开发者模式」**。
+![Chrome 开发者模式](../img/chrome-dev.png)
+![Edge 开发者模式](../img/edge-dev.png)
+
 3. 点击 **「加载已解压的扩展程序」**。
+![Chrome](../img/chrome-zip.png)
+![Edge](../img/edge-zip.png)
+
 4. 选择刚才解压的文件夹（如 `xiaoetong`），不要只选 zip 文件本身。
 
 加载成功后，扩展列表中会出现对应名称（如「小鹅通视频下载」）。
@@ -98,6 +107,8 @@
 ### 4.2 查看扩展是否生效
 
 点击浏览器工具栏上的扩展图标，打开 **弹出窗口（Popup）**：
+
+![](../img/pop.png)
 
 - 顶部会显示渠道名称。
 - **全能**：若显示 **「全能渠道：当前页面可嗅探」**，表示本页可以抓取资源。

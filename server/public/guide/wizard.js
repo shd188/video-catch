@@ -86,10 +86,18 @@
 
   function queryChannelFromUrl() {
     try {
+      if (window.__VC_DELIVER__ && window.__VC_DELIVER__.channelId) {
+        var d = window.__VC_DELIVER__.channelId;
+        if (channelById(d)) return d;
+      }
       var q = new URLSearchParams(location.search).get("channel");
       if (q && channelById(q)) return q;
     } catch (_) {}
     return null;
+  }
+
+  function isDeliverMode() {
+    return !!(window.__VC_DELIVER__ && window.__VC_DELIVER__.channelId);
   }
 
   function saveProgress() {
@@ -197,12 +205,51 @@
       window.postMessage({ type: PING }, "*");
     } catch (_) {}
     try {
+      document.documentElement.dispatchEvent(
+        new CustomEvent("vc-guide-ping", { bubbles: true })
+      );
+    } catch (_) {}
+    try {
       var attr = document.documentElement.getAttribute("data-video-catch-beacon");
       if (attr) {
         var parsed = JSON.parse(attr);
         if (parsed && parsed.type === PONG) ingestBeacon(parsed);
       }
     } catch (_) {}
+  }
+
+  /**
+   * 扩展若在本页打开之后才安装，content script 不会进已打开标签。
+   * 先 ping；若仍无应答则自动刷新本页（等同手动 F5）。
+   */
+  function redetectOrReload() {
+    var beforeAt = matchingBeacon() ? matchingBeacon().at : 0;
+    requestBeacon();
+    setTimeout(requestBeacon, 200);
+    setTimeout(function () {
+      var b = matchingBeacon();
+      if (b && b.at && b.at !== beforeAt) {
+        render();
+        return;
+      }
+      if (b) {
+        // 已有旧 beacon：再读一次属性并刷新 UI
+        requestBeacon();
+        render();
+        return;
+      }
+      try {
+        var url = new URL(location.href);
+        if (url.searchParams.get("vc_reload") === "1") {
+          renderDetectPanel();
+          return;
+        }
+        url.searchParams.set("vc_reload", "1");
+        location.replace(url.toString());
+      } catch (_) {
+        location.reload();
+      }
+    }, 700);
   }
 
   function ingestBeacon(payload) {
@@ -219,11 +266,33 @@
     state.step = n;
     saveProgress();
     render();
+    // 装扩展常在向导页已打开后完成，进入「加载/激活」步骤时自动再 ping 几次
+    if (n >= 4) {
+      scheduleDetect();
+    }
     var panel = $("wizard-steps");
     if (panel) {
       var active = panel.querySelector('.wiz-step[data-step="' + n + '"]');
       if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
+  }
+
+  var detectTimer = null;
+  var detectDebounce = null;
+  function scheduleDetect() {
+    clearTimeout(detectDebounce);
+    detectDebounce = setTimeout(function () {
+      requestBeacon();
+      clearTimeout(detectTimer);
+      var delays = [300, 800, 1600, 3000];
+      delays.forEach(function (ms) {
+        setTimeout(requestBeacon, ms);
+      });
+      detectTimer = setTimeout(function () {
+        renderDetectPanel();
+        renderStatus();
+      }, 3200);
+    }, 120);
   }
 
   function setCheck(key, value) {
@@ -305,6 +374,20 @@
   function renderChannelPicker() {
     var box = $("wiz-channels");
     if (!box) return;
+    if (isDeliverMode() && state.channelId) {
+      var ch = selectedChannel();
+      box.innerHTML =
+        '<div class="wiz-channel is-active" style="cursor:default">' +
+        "<strong>" +
+        (ch ? ch.name : state.channelId) +
+        "</strong>" +
+        "<span>本页已锁定渠道，无需再选</span>" +
+        "<em>安装包 " +
+        (ch ? ch.zip : "") +
+        "</em>" +
+        "</div>";
+      return;
+    }
     box.innerHTML = CHANNELS.map(function (ch) {
       var active = state.channelId === ch.id ? " is-active" : "";
       return (
@@ -391,9 +474,11 @@
       result.className = "wiz-detect bad";
       result.innerHTML =
         "<strong>未检测到扩展</strong>" +
-        "<p>请确认已「加载已解压的扩展程序」，且选中的是文件夹 <code>" +
+        "<p>若您<strong>刚刚才加载扩展</strong>，本页还没注入检测脚本，点「重新检测」会自动刷新本页完成检测。</p>" +
+        "<p>请确认已「加载已解压的扩展程序」，且选中文件夹 <code>" +
         (ch ? ch.folder : "…") +
-        "</code>（不是 zip）。装好后点下方「重新检测」，或刷新本页。</p>" +
+        "</code>（不是 zip）。</p>" +
+        '<p><button type="button" class="wiz-btn" data-redetect>重新检测（必要时自动刷新）</button></p>' +
         "<ul>" +
         "<li>常见错误：直接加载了 zip 文件</li>" +
         "<li>常见错误：解压后多套了一层文件夹，应选到含 <code>manifest.json</code> 的那一层</li>" +
@@ -477,9 +562,8 @@
       }
       t = e.target.closest("[data-redetect]");
       if (t) {
-        requestBeacon();
         flashBtn(t, "检测中…");
-        setTimeout(requestBeacon, 400);
+        redetectOrReload();
         return;
       }
     });
@@ -497,10 +581,35 @@
       ingestBeacon(e.data);
     });
 
+    document.addEventListener("vc-guide-pong", function (e) {
+      if (e && e.detail) ingestBeacon(e.detail);
+    });
+
+    try {
+      var mo = new MutationObserver(function () {
+        requestBeacon();
+      });
+      mo.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-video-catch-beacon"],
+      });
+    } catch (_) {}
+
+    // 从扩展页切回本页时自动再检（刚装完/刚激活完很常见）
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && state.step >= 4) {
+        scheduleDetect();
+      }
+    });
+    window.addEventListener("focus", function () {
+      if (state.step >= 4) scheduleDetect();
+    });
+
     var redetect = $("wiz-redetect-top");
     if (redetect) {
       redetect.addEventListener("click", function () {
-        requestBeacon();
+        flashBtn(redetect, "检测中…");
+        redetectOrReload();
       });
     }
   }
@@ -510,11 +619,27 @@
     loadProgress();
     var fromUrl = queryChannelFromUrl();
     if (fromUrl) state.channelId = fromUrl;
+
+    if (isDeliverMode() && state.channelId) {
+      var title = $("page-title");
+      var sub = $("page-sub");
+      if (title) title.textContent = "发货与安装说明";
+      if (sub) sub.textContent = "网盘下载 · 领取激活码 · 安装向导";
+      // 发货页跳过选渠道，直接从「下载解压」开始
+      if (state.step < 2) state.step = 2;
+    }
+
+    // 重新检测触发的自动刷新会带 ?vc_reload=1；进页后去掉，以便下次仍可再刷
+    try {
+      var u = new URL(location.href);
+      if (u.searchParams.get("vc_reload") === "1") {
+        u.searchParams.delete("vc_reload");
+        history.replaceState(null, "", u.toString());
+      }
+    } catch (_) {}
     bind();
     render();
-    requestBeacon();
-    setTimeout(requestBeacon, 500);
-    setTimeout(requestBeacon, 1500);
+    scheduleDetect();
   }
 
   if (document.readyState === "loading") {

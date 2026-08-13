@@ -414,11 +414,18 @@ function AddMedia(data, currentTab = true) {
 
     // 数据发送
     data.html.find("#send2local").click(function () {
-        send2local("catch", data, data.tabId).then(function (success) {
-            success && success?.ok && Tips(i18n.hasSent, 1000);
-        }).catch(function (error) {
-            error ? Tips(error, 1000) : Tips(i18n.sendFailed, 1000);
-        });
+        const doSend = function () {
+            send2local("catch", data, data.tabId).then(function (success) {
+                success && success?.ok && Tips(i18n.hasSent, 1000);
+            }).catch(function (error) {
+                error ? Tips(error, 1000) : Tips(i18n.sendFailed, 1000);
+            });
+        };
+        if (typeof channelEnrichMediaWithPageTitle === "function") {
+            channelEnrichMediaWithPageTitle(data).finally(doSend);
+        } else {
+            doSend();
+        }
         return false;
     });
 
@@ -793,6 +800,14 @@ $("#currentPage").click(function () {
 
 // 发送到本地 多个
 $("#send2localSelect").click(function () {
+    const enrichThen = async (items) => {
+        if (typeof channelEnrichMediaWithPageTitle === "function") {
+            for (const item of items) {
+                await channelEnrichMediaWithPageTitle(item);
+            }
+        }
+        return items;
+    };
     if (window.confirm(i18n("send2localTips")) && getData().size > 1) {
         const checkedData = [];
         getData().forEach(function (item) {
@@ -800,7 +815,9 @@ $("#send2localSelect").click(function () {
                 checkedData.push(item);
             }
         });
-        send2localArray("catch", checkedData, G.tabId).then(function (success) {
+        enrichThen(checkedData).then(function (list) {
+            return send2localArray("catch", list, G.tabId);
+        }).then(function (success) {
             success && success?.ok && Tips(i18n.hasSent, 1000);
         }).catch(function (error) {
             error ? Tips(error, 1000) : Tips(i18n.sendFailed, 1000);
@@ -809,11 +826,18 @@ $("#send2localSelect").click(function () {
     }
     getData().forEach(function (item) {
         if (item.checked) {
-            send2local("catch", item, item.tabId).then(function (success) {
-                success && success?.ok && Tips(i18n.hasSent, 1000);
-            }).catch(function (error) {
-                error ? Tips(error, 1000) : Tips(i18n.sendFailed, 1000);
-            });
+            const sendOne = function () {
+                send2local("catch", item, item.tabId).then(function (success) {
+                    success && success?.ok && Tips(i18n.hasSent, 1000);
+                }).catch(function (error) {
+                    error ? Tips(error, 1000) : Tips(i18n.sendFailed, 1000);
+                });
+            };
+            if (typeof channelEnrichMediaWithPageTitle === "function") {
+                channelEnrichMediaWithPageTitle(item).finally(sendOne);
+            } else {
+                sendOne();
+            }
         }
     });
 });

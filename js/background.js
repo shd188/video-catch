@@ -1,5 +1,29 @@
 importScripts("/js/function.js", "/js/templates.js", "/js/init.js", "/js/channel-config.js", "/js/channel-init.js", "/js/license-client.js", "/js/license-update.js");
 
+/** 扩展刚装上时，给已打开的 /guide/ 页补注入 beacon（否则「重新检测」无效，只能手动刷新） */
+function injectGuideBeaconIntoOpenTabs() {
+    if (!chrome.scripting || !chrome.scripting.executeScript) { return; }
+    chrome.tabs.query({}, function (tabs) {
+        if (chrome.runtime.lastError || !tabs) { return; }
+        for (const tab of tabs) {
+            if (!tab?.id || !tab.url) { continue; }
+            let path = "";
+            try { path = new URL(tab.url).pathname || ""; } catch (_) { continue; }
+            if (path !== "/guide" && path !== "/guide/" && !path.startsWith("/guide/")) {
+                continue;
+            }
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ["js/guide-beacon.js"],
+            }).catch(function () { /* tab may be restricted */ });
+        }
+    });
+}
+chrome.runtime.onInstalled.addListener(function () {
+    injectGuideBeaconIntoOpenTabs();
+});
+try { injectGuideBeaconIntoOpenTabs(); } catch (_) {}
+
 // Service Worker 5分钟后会强制终止扩展
 // https://bugs.chromium.org/p/chromium/issues/detail?id=1271154
 // https://stackoverflow.com/questions/66618136/persistent-service-worker-in-chrome-extension/70003493#70003493
@@ -34,7 +58,7 @@ chrome.alarms.onAlarm.addListener(function (alarm) {
         return;
     }
     if (alarm.name === "licenseCheck" && typeof licenseCheck === "function") {
-        licenseCheck(false).catch(function () { });
+        licenseCheck(true).catch(function () { });
         return;
     }
 });
@@ -45,8 +69,7 @@ function scheduleLicenseCheckAlarm() {
         return licenseGetConfig();
     }).then(function (cfg) {
         if (!cfg?.apiBase) return;
-        const hours = cfg.checkIntervalHours ?? 24;
-        chrome.alarms.create("licenseCheck", { periodInMinutes: Math.max(30, hours * 60) });
+        chrome.alarms.create("licenseCheck", { periodInMinutes: 30 });
     }).catch(function () { });
 }
 
@@ -286,6 +309,17 @@ function findMedia(data, isRegex = false, filter = false, timer = false) {
         info.title = webInfo?.title ?? "NULL";
         info.favIconUrl = webInfo?.favIconUrl;
         info.webUrl = webInfo?.url;
+        // 腾讯会议回放：从 DOM 读取会议主题（style_subject__*）
+        if (typeof channelFetchTencentMeetingSubject === "function"
+            && typeof channelIsTencentMeetingPageUrl === "function"
+            && channelIsTencentMeetingPageUrl(info.webUrl)) {
+            try {
+                const subject = await channelFetchTencentMeetingSubject(data.tabId, { retries: 3, intervalMs: 400 });
+                if (typeof channelApplyLessonTitle === "function") {
+                    channelApplyLessonTitle(info, subject);
+                }
+            } catch (e) { /* ignore */ }
+        }
         if (channelShouldIgnoreSniffedMedia(info)) {
             return;
         }

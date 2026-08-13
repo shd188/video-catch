@@ -60,8 +60,12 @@
                 if (G.licenseActive !== true) {
                     $bar.removeClass("channel-allowed").addClass("channel-blocked");
                     const installUrl = chrome.runtime.getURL(G.channelInstallPage || "channel-install.html");
+                    const revoked = typeof LicenseState !== "undefined" && LicenseState.code === "REVOKED";
+                    const statusText = revoked
+                        ? i18nChannel("popupChannelRevoked", "激活码已作废，嗅探已禁用")
+                        : i18nChannel("popupChannelNeedActivate", "尚未激活，嗅探已禁用");
                     $bar.find(".channel-detail").html(
-                        `${i18nChannel("popupChannelNeedActivate", "尚未激活，嗅探已禁用")}`
+                        `${statusText}`
                         + `<br><a href="${escapeAttr(installUrl)}" target="_blank" rel="noopener">`
                         + `${i18nChannel("popupChannelOpenActivate", "打开激活页")}</a>`
                     );

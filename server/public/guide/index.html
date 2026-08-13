@@ -467,6 +467,15 @@
       padding-left: 1.35rem;
     }
     .guide-body li { margin: 0.35rem 0; }
+    .guide-body img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 0.75rem 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      box-sizing: border-box;
+    }
     .guide-body table {
       width: 100%;
       border-collapse: collapse;
@@ -510,14 +519,153 @@
       .wiz-channels { grid-template-columns: 1fr; }
       .wiz-step-body { padding-left: 16px; }
     }
+
+    /* Delivery (Xiaohongshu fixed URL) */
+    .deliver-panel {
+      margin-bottom: 16px;
+      padding: 18px 18px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 113, 227, 0.22);
+      background: linear-gradient(165deg, #f0f7ff 0%, var(--surface) 55%);
+    }
+    .deliver-panel[hidden] { display: none !important; }
+    .deliver-eyebrow {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+    .deliver-title {
+      margin: 0 0 14px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .deliver-block {
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .deliver-block:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .deliver-label {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .deliver-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .deliver-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+    }
+    .deliver-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+    .deliver-btn.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .deliver-muted {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+    .deliver-key {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      word-break: break-all;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+    .deliver-err {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--bad);
+    }
+    .deliver-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      z-index: 40;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(29, 29, 31, 0.92);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>渠道版扩展 · 安装向导</h1>
-    <p>分步安装 · 自动检测 · 视频与文字说明</p>
+    <h1 id="page-title">渠道版扩展 · 安装向导</h1>
+    <p id="page-sub">分步安装 · 自动检测 · 视频与文字说明</p>
   </header>
   <main>
+    <section id="deliver-panel" class="deliver-panel" hidden>
+      <p class="deliver-eyebrow">发货页</p>
+      <h2 class="deliver-title">您购买的是：<span id="deliver-channel-label">…</span></h2>
+
+      <div class="deliver-block">
+        <p class="deliver-label">1. 下载安装包（网盘）</p>
+        <div class="deliver-actions">
+          <a id="deliver-pan-url" class="deliver-btn" href="#" target="_blank" rel="noopener" hidden>打开网盘下载安装包</a>
+          <span id="deliver-pan-code-wrap" hidden>
+            提取码 <strong id="deliver-pan-code"></strong>
+            <button type="button" class="deliver-btn secondary" id="deliver-copy-pan-code" style="padding:6px 10px;font-size:12px;margin-left:6px">复制</button>
+          </span>
+        </div>
+        <p id="deliver-pan-missing" class="deliver-muted" hidden>网盘链接尚未配置，请联系客服获取安装包。</p>
+      </div>
+
+      <div class="deliver-block">
+        <p class="deliver-label">2. 领取激活码</p>
+        <div class="deliver-actions">
+          <button type="button" class="deliver-btn" id="deliver-claim-btn">领取激活码</button>
+        </div>
+        <div id="deliver-key-box" hidden>
+          <p class="deliver-key" id="deliver-key"></p>
+          <div class="deliver-actions">
+            <button type="button" class="deliver-btn secondary" id="deliver-copy-key">复制激活码</button>
+          </div>
+          <p class="deliver-muted">请自行保存。避免激活码丢失无法安装。</p>
+        </div>
+        <p id="deliver-claim-err" class="deliver-err" hidden></p>
+      </div>
+
+      <p class="deliver-muted">领好激活码后，按下方安装向导完成安装与激活。</p>
+    </section>
+    <div id="deliver-toast" class="deliver-toast" hidden></div>
+
     <p class="mode-notice">
       建议优先使用 <strong>安装向导</strong>（一步一步勾选，装好后可自动检测）。
       也可以改用视频跟做，或查阅完整文字说明。装不好可看
@@ -575,7 +723,7 @@
               </span>
             </button>
             <div class="wiz-step-body" hidden>
-              <p>您应收到 <code data-ch-zip>xiaoetong.zip</code>（渠道：<strong data-ch-name>…</strong>）。</p>
+              <p>请从<strong>上方网盘</strong>下载 <code data-ch-zip>xiaoetong.zip</code>（渠道：<strong data-ch-name>…</strong>），或使用您已收到的安装包。</p>
               <ol>
                 <li>把 zip 保存到电脑（如下载文件夹）。</li>
                 <li>双击解压，得到文件夹 <code data-ch-folder>xiaoetong</code>。</li>
@@ -686,7 +834,8 @@
               <ol>
                 <li>首次加载通常会自动打开「安装说明」页。</li>
                 <li>在「渠道激活」输入服务商给的激活码，点「激活」。</li>
-                <li>成功后回到<strong>本向导页</strong>，点「重新检测」。</li>
+                <li>成功后<strong>回到本向导页</strong>（切回本标签即可，会自动再检测；也可点「重新检测」）。</li>
+                <li>若一直显示「未检测到」，请按 <kbd>F5</kbd> <strong>刷新本页</strong> 后再检测一次。</li>
               </ol>
               <ul class="wiz-checks">
                 <li>
@@ -789,6 +938,7 @@
     </article>
   </main>
   <script src="/guide/video-config.js"></script>
+  <script src="/guide/delivery.js"></script>
   <script src="/guide/wizard.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
   <script>
@@ -1004,6 +1154,8 @@
           return res.text();
         })
         .then(function (md) {
+          // docs 用 ../img/；/guide 与 /d/* 发货页均用绝对路径，避免相对路径指错目录
+          md = md.replace(/\]\(\.\.\/img\//g, "](/guide/img/");
           document.getElementById("text-content").innerHTML = marked.parse(md);
         })
         .catch(function (err) {

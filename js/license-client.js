@@ -7,6 +7,7 @@ const LicenseStorage = {
   installationId: "installationId",
   lastCheck: "licenseLastCheck",
   activatedOnce: "licenseActivatedOnce",
+  invalidated: "licenseInvalidated",
 };
 
 /** 不依赖 G 的订阅状态（安装页 / background 共用） */
@@ -14,6 +15,7 @@ const LicenseState = {
   active: false,
   expiresAt: null,
   update: null,
+  code: null,
 };
 
 let _licenseConfigCache = null;
@@ -58,9 +60,12 @@ function licenseOpenInstallPage() {
 }
 
 function licenseApplyCheckResult(result, cfg) {
+  const revoked = result?.code === "REVOKED";
   const strictMode = cfg?.strict === true;
-  const updatesAllowed = !!result.updates_allowed || (!strictMode && !!result.ever_activated);
-  LicenseState.active = !!result.active || updatesAllowed;
+  const updatesAllowed =
+    !revoked && (!!result.updates_allowed || (!strictMode && !!result.ever_activated));
+  LicenseState.active = !revoked && (!!result.active || updatesAllowed);
+  LicenseState.code = result?.code || null;
   LicenseState.expiresAt = result.expires_at ?? null;
   LicenseState.update = result.update_available && result.download_url
     ? {
@@ -71,6 +76,10 @@ function licenseApplyCheckResult(result, cfg) {
     : null;
   licenseSyncToG();
 
+  if (revoked) {
+    licenseMarkInvalidated();
+  }
+
   if (typeof licensePersistPendingUpdate === "function") {
     licensePersistPendingUpdate(LicenseState.update);
   }
@@ -79,13 +88,32 @@ function licenseApplyCheckResult(result, cfg) {
   }
 }
 
+function licenseMarkInvalidated() {
+  chrome.storage.local.set({
+    [LicenseStorage.invalidated]: true,
+    [LicenseStorage.activatedOnce]: false,
+  });
+}
+
+function licenseClearInvalidated() {
+  chrome.storage.local.set({ [LicenseStorage.invalidated]: false });
+}
+
+async function licenseIsInvalidated() {
+  const items = await new Promise((resolve) => {
+    chrome.storage.local.get([LicenseStorage.invalidated], (data) => resolve(data || {}));
+  });
+  return !!items[LicenseStorage.invalidated];
+}
+
 async function licenseHasLocalActivation() {
   const items = await new Promise((resolve) => {
     chrome.storage.local.get(
-      [LicenseStorage.key, LicenseStorage.activatedOnce],
+      [LicenseStorage.key, LicenseStorage.activatedOnce, LicenseStorage.invalidated],
       (data) => resolve(data || {})
     );
   });
+  if (items[LicenseStorage.invalidated]) return false;
   return !!(items[LicenseStorage.key] || items[LicenseStorage.activatedOnce]);
 }
 
@@ -104,6 +132,10 @@ async function licenseBootstrap() {
   }
   if (await licenseHasLocalActivation()) {
     licenseApplyLocalActivationHint();
+  } else if (await licenseIsInvalidated()) {
+    LicenseState.active = false;
+    LicenseState.code = "REVOKED";
+    licenseSyncToG();
   }
   try {
     return await licenseCheck(true);
@@ -111,6 +143,12 @@ async function licenseBootstrap() {
     if (await licenseHasLocalActivation()) {
       licenseApplyLocalActivationHint();
       return { cached: true, active: true, offline: true };
+    }
+    if (await licenseIsInvalidated()) {
+      LicenseState.active = false;
+      LicenseState.code = "REVOKED";
+      licenseSyncToG();
+      return { cached: true, active: false, offline: true, code: "REVOKED" };
     }
     throw e;
   }
@@ -208,7 +246,9 @@ async function licenseActivate(licenseKey) {
   });
   if (result.ok) {
     await licenseSetStoredKey(licenseKey.trim());
+    licenseClearInvalidated();
     LicenseState.active = true;
+    LicenseState.code = null;
     LicenseState.expiresAt = result.expires_at;
     licenseSyncToG();
     chrome.storage.local.set({ [LicenseStorage.activatedOnce]: true });
@@ -254,6 +294,7 @@ async function licenseCheck(force = false) {
   chrome.storage.local.set({ [LicenseStorage.lastCheck]: Date.now() });
   licenseApplyCheckResult(result, cfg);
   if (LicenseState.active) {
+    licenseClearInvalidated();
     chrome.storage.local.set({ [LicenseStorage.activatedOnce]: true });
   }
 
@@ -266,6 +307,7 @@ function licensePreserveKeys() {
     LicenseStorage.installationId,
     LicenseStorage.lastCheck,
     LicenseStorage.activatedOnce,
+    LicenseStorage.invalidated,
     "updateDismissedVersion",
     "updatePromptShownVersion",
     "pendingUpdate",
