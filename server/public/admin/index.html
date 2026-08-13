@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="Video-Catch 激活码、兑换码与渠道包管理" />
-  <title>Video-Catch 管理后台</title>
+  <meta name="description" content="按产品管理激活码、兑换码与发货页" />
+  <title>管理后台</title>
   <style>
     :root {
       --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -71,6 +71,12 @@
       font-size: var(--text-lg);
       font-weight: 600;
       letter-spacing: -0.02em;
+    }
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
     }
     #authBar {
       display: flex;
@@ -241,6 +247,39 @@
       color: #fff;
       box-shadow: var(--shadow);
     }
+    .product-nav {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+      flex-wrap: wrap;
+    }
+    .product-nav button {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 10px 16px;
+      font-size: var(--text-base);
+      font-weight: 600;
+      box-shadow: none;
+    }
+    .product-nav button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .product-nav button.account {
+      font-weight: 500;
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      margin-left: auto;
+    }
+    .product-nav button.account.active {
+      color: #fff;
+    }
+    .product-hint {
+      margin: 0 0 var(--space-4);
+    }
     .table-wrap {
       overflow-x: auto;
       margin-top: var(--space-3);
@@ -271,6 +310,7 @@
     }
     .err { color: #d70015; font-size: var(--text-sm); margin-top: var(--space-2); }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .row2:has(#bulkChannelWrap[hidden]) { grid-template-columns: 1fr; }
     .preset-row { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; }
     .channel-tabs {
       display: flex;
@@ -395,6 +435,17 @@
         white-space: nowrap;
         min-height: 40px;
       }
+      .product-nav {
+        flex-wrap: wrap;
+      }
+      .product-nav button {
+        flex: 1 1 calc(50% - 8px);
+        min-height: 44px;
+      }
+      .product-nav button.account {
+        margin-left: 0;
+        flex: 1 1 100%;
+      }
       .channel-tabs {
         flex-wrap: nowrap;
         overflow-x: auto;
@@ -418,7 +469,7 @@
         width: 100%;
         min-height: 44px;
       }
-      #bulkBtn, #publishBtn, #createLicBtn, #changePasswordBtn {
+      #bulkBtn, #redeemBulkBtn, #changePasswordBtn {
         width: 100%;
         min-height: 44px;
       }
@@ -511,7 +562,7 @@
 </head>
 <body>
   <header>
-    <h1>Video-Catch 管理后台</h1>
+    <h1>管理后台</h1>
     <div id="authBar">
       <a href="/guide/" target="_blank" rel="noopener" class="auth-link">用户说明 ↗</a>
       <span id="authStatus" class="guest">未登录</span>
@@ -527,33 +578,19 @@
       请先输入右上角<strong>管理登录密码</strong>并登录（与客户激活码无关）。建议将本页加入书签：<strong id="pageUrl"></strong>
     </div>
 
-    <div class="card card-info">
-      <strong>推荐流程：</strong>每个渠道只 <b>发布一次 zip</b> → 批量生成激活码 → 下载 CSV → 每单发一个未使用的码。
-      <br />课程下载器（桌面端）选渠道「课程下载器」生成 <code>XET-</code> 码，发货页：<a href="/course-dl/" target="_blank">/course-dl/</a>
-      <br />兑换码（按次数套餐，与激活码独立）可在「生成兑换码」页签批量生成。
-    </div>
+    <p id="productHint" class="card card-info product-hint"></p>
 
-    <div class="tabs">
-      <button type="button" data-tab="bulk" class="active">生成激活码</button>
-      <button type="button" data-tab="redeem-bulk">生成兑换码</button>
-      <button type="button" data-tab="release">发布渠道包</button>
-      <button type="button" data-tab="delivery">发货页/网盘</button>
-      <button type="button" data-tab="coursedl">课程下载器</button>
-      <button type="button" data-tab="licenses">激活码查询</button>
-      <button type="button" data-tab="redeem-list">兑换码查询</button>
-      <button type="button" data-tab="releases">版本列表</button>
-      <button type="button" data-tab="license">单个生成</button>
-      <button type="button" data-tab="account">修改登录密码</button>
-    </div>
+    <div class="product-nav" id="productNav"></div>
+    <div class="tabs" id="subTabs"></div>
 
     <section id="panel-bulk" class="card">
-      <h3>生成激活码</h3>
-      <p class="section-desc">选择渠道和数量，生成后下载 CSV。码快用完时在此补生成一批。</p>
+      <h3 id="bulkTitle">生成激活码</h3>
+      <p class="section-desc" id="bulkDesc">选择渠道和数量，生成后下载 CSV。码快用完时在此补生成一批。</p>
       <div id="bulkStats" class="stats-box">
         登录后显示剩余未使用数量…
       </div>
       <div class="row2">
-        <div>
+        <div id="bulkChannelWrap">
           <label>渠道</label>
           <select id="bulkChannel"></select>
         </div>
@@ -619,26 +656,10 @@
       <div id="redeemBulkResult"></div>
     </section>
 
-    <section id="panel-release" class="card" hidden>
-      <h3>发布渠道扩展包</h3>
-      <p class="section-desc">本机 <code>npm run build -- 渠道名</code> 打 zip 后上传。</p>
-      <label>渠道</label>
-      <select id="relChannel"></select>
-      <label>版本号</label>
-      <input id="relVersion" value="2.6.10" placeholder="与 manifest.json 版本一致" />
-      <label>更新说明</label>
-      <textarea id="relNotes" rows="2"></textarea>
-      <label>扩展 zip</label>
-      <input id="relFile" type="file" accept=".zip" />
-      <button type="button" id="publishBtn" data-require-auth>上传并发布</button>
-      <p class="err" id="relErr"></p>
-      <div id="relResult"></div>
-    </section>
-
     <section id="panel-delivery" class="card" hidden>
-      <h3>发货页 / 网盘</h3>
+      <h3>发货页配置</h3>
       <p class="section-desc">
-        小红书自动发货每渠道填一个固定链接。客户打开后可手动领取激活码。
+        每个渠道一个发货链接，填到小红书自动发货。客户打开后可领取激活码并看到网盘下载地址。
         链接形如 <code id="deliveryUrlExample">https://api…/d/a8f3c2…</code>（不透明 token，无法从地址猜到其它渠道）。
       </p>
       <div id="deliveryChannelTabs" class="channel-tabs"></div>
@@ -656,11 +677,11 @@
     </section>
 
     <section id="panel-coursedl" class="card" hidden>
-      <h3>课程下载器发货页</h3>
+      <h3>发货页配置</h3>
       <p class="section-desc">
         买家入口：<a id="courseDlPageLink" href="/course-dl/" target="_blank">/course-dl/</a>
-        买家填<strong>小红书订单号</strong>（如 <code>P802096514294231571</code>）点「生成激活码」，系统绑定一条未发出且未激活的库存码并显示在网页上。
-        请先在「生成激活码」选渠道 <b>课程下载器</b> 批量备货；库存空时会自动补生成 1 个。
+        买家填<strong>小红书订单号</strong>（如 <code>P802096514294231571</code>）领取激活码。
+        请先在本产品「生成激活码」里备货；库存空时发货页会自动补生成 1 个。
       </p>
       <label>macOS 安装包链接</label>
       <input id="cdlMacUrl" placeholder="https://...dmg 或网盘直链" />
@@ -673,7 +694,7 @@
     </section>
 
     <section id="panel-licenses" class="card" hidden>
-      <h3>激活码查询</h3>
+      <h3>激活码列表</h3>
       <p class="section-desc">按渠道查看激活码使用情况。</p>
       <div id="licenseChannelTabs" class="channel-tabs"></div>
       <div class="releases-toolbar">
@@ -701,7 +722,7 @@
     </section>
 
     <section id="panel-redeem-list" class="card" hidden>
-      <h3>兑换码查询</h3>
+      <h3>兑换码列表</h3>
       <p class="section-desc">本地镜像列表；点「刷新」会向 sph-dl 同步当前页剩余次数。</p>
       <div class="releases-toolbar">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -742,20 +763,6 @@
       <div id="redeemPagination" class="pagination"></div>
     </section>
 
-    <section id="panel-license" class="card" hidden>
-      <h3>单个生成</h3>
-      <label>渠道 ID</label>
-      <input id="licChannel" value="xiaoetong" list="channelList" />
-      <label>客户邮箱（可选）</label>
-      <input id="licEmail" type="email" />
-      <label>过期日期（可选）</label>
-      <input id="licExpires" type="date" />
-      <label>备注</label>
-      <input id="licNote" placeholder="订单号" />
-      <button type="button" id="createLicBtn" data-require-auth>生成 1 个激活码</button>
-      <div id="licResult"></div>
-    </section>
-
     <section id="panel-account" class="card" hidden>
       <h3>修改管理登录密码</h3>
       <p class="section-desc">
@@ -769,36 +776,64 @@
       <button type="button" id="changePasswordBtn" data-require-auth>保存新密码</button>
       <div id="passwordResult"></div>
     </section>
-
-    <section id="panel-releases" class="card" hidden>
-      <h3>已发布版本</h3>
-      <p class="section-desc">按渠道查看已上传的扩展 zip，可直接下载。</p>
-      <div id="releaseChannelTabs" class="channel-tabs"></div>
-      <div class="releases-toolbar">
-        <span id="releaseChannelHint" class="section-desc" style="margin:0"></span>
-        <button type="button" class="secondary btn-sm" id="refreshRelBtn" data-require-auth>刷新</button>
-      </div>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr><th>版本</th><th>文件</th><th>说明</th><th>发布时间</th><th>操作</th></tr>
-          </thead>
-          <tbody id="relTable"></tbody>
-        </table>
-      </div>
-    </section>
   </main>
-
-  <datalist id="channelList"></datalist>
 
   <script>
     const STORAGE_KEY = "video_admin_key";
     const REMEMBER_KEY = "video_admin_remember";
+    const PRODUCT_DEFS = [
+      {
+        id: "plugin",
+        label: "视频下载插件",
+        hint: "全能、小鹅通、飞书、腾讯会议。生成激活码后可下载 CSV，或把发货链接发给客户自行领取。",
+        channelIds: ["quanneng", "xiaoetong", "feishu", "tencentmeeting"],
+        tabs: [
+          { id: "bulk", label: "生成激活码" },
+          { id: "licenses", label: "激活码列表" },
+          { id: "delivery", label: "发货页配置" },
+        ],
+      },
+      {
+        id: "sph",
+        label: "视频号下载",
+        hint: "按次数套餐生成兑换码（经 sph-dl 写入）。与浏览器插件激活码相互独立。",
+        channelIds: [],
+        tabs: [
+          { id: "redeem-bulk", label: "生成兑换码" },
+          { id: "redeem-list", label: "兑换码列表" },
+        ],
+      },
+      {
+        id: "coursedl",
+        label: "小鹅通课程下载器",
+        hint: "桌面端激活码（XET- 开头）。买家打开发货页，填写小红书订单号领取。",
+        channelIds: ["course-dl"],
+        tabs: [
+          { id: "bulk", label: "生成激活码" },
+          { id: "licenses", label: "激活码列表" },
+          { id: "coursedl", label: "发货页配置" },
+        ],
+      },
+    ];
+    const PANEL_IDS = ["bulk", "redeem-bulk", "delivery", "coursedl", "licenses", "redeem-list", "account"];
+    const HASH_ALIASES = {
+      bulk: ["plugin", "bulk"],
+      licenses: ["plugin", "licenses"],
+      delivery: ["plugin", "delivery"],
+      "redeem-bulk": ["sph", "redeem-bulk"],
+      "redeem-list": ["sph", "redeem-list"],
+      coursedl: ["coursedl", "coursedl"],
+      account: ["account", "account"],
+      release: ["plugin", "bulk"],
+      releases: ["plugin", "bulk"],
+      license: ["plugin", "bulk"],
+    };
     let lastBulkDownload = null;
     let lastRedeemDownload = null;
     let isAuthenticated = false;
-    let adminChannels = [];
-    let activeReleaseChannel = "";
+    let allAdminChannels = [];
+    let activeProduct = "plugin";
+    let activeTab = "bulk";
     let activeLicenseChannel = "";
     let activeDeliveryChannel = "";
     let licensePage = 1;
@@ -930,49 +965,103 @@
       return { id: c.id, label: c.label || c.id };
     }
 
+    function productDef(id) {
+      return PRODUCT_DEFS.find((p) => p.id === id) || null;
+    }
+
+    function channelsForProduct(productId) {
+      const def = productDef(productId);
+      if (!def?.channelIds?.length) return [];
+      const byId = new Map(allAdminChannels.map((c) => [c.id, c]));
+      return def.channelIds.map((id) => byId.get(id) || { id, label: channelLabel(id) });
+    }
+
     function channelLabel(id) {
-      const hit = adminChannels.find((c) => c.id === id);
-      return hit ? hit.label : id;
+      const hit = allAdminChannels.find((c) => c.id === id);
+      if (hit) return hit.label;
+      const fallback = {
+        xiaoetong: "小鹅通",
+        tencentmeeting: "腾讯会议",
+        feishu: "飞书",
+        quanneng: "全能",
+        "course-dl": "课程下载器",
+      };
+      return fallback[id] || id;
     }
 
     const DEFAULT_CHANNELS = [
+      { id: "quanneng", label: "全能" },
       { id: "xiaoetong", label: "小鹅通" },
+      { id: "feishu", label: "飞书" },
       { id: "tencentmeeting", label: "腾讯会议" },
+      { id: "course-dl", label: "课程下载器" },
     ];
 
     function fillChannelSelects(channels) {
-      adminChannels = (channels.length ? channels : DEFAULT_CHANNELS).map(normalizeChannel);
-      const opts = adminChannels
+      allAdminChannels = (channels.length ? channels : DEFAULT_CHANNELS).map(normalizeChannel);
+      refreshProductNav();
+      applyProductChannelUi();
+    }
+
+    function applyProductChannelUi() {
+      const list = channelsForProduct(activeProduct);
+      const opts = list
         .map((c) => `<option value="${c.id}">${c.label}（${c.id}）</option>`)
         .join("");
       const bulkSel = document.getElementById("bulkChannel");
+      const wrap = document.getElementById("bulkChannelWrap");
       const prevBulk = bulkSel.value;
       bulkSel.innerHTML = opts;
-      if (prevBulk && [...bulkSel.options].some((o) => o.value === prevBulk)) bulkSel.value = prevBulk;
-
-      const relSel = document.getElementById("relChannel");
-      if (relSel) {
-        const prevRel = relSel.value;
-        relSel.innerHTML = opts;
-        if (prevRel && [...relSel.options].some((o) => o.value === prevRel)) relSel.value = prevRel;
+      if (list.length === 1) {
+        bulkSel.value = list[0].id;
+        if (wrap) wrap.hidden = true;
+      } else {
+        if (wrap) wrap.hidden = false;
+        if (prevBulk && list.some((c) => c.id === prevBulk)) bulkSel.value = prevBulk;
+        else if (list[0]) bulkSel.value = list[0].id;
       }
 
-      document.getElementById("channelList").innerHTML = adminChannels
-        .map((c) => `<option value="${c.id}">${c.label}</option>`)
-        .join("");
+      if (list.length && (!activeLicenseChannel || !list.some((c) => c.id === activeLicenseChannel))) {
+        activeLicenseChannel = list[0].id;
+        licensePage = 1;
+      }
+      if (list.length && (!activeDeliveryChannel || !list.some((c) => c.id === activeDeliveryChannel))) {
+        activeDeliveryChannel = list[0].id;
+      }
+
+      const hideChannelTabs = list.length <= 1;
+      const licTabs = document.getElementById("licenseChannelTabs");
+      const delTabs = document.getElementById("deliveryChannelTabs");
+      if (licTabs) licTabs.hidden = hideChannelTabs;
+      if (delTabs) delTabs.hidden = hideChannelTabs;
+
+      const bulkTitle = document.getElementById("bulkTitle");
+      const bulkDesc = document.getElementById("bulkDesc");
+      if (activeProduct === "coursedl") {
+        if (bulkTitle) bulkTitle.textContent = "生成激活码";
+        if (bulkDesc) bulkDesc.textContent = "生成课程下载器激活码（XET- 开头），下载 CSV 备用；发货页会从未发出的库存中自动发放。";
+      } else {
+        if (bulkTitle) bulkTitle.textContent = "生成激活码";
+        if (bulkDesc) bulkDesc.textContent = "选择渠道和数量，生成后下载 CSV。码快用完时在此补生成一批。";
+      }
+
       refreshChannelTabs();
     }
 
-    function mountChannelTabs(containerId, hintId, getActive, setActive, onSelect) {
+    function mountChannelTabs(containerId, hintId, getActive, setActive, onSelect, list) {
       const el = document.getElementById(containerId);
       if (!el) return;
-      const list = adminChannels.length ? adminChannels : DEFAULT_CHANNELS;
+      const channels = list && list.length ? list : channelsForProduct(activeProduct);
+      if (!channels.length) {
+        el.innerHTML = "";
+        return;
+      }
       let active = getActive();
-      if (!active || !list.some((c) => c.id === active)) {
-        active = list[0].id;
+      if (!active || !channels.some((c) => c.id === active)) {
+        active = channels[0].id;
         setActive(active);
       }
-      el.innerHTML = list
+      el.innerHTML = channels
         .map(
           (c) =>
             `<button type="button" class="${c.id === active ? "active" : ""}" data-ch="${c.id}">${c.label}</button>`
@@ -981,25 +1070,19 @@
       el.querySelectorAll("button").forEach((btn) => {
         btn.onclick = () => {
           setActive(btn.dataset.ch);
-          mountChannelTabs(containerId, hintId, getActive, setActive, onSelect);
+          mountChannelTabs(containerId, hintId, getActive, setActive, onSelect, channels);
           onSelect();
         };
       });
       const hint = hintId && document.getElementById(hintId);
       if (hint) {
-        const cur = list.find((c) => c.id === getActive());
+        const cur = channels.find((c) => c.id === getActive());
         hint.textContent = cur ? `当前：${cur.label}（${cur.id}）` : "";
       }
     }
 
     function refreshChannelTabs() {
-      mountChannelTabs(
-        "releaseChannelTabs",
-        "releaseChannelHint",
-        () => activeReleaseChannel,
-        (id) => { activeReleaseChannel = id; },
-        loadReleases
-      );
+      const list = channelsForProduct(activeProduct);
       mountChannelTabs(
         "licenseChannelTabs",
         "licenseChannelHint",
@@ -1008,15 +1091,93 @@
           activeLicenseChannel = id;
           licensePage = 1;
         },
-        loadLicenses
+        loadLicenses,
+        list
       );
       mountChannelTabs(
         "deliveryChannelTabs",
         null,
         () => activeDeliveryChannel,
         (id) => { activeDeliveryChannel = id; },
-        loadDeliveryPanel
+        loadDeliveryPanel,
+        list
       );
+    }
+
+    function refreshProductNav() {
+      const nav = document.getElementById("productNav");
+      nav.innerHTML =
+        PRODUCT_DEFS.map(
+          (p) =>
+            `<button type="button" data-product="${p.id}" class="${p.id === activeProduct ? "active" : ""}">${p.label}</button>`
+        ).join("") +
+        `<button type="button" class="account${activeProduct === "account" ? " active" : ""}" data-product="account">修改密码</button>`;
+      nav.querySelectorAll("button").forEach((btn) => {
+        btn.onclick = () => showProduct(btn.dataset.product);
+      });
+    }
+
+    function refreshSubTabs() {
+      const el = document.getElementById("subTabs");
+      const hint = document.getElementById("productHint");
+      if (activeProduct === "account") {
+        el.innerHTML = "";
+        el.hidden = true;
+        hint.innerHTML = "此密码仅用于登录本后台，与客户激活码无关。";
+        return;
+      }
+      el.hidden = false;
+      const def = productDef(activeProduct);
+      hint.innerHTML = def?.hint || "";
+      el.innerHTML = (def?.tabs || [])
+        .map(
+          (t) =>
+            `<button type="button" data-tab="${t.id}" class="${t.id === activeTab ? "active" : ""}">${t.label}</button>`
+        )
+        .join("");
+      el.querySelectorAll("button").forEach((btn) => {
+        btn.onclick = () => showProduct(activeProduct, btn.dataset.tab);
+      });
+    }
+
+    function parseHash() {
+      const raw = (location.hash || "").replace(/^#/, "");
+      if (!raw) return ["plugin", "bulk"];
+      if (HASH_ALIASES[raw]) return HASH_ALIASES[raw];
+      const [product, tab] = raw.split("/");
+      if (product === "account") return ["account", "account"];
+      const def = productDef(product);
+      if (!def) return ["plugin", "bulk"];
+      const tabId = tab && def.tabs.some((t) => t.id === tab) ? tab : def.tabs[0].id;
+      return [product, tabId];
+    }
+
+    function showProduct(productId, tabId) {
+      if (productId === "account") {
+        activeProduct = "account";
+        activeTab = "account";
+      } else {
+        const def = productDef(productId) || PRODUCT_DEFS[0];
+        activeProduct = def.id;
+        const allowed = def.tabs.map((t) => t.id);
+        activeTab = allowed.includes(tabId) ? tabId : def.tabs[0].id;
+      }
+      refreshProductNav();
+      refreshSubTabs();
+      applyProductChannelUi();
+      PANEL_IDS.forEach((id) => {
+        const panel = document.getElementById("panel-" + id);
+        if (panel) panel.hidden = id !== activeTab;
+      });
+      const nextHash = activeProduct === "account" ? "#account" : `#${activeProduct}/${activeTab}`;
+      if (location.hash !== nextHash) history.replaceState(null, "", nextHash);
+
+      if (activeTab === "bulk") loadBulkStats();
+      if (activeTab === "redeem-bulk") loadRedeemBulkStats();
+      if (activeTab === "delivery" && isAuthenticated) loadDeliveryPanel();
+      if (activeTab === "coursedl" && isAuthenticated) loadCourseDlConfig();
+      if (activeTab === "licenses" && isAuthenticated) loadLicenses();
+      if (activeTab === "redeem-list" && isAuthenticated) loadRedeemCodes();
     }
 
     async function loadChannels() {
@@ -1024,8 +1185,7 @@
       try {
         const { channels } = await api("/api/admin/channels");
         fillChannelSelects(channels);
-        loadBulkStats();
-        loadRedeemBulkStats();
+        showProduct(activeProduct, activeTab);
       } catch (_) {}
     }
 
@@ -1052,35 +1212,9 @@
 
     document.getElementById("bulkChannel").addEventListener("change", loadBulkStats);
 
-    const TAB_IDS = ["bulk", "redeem-bulk", "release", "delivery", "coursedl", "licenses", "redeem-list", "releases", "license", "account"];
-
-    function showTab(tab) {
-      if (!TAB_IDS.includes(tab)) tab = "bulk";
-      document.querySelectorAll(".tabs button").forEach((b) => {
-        b.classList.toggle("active", b.dataset.tab === tab);
-      });
-      TAB_IDS.forEach((t) => {
-        document.getElementById("panel-" + t).hidden = t !== tab;
-      });
-      if (location.hash !== "#" + tab) {
-        history.replaceState(null, "", "#" + tab);
-      }
-      if (tab === "bulk") loadBulkStats();
-      if (tab === "redeem-bulk") loadRedeemBulkStats();
-      if (tab === "delivery" && isAuthenticated) loadDeliveryPanel();
-      if (tab === "coursedl" && isAuthenticated) loadCourseDlConfig();
-      if (tab === "licenses" && isAuthenticated) loadLicenses();
-      if (tab === "redeem-list" && isAuthenticated) loadRedeemCodes();
-      if (tab === "releases" && isAuthenticated) loadReleases();
-    }
-
-    document.querySelectorAll(".tabs button").forEach((btn) => {
-      btn.onclick = () => showTab(btn.dataset.tab);
-    });
-
     window.addEventListener("hashchange", () => {
-      const tab = (location.hash || "#bulk").slice(1);
-      showTab(tab);
+      const [product, tab] = parseHash();
+      showProduct(product, tab);
     });
 
     document.querySelectorAll(".preset-count").forEach((btn) => {
@@ -1209,31 +1343,6 @@
       }
     };
 
-    document.getElementById("createLicBtn").onclick = async () => {
-      if (!requireAuth()) return;
-      const el = document.getElementById("licResult");
-      el.innerHTML = "";
-      try {
-        const { license } = await api("/api/admin/licenses", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            channel_id: document.getElementById("licChannel").value.trim(),
-            email: document.getElementById("licEmail").value.trim() || undefined,
-            single_use: true,
-            expires_at: document.getElementById("licExpires").value || undefined,
-            note: document.getElementById("licNote").value.trim() || undefined,
-          }),
-        });
-        el.innerHTML = `<div class="success-box">
-          <div class="mono" style="font-size:18px;margin:8px 0">${license.license_key}</div>
-          <button type="button" onclick="navigator.clipboard.writeText('${license.license_key}')">复制</button>
-        </div>`;
-      } catch (e) {
-        el.innerHTML = `<p class="err">${e.message}</p>`;
-      }
-    };
-
     function licenseRowIsUsed(l) {
       return !!(l.is_used || Number(l.activation_count ?? l.devices_used ?? 0) > 0);
     }
@@ -1285,8 +1394,9 @@
 
     async function loadLicenses() {
       if (!requireAuth()) return;
-      if (!activeLicenseChannel && adminChannels.length) {
-        activeLicenseChannel = adminChannels[0].id;
+      if (!activeLicenseChannel) {
+        const list = channelsForProduct(activeProduct);
+        if (list.length) activeLicenseChannel = list[0].id;
       }
       const ch = activeLicenseChannel || "xiaoetong";
       const unusedOnly = document.getElementById("unusedOnly").checked;
@@ -1418,8 +1528,9 @@
 
     async function loadDeliveryPanel() {
       if (!requireAuth()) return;
-      if (!activeDeliveryChannel && adminChannels.length) {
-        activeDeliveryChannel = adminChannels[0].id;
+      if (!activeDeliveryChannel) {
+        const list = channelsForProduct(activeProduct);
+        if (list.length) activeDeliveryChannel = list[0].id;
       }
       const ch = activeDeliveryChannel || "xiaoetong";
       const urlEl = document.getElementById("deliveryPageUrl");
@@ -1481,7 +1592,7 @@
 
     document.getElementById("saveDeliveryPanBtn").onclick = async () => {
       if (!requireAuth()) return;
-      const ch = activeDeliveryChannel || adminChannels[0]?.id;
+      const ch = activeDeliveryChannel || channelsForProduct(activeProduct)[0]?.id;
       const el = document.getElementById("deliveryPanResult");
       el.innerHTML = "";
       try {
@@ -1618,178 +1729,6 @@
       if (isAuthenticated) loadRedeemCodes();
     });
 
-    document.getElementById("relFile").addEventListener("change", () => {
-      const file = document.getElementById("relFile").files[0];
-      const verInput = document.getElementById("relVersion");
-      if (!file || verInput.value.trim()) return;
-      const m = file.name.match(/(\d+\.\d+(?:\.\d+)?(?:\.\d+)?)/);
-      if (m) verInput.value = m[1];
-    });
-
-    document.getElementById("publishBtn").onclick = async () => {
-      if (!requireAuth()) return;
-      const err = document.getElementById("relErr");
-      const out = document.getElementById("relResult");
-      err.textContent = "";
-      out.innerHTML = "";
-      const file = document.getElementById("relFile").files[0];
-      if (!file) {
-        err.textContent = "请选择 zip";
-        return;
-      }
-      const channelId = document.getElementById("relChannel").value.trim();
-      const version = document.getElementById("relVersion").value.trim();
-      if (!channelId) {
-        err.textContent = "请填写渠道 ID（如 xiaoetong）";
-        return;
-      }
-      if (!version) {
-        err.textContent = "请填写版本号（与 zip 内 manifest.json 一致）";
-        return;
-      }
-      const fd = new FormData();
-      fd.append("channel_id", channelId);
-      fd.append("version", version);
-      fd.append("release_notes", document.getElementById("relNotes").value.trim());
-      fd.append("file", file);
-      const qs = new URLSearchParams({ channel_id: channelId, version });
-      const btn = document.getElementById("publishBtn");
-      btn.disabled = true;
-      try {
-        const res = await fetch(`/api/admin/releases/upload?${qs}`, {
-          method: "POST",
-          headers: { "X-Admin-Key": getKey() },
-          body: fd,
-        });
-        const data = await res.json();
-        if (res.status === 401) {
-          clearAuth();
-          throw new Error("登录已失效");
-        }
-        if (!res.ok) throw new Error(data.message || "上传失败");
-        out.innerHTML = `<div class="success-box">已发布 ${data.release.channel_id} v${data.release.version}</div>`;
-        document.getElementById("relFile").value = "";
-      } catch (e) {
-        err.textContent = e.message;
-      } finally {
-        btn.disabled = !isAuthenticated;
-      }
-    };
-
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    async function downloadRelease(channelId, version, filename) {
-      if (!requireAuth()) return;
-      if (!channelId || !version) {
-        throw new Error("渠道或版本无效，请刷新页面后重试");
-      }
-      const key = getKey();
-      const qs = new URLSearchParams({
-        channel_id: channelId,
-        version,
-        admin_key: key,
-      });
-      const url = `/api/admin/releases/download?${qs}`;
-      const res = await fetch(url, { headers: { "X-Admin-Key": key } });
-      if (res.status === 401) {
-        clearAuth();
-        throw new Error("登录已失效，请重新登录");
-      }
-      const contentType = res.headers.get("Content-Type") || "";
-      if (!res.ok || contentType.includes("application/json")) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || `下载失败 (HTTP ${res.status})`);
-      }
-      const blob = await res.blob();
-      if (!blob.size) {
-        throw new Error("文件为空，服务器上可能缺少 zip，请重新发布");
-      }
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename || `${channelId}-${version}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    }
-
-    async function loadReleases() {
-      if (!requireAuth()) return;
-      if (!activeReleaseChannel && adminChannels.length) {
-        activeReleaseChannel = adminChannels[0].id;
-      }
-      const ch = activeReleaseChannel || "xiaoetong";
-      const q = `?channel_id=${encodeURIComponent(ch)}`;
-      const { releases } = await api("/api/admin/releases" + q);
-      document.getElementById("relTable").innerHTML =
-        releases
-          .map(
-            (r) => `<tr>
-        <td data-label="版本"><b>${escapeHtml(r.version)}</b></td>
-        <td class="mono" data-label="文件">${escapeHtml(r.filename)}</td>
-        <td data-label="说明">${escapeHtml(r.release_notes || "—")}</td>
-        <td data-label="发布时间">${escapeHtml(r.published_at || "")}</td>
-        <td class="row-actions-cell" data-label="操作">
-          <div class="row-actions">
-            <button type="button" class="secondary btn-sm btn-dl" data-ch="${r.channel_id}" data-ver="${r.version}" data-file="${r.filename}">下载</button>
-            <button type="button" class="btn-danger btn-sm btn-del" data-ch="${r.channel_id}" data-ver="${r.version}" data-label="${escapeHtml(channelLabel(r.channel_id))}">删除</button>
-          </div>
-        </td>
-      </tr>`
-          )
-          .join("") || "<tr class='empty-row'><td colspan='5'>该渠道暂无已发布版本</td></tr>";
-    }
-
-    async function deleteReleaseRow(channelId, version, label) {
-      if (!requireAuth()) return;
-      const name = label || channelId;
-      if (
-        !confirm(
-          `确定删除「${name}」v${version}？\n\n将删除版本记录；若服务器上存在对应 zip 也会一并删除。`
-        )
-      ) {
-        return;
-      }
-      await api(
-        `/api/admin/releases?channel_id=${encodeURIComponent(channelId)}&version=${encodeURIComponent(version)}`,
-        { method: "DELETE" }
-      );
-      await loadReleases();
-    }
-
-    document.getElementById("relTable").addEventListener("click", async (e) => {
-      const dlBtn = e.target.closest(".btn-dl");
-      if (dlBtn) {
-        dlBtn.disabled = true;
-        try {
-          await downloadRelease(dlBtn.dataset.ch, dlBtn.dataset.ver, dlBtn.dataset.file);
-        } catch (err) {
-          alert(err.message || "下载失败");
-        } finally {
-          dlBtn.disabled = false;
-        }
-        return;
-      }
-      const delBtn = e.target.closest(".btn-del");
-      if (!delBtn) return;
-      delBtn.disabled = true;
-      try {
-        await deleteReleaseRow(delBtn.dataset.ch, delBtn.dataset.ver, delBtn.dataset.label);
-      } catch (err) {
-        alert(err.message || "删除失败");
-      } finally {
-        delBtn.disabled = false;
-      }
-    });
-
-    document.getElementById("refreshRelBtn").onclick = loadReleases;
-
     document.getElementById("changePasswordBtn").onclick = async () => {
       if (!requireAuth()) return;
       const el = document.getElementById("passwordResult");
@@ -1825,7 +1764,8 @@
 
     fillChannelSelects(DEFAULT_CHANNELS);
     setAuthenticated(false);
-    showTab((location.hash || "#bulk").slice(1) || "bulk");
+    const [bootProduct, bootTab] = parseHash();
+    showProduct(bootProduct, bootTab);
     tryAutoLogin();
   </script>
 </body>
