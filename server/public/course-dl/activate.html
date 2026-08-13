@@ -24,11 +24,16 @@
         <input
           id="order"
           class="mono"
-          placeholder="例如 P802096514294231571"
+          placeholder="P802096514294231571"
           autocomplete="off"
           required
+          maxlength="19"
+          minlength="19"
+          pattern="P[0-9]{18}"
+          inputmode="text"
+          spellcheck="false"
         />
-        <p class="hint">在小红书订单详情里复制，一般以 P 开头。每个订单号只能领取一次；重复填写会显示同一份激活码。</p>
+        <p class="hint" id="order-hint">须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能领取一次。</p>
 
         <div class="row" style="margin-top:18px">
           <button class="btn" type="submit" id="submit">生成激活码</button>
@@ -55,8 +60,54 @@
       msg.className = "msg show " + (ok ? "ok" : "err");
     }
 
+    const ORDER_RE = /^P\d{18}$/;
+    const ORDER_LEN = 19;
+    const orderInput = document.getElementById("order");
+    const orderHint = document.getElementById("order-hint");
+
+    function normalizeOrder(raw) {
+      return String(raw || "")
+        .trim()
+        .replace(/\s+/g, "")
+        .toUpperCase();
+    }
+
+    function orderError(value) {
+      if (!value) return "请填写小红书订单号";
+      if (value[0] !== "P") return "订单号必须以 P 开头";
+      if (/[^P0-9]/.test(value)) return "订单号只能是 P 加数字，不能有空格或其它字符";
+      if (value.length !== ORDER_LEN) {
+        return "订单号须为 19 位（P + 18 位数字），当前 " + value.length + " 位";
+      }
+      if (!ORDER_RE.test(value)) return "格式不对，须为 P 加 18 位数字，例如 P802096514294231571";
+      return "";
+    }
+
+    orderInput.addEventListener("input", () => {
+      let v = orderInput.value.toUpperCase().replace(/[^P0-9]/g, "");
+      if (v.length > ORDER_LEN) v = v.slice(0, ORDER_LEN);
+      if (orderInput.value !== v) orderInput.value = v;
+      const err = orderError(v);
+      if (v && err) {
+        orderHint.textContent = err;
+        orderHint.style.color = "var(--bad)";
+      } else {
+        orderHint.innerHTML =
+          "须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能领取一次。";
+        orderHint.style.color = "";
+      }
+    });
+
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const order = normalizeOrder(orderInput.value);
+      orderInput.value = order;
+      const err = orderError(order);
+      if (err) {
+        show(err, false);
+        reveal.classList.remove("show");
+        return;
+      }
       const btn = document.getElementById("submit");
       btn.disabled = true;
       reveal.classList.remove("show");
@@ -64,9 +115,7 @@
         const r = await fetch("/api/claim", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            order_no: document.getElementById("order").value.trim(),
-          }),
+          body: JSON.stringify({ order_no: order }),
         });
         const d = await r.json();
         if (d.ok && d.license_key) {

@@ -3,10 +3,14 @@ import { getDb } from "./db.js";
 
 export const COURSE_DL_CHANNEL = "course-dl";
 
+const XHS_ORDER_RE = /^P\d{18}$/;
+const XHS_ORDER_HINT = "订单号须以 P 开头，后面 18 位数字，共 19 位，例如 P802096514294231571";
+
 function normalizeOrder(s) {
   return String(s || "")
     .trim()
-    .replace(/\s+/g, "");
+    .replace(/\s+/g, "")
+    .toUpperCase();
 }
 
 export function generateLicenseKey(channelId) {
@@ -96,11 +100,11 @@ export function activateLicense({ licenseKey, channelId, installationId, userAge
           message: "请使用领取该激活码时填写的小红书订单号",
         };
       }
-    } else if (!order || order.length < 4) {
+    } else if (!XHS_ORDER_RE.test(order)) {
       return {
         ok: false,
         code: "BAD_ORDER",
-        message: "请先在发货页用小红书订单号领取激活码",
+        message: XHS_ORDER_HINT,
       };
     }
     const orderToBind = bound || order;
@@ -563,8 +567,6 @@ const VERIFY_ERRORS = {
   NOT_ACTIVATED: "尚未激活",
 };
 
-const XHS_ORDER_RE = /^P\d{10,24}$/;
-
 export function normalizeXhsOrder(s) {
   return String(s || "")
     .trim()
@@ -582,8 +584,8 @@ export function claimCourseDlByOrder(orderNo) {
     return {
       ok: false,
       code: "BAD_ORDER",
-      error: "请填写小红书订单号，格式如 P802096514294231571",
-      message: "请填写小红书订单号，格式如 P802096514294231571",
+      error: XHS_ORDER_HINT,
+      message: XHS_ORDER_HINT,
     };
   }
 
