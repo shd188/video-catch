@@ -14,10 +14,11 @@
 | API 域名 | https://api.shentongxue.online |
 | 管理后台 | https://api.shentongxue.online/admin/ |
 | 用户说明（公开） | https://api.shentongxue.online/guide/ |
+| 课程下载器发货页 | https://api.shentongxue.online/course-dl/ |
 | Guide 视频（OSS） | 见 [GUIDE-VIDEO-OSS.md](GUIDE-VIDEO-OSS.md) |
 | 静态落地页 | 仓库 `landing/`（独立托管，不依赖 API） |
 
-**当前渠道**：`quanneng`（全能）、`xiaoetong`（小鹅通）、`tencentmeeting`（腾讯会议）、`feishu`（飞书）
+**当前渠道**：`quanneng`（全能）、`xiaoetong`（小鹅通）、`tencentmeeting`（腾讯会议）、`feishu`（飞书）、`course-dl`（课程下载器桌面端）
 
 **服务器**（CentOS 7）：代码 `/opt/video-catch`，API 跑在 Docker 容器 `video-catch-api`，Nginx 反代 443 → 8787。
 
@@ -243,7 +244,7 @@ docker restart video-catch-api
 编辑 `/opt/video-catch/server/.env`：
 
 ```
-ADMIN_CHANNELS=quanneng,xiaoetong,tencentmeeting,feishu
+ADMIN_CHANNELS=quanneng,xiaoetong,tencentmeeting,feishu,course-dl
 ```
 
 然后 `docker restart video-catch-api`。
@@ -261,6 +262,23 @@ tar czf ~/backup-$(date +%F).tar.gz data/licenses.db data/releases/
 docker stop video-catch-api
 cp licenses.db /opt/video-catch/server/data/licenses.db
 docker start video-catch-api
+```
+
+### 6.6 课程下载器（桌面端）
+
+与扩展共用同一后台，渠道 ID 为 `course-dl`（显示名「课程下载器」）。
+
+| 买家发货页 | https://api.shentongxue.online/course-dl/ |
+| 激活码格式 | `XET-xxxx-xxxx-xxxx` |
+| 规则 | 1 码 1 机；订单号全局（本渠道）只能用一次；作废后联网失效 |
+
+日常：后台「生成激活码」选 **课程下载器** → 私发给买家；「课程下载器」页签填安装包链接；「激活码查询」可作废 / 解绑。
+
+更新本功能后在服务器：
+
+```bash
+cd /opt/video-catch && git pull
+docker restart video-catch-api
 ```
 
 ---

@@ -14,7 +14,28 @@ import {
   licenseStats,
   listLicenses,
   countLicenses,
+  claimDeliveryLicense,
+  findLicenseByClaimToken,
+  revokeLicense,
+  unbindLicense,
+  activateCourseDl,
+  verifyCourseDl,
+  getCourseDlConfig,
+  setCourseDlConfig,
 } from "./licenses.js";
+import {
+  deliveryChannelAllowed,
+  getDeliveryPan,
+  setDeliveryPan,
+  listDeliveryPanConfigs,
+  checkClaimRateLimit,
+  parseCookies,
+  claimCookieName,
+  ensureDeliverySlug,
+  getChannelIdBySlug,
+  rotateDeliverySlug,
+  deliveryPageUrl,
+} from "./delivery.js";
 import {
   REDEEM_PACKS,
   createRedeemCode,
@@ -55,7 +76,7 @@ const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "0.0.0.0";
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "";
-const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "quanneng,xiaoetong,tencentmeeting,feishu")
+const ADMIN_CHANNELS = (process.env.ADMIN_CHANNELS || "quanneng,xiaoetong,tencentmeeting,feishu,course-dl")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
@@ -146,6 +167,151 @@ app.use(
   })
 );
 
+const courseDlDir = path.join(publicDir, "course-dl");
+function sendCourseDlIndex(_req, res) {
+  res.setHeader("Cache-Control", "no-cache");
+  res.sendFile(path.join(courseDlDir, "index.html"));
+}
+app.get(["/course-dl", "/course-dl/"], sendCourseDlIndex);
+app.use(
+  "/course-dl",
+  express.static(courseDlDir, {
+    index: false,
+    redirect: false,
+    maxAge: process.env.NODE_ENV === "production" ? "1h" : 0,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith("index.html") || filePath.endsWith(".html")) {
+        res.setHeader("Cache-Control", "no-cache");
+      }
+    },
+  })
+);
+
+function sendDeliverPage(req, res) {
+  const slug = String(req.params.slug || "").trim();
+  const channelId = getChannelIdBySlug(slug);
+  if (!channelId || !deliveryChannelAllowed(channelId, ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS)) {
+    return res.status(404).type("text/plain; charset=utf-8").send("链接无效或已失效");
+  }
+  let html = fs.readFileSync(path.join(guideDir, "index.html"), "utf8");
+  const inject = `<script>window.__VC_DELIVER__=${JSON.stringify({
+    channelId,
+    token: slug,
+  })};</script>`;
+  if (html.includes("</head>")) {
+    html = html.replace("</head>", `${inject}</head>`);
+  } else {
+    html = inject + html;
+  }
+  // Bust stale browser cache that may still hold application/octet-stream for same ETag
+  html = html.replace(
+    "<head>",
+    `<head>\n  <!-- vc-deliver-v3 -->\n  <meta http-equiv="Cache-Control" content="no-store" />`
+  );
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.send(html);
+}
+app.get("/d/:slug", sendDeliverPage);
+// 旧的可枚举渠道路径已废弃
+app.get("/deliver/:channelId", (_req, res) => {
+  res.status(404).type("text/plain; charset=utf-8").send("链接无效或已失效");
+});
+
+function clientIp(req) {
+  const xf = req.headers["x-forwarded-for"];
+  if (xf) return String(xf).split(",")[0].trim();
+  return req.socket?.remoteAddress || "";
+}
+
+app.get("/api/v1/delivery/meta", (req, res) => {
+  const token = String(req.query.token || "").trim();
+  const channelId = getChannelIdBySlug(token);
+  if (!channelId || !deliveryChannelAllowed(channelId, ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS)) {
+    return res.status(400).json({ ok: false, message: "链接无效或已失效" });
+  }
+  const channels = getAdminChannelList(ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS);
+  const ch = channels.find((c) => c.id === channelId);
+  const pan = getDeliveryPan(channelId);
+  const cookies = parseCookies(req.headers.cookie);
+  const claimTok = cookies[claimCookieName(channelId)] || "";
+  let claimed = false;
+  let licenseKey = null;
+  if (claimTok) {
+    const existing = findLicenseByClaimToken(channelId, claimTok);
+    if (existing) {
+      claimed = true;
+      licenseKey = existing.license_key;
+    }
+  }
+  res.json({
+    ok: true,
+    channel_id: channelId,
+    channel_label: ch?.label || channelId,
+    pan,
+    claimed,
+    license_key: licenseKey,
+  });
+});
+
+app.post("/api/v1/delivery/claim", (req, res) => {
+  const token = String(req.body?.token || "").trim();
+  const channelId = getChannelIdBySlug(token);
+  if (!channelId || !deliveryChannelAllowed(channelId, ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS)) {
+    return res.status(400).json({ ok: false, code: "BAD_TOKEN", message: "链接无效或已失效" });
+  }
+  const cookies = parseCookies(req.headers.cookie);
+  const existingToken = cookies[claimCookieName(channelId)] || "";
+
+  // 已领过：不计入限流，直接返回
+  if (existingToken) {
+    const existing = findLicenseByClaimToken(channelId, existingToken);
+    if (existing) {
+      const pan = getDeliveryPan(channelId);
+      return res.json({
+        ok: true,
+        license_key: existing.license_key,
+        channel_id: existing.channel_id,
+        pan,
+        reused: true,
+      });
+    }
+  }
+
+  const rate = checkClaimRateLimit(clientIp(req), channelId, { maxPerDay: 20 });
+  if (!rate.ok) {
+    return res.status(429).json(rate);
+  }
+
+  const result = claimDeliveryLicense(channelId, {});
+  if (!result.ok) {
+    const status = result.code === "OUT_OF_STOCK" ? 409 : 400;
+    return res.status(status).json(result);
+  }
+
+  const pan = getDeliveryPan(channelId);
+  const cookieName = claimCookieName(channelId);
+  const maxAge = 365 * 24 * 60 * 60;
+  res.setHeader(
+    "Set-Cookie",
+    `${cookieName}=${encodeURIComponent(result.claim_token)}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${
+      process.env.NODE_ENV === "production" || PUBLIC_BASE_URL.startsWith("https")
+        ? "; Secure"
+        : ""
+    }`
+  );
+  res.json({
+    ok: true,
+    license_key: result.license_key,
+    channel_id: result.channel_id,
+    pan,
+    reused: false,
+  });
+});
+
 const manualDir = path.join(publicDir, "manual");
 function sendManualIndex(_req, res) {
   res.setHeader("Cache-Control", "no-cache");
@@ -167,7 +333,7 @@ app.use(
 );
 
 app.post("/api/v1/activate", (req, res) => {
-  const { license_key, channel_id, installation_id, user_agent } = req.body || {};
+  const { license_key, channel_id, installation_id, user_agent, order_no, orderNo } = req.body || {};
   if (!license_key || !channel_id || !installation_id) {
     return res.status(400).json({ ok: false, message: "缺少参数" });
   }
@@ -176,6 +342,7 @@ app.post("/api/v1/activate", (req, res) => {
     channelId: String(channel_id).trim(),
     installationId: String(installation_id).trim(),
     userAgent: user_agent,
+    orderNo: order_no || orderNo,
   });
   res.status(result.ok ? 200 : 403).json(result);
 });
@@ -228,6 +395,35 @@ app.post("/api/v1/check", (req, res) => {
     );
   }
   res.json(payload);
+});
+
+/** course-dl 桌面端兼容接口（与 Cloudflare Worker 版路径一致） */
+app.post("/api/activate", (req, res) => {
+  const body = req.body || {};
+  const result = activateCourseDl({
+    code: body.code || body.license_key,
+    deviceId: body.device_id || body.deviceId || body.installation_id,
+    orderNo: body.order_no || body.orderNo,
+    userAgent: req.headers["user-agent"],
+  });
+  const status = result.ok ? 200 : result.code === "INVALID_KEY" ? 404 : 403;
+  if (!result.ok && result.error && result.error.includes("请填写")) {
+    return res.status(400).json(result);
+  }
+  res.status(status).json(result);
+});
+
+app.post("/api/verify", (req, res) => {
+  const body = req.body || {};
+  const result = verifyCourseDl({
+    code: body.code || body.license_key,
+    deviceId: body.device_id || body.deviceId || body.installation_id,
+  });
+  res.status(result.ok ? 200 : result.http || 403).json(result);
+});
+
+app.get("/api/config", (_req, res) => {
+  res.json({ ok: true, ...getCourseDlConfig() });
 });
 
 app.get("/api/v1/download", (req, res) => {
@@ -324,11 +520,17 @@ app.get("/api/admin/licenses/stats", adminAuth, (req, res) => {
 app.get("/api/admin/licenses", adminAuth, (req, res) => {
   const channelId = req.query.channel_id ? String(req.query.channel_id) : null;
   const unusedOnly = req.query.unused === "1";
+  const unsentOnly = req.query.unsent === "1";
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const pageSize = Math.min(Math.max(parseInt(req.query.page_size, 10) || 50, 1), 200);
   const offset = (page - 1) * pageSize;
-  const total = countLicenses(channelId, { unusedOnly });
-  const licenses = listLicenses(channelId, { limit: pageSize, offset, unusedOnly });
+  const total = countLicenses(channelId, { unusedOnly, unsentOnly });
+  const licenses = listLicenses(channelId, {
+    limit: pageSize,
+    offset,
+    unusedOnly,
+    unsentOnly,
+  });
   res.json({
     ok: true,
     licenses,
@@ -338,6 +540,69 @@ app.get("/api/admin/licenses", adminAuth, (req, res) => {
       total,
       total_pages: Math.max(1, Math.ceil(total / pageSize)),
     },
+  });
+});
+
+app.get("/api/admin/delivery/pan", adminAuth, (req, res) => {
+  const channelId = req.query.channel_id ? String(req.query.channel_id).trim() : "";
+  if (channelId) {
+    const slug = ensureDeliverySlug(channelId);
+    return res.json({
+      ok: true,
+      channel_id: channelId,
+      pan: getDeliveryPan(channelId),
+      slug,
+      page_url: deliveryPageUrl(PUBLIC_BASE_URL, slug),
+    });
+  }
+  const channels = getAdminChannelList(ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS);
+  const ids = channels.map((c) => c.id);
+  res.json({
+    ok: true,
+    items: listDeliveryPanConfigs(ids).map((item) => {
+      const slug = ensureDeliverySlug(item.channel_id);
+      return {
+        ...item,
+        slug,
+        page_url: deliveryPageUrl(PUBLIC_BASE_URL, slug),
+      };
+    }),
+  });
+});
+
+app.put("/api/admin/delivery/pan", adminAuth, (req, res) => {
+  const channelId = String(req.body?.channel_id || "").trim();
+  if (!channelId) {
+    return res.status(400).json({ ok: false, message: "请指定 channel_id" });
+  }
+  const pan = setDeliveryPan(channelId, {
+    url: req.body?.url,
+    code: req.body?.code,
+  });
+  const slug = ensureDeliverySlug(channelId);
+  res.json({
+    ok: true,
+    channel_id: channelId,
+    pan,
+    slug,
+    page_url: deliveryPageUrl(PUBLIC_BASE_URL, slug),
+  });
+});
+
+app.post("/api/admin/delivery/slug/rotate", adminAuth, (req, res) => {
+  const channelId = String(req.body?.channel_id || "").trim();
+  if (!channelId) {
+    return res.status(400).json({ ok: false, message: "请指定 channel_id" });
+  }
+  if (!deliveryChannelAllowed(channelId, ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS)) {
+    return res.status(400).json({ ok: false, message: "渠道无效" });
+  }
+  const slug = rotateDeliverySlug(channelId);
+  res.json({
+    ok: true,
+    channel_id: channelId,
+    slug,
+    page_url: deliveryPageUrl(PUBLIC_BASE_URL, slug),
   });
 });
 
@@ -372,6 +637,30 @@ app.post("/api/admin/licenses/bulk", adminAuth, (req, res) => {
   } catch (e) {
     res.status(400).json({ ok: false, message: e.message });
   }
+});
+
+app.post("/api/admin/licenses/revoke", adminAuth, (req, res) => {
+  const key = String(req.body?.license_key || req.body?.code || "").trim();
+  if (!key) return res.status(400).json({ ok: false, message: "缺少激活码" });
+  const result = revokeLicense(key);
+  res.status(result.ok ? 200 : 404).json(result);
+});
+
+app.post("/api/admin/licenses/unbind", adminAuth, (req, res) => {
+  const key = String(req.body?.license_key || req.body?.code || "").trim();
+  if (!key) return res.status(400).json({ ok: false, message: "缺少激活码" });
+  const result = unbindLicense(key);
+  const status = result.ok ? 200 : result.code === "REVOKED" ? 403 : 404;
+  res.status(status).json(result);
+});
+
+app.get("/api/admin/course-dl/config", adminAuth, (_req, res) => {
+  res.json({ ok: true, ...getCourseDlConfig() });
+});
+
+app.post("/api/admin/course-dl/config", adminAuth, (req, res) => {
+  const cfg = setCourseDlConfig(req.body || {});
+  res.json({ ok: true, ...cfg });
 });
 
 app.get("/api/admin/redeem-codes/stats", adminAuth, (req, res) => {
@@ -504,6 +793,8 @@ const server = app.listen(PORT, HOST, () => {
   const base = PUBLIC_BASE_URL.replace(/\/$/, "");
   console.log(`Admin UI: ${base}/admin/`);
   console.log(`User guide: ${base}/guide/`);
+  console.log(`Course-dl delivery: ${base}/course-dl/`);
+  console.log(`Delivery pages: ${base}/d/<token>`);
   console.log(`Remote install prep: ${base}/manual/`);
   console.log(`PUBLIC_BASE_URL=${PUBLIC_BASE_URL}`);
   if (!ADMIN_API_KEY || ADMIN_API_KEY === "change-me-to-a-long-random-string") {

@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS licenses (
   single_use INTEGER NOT NULL DEFAULT 0,
   expires_at TEXT,
   note TEXT,
+  sent_at TEXT,
+  claim_token TEXT,
+  order_no TEXT,
+  revoked INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -53,3 +57,6 @@ CREATE INDEX IF NOT EXISTS idx_activations_license ON activations(license_id);
 CREATE INDEX IF NOT EXISTS idx_releases_channel ON releases(channel_id);
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_pack ON redeem_codes(pack);
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_remaining ON redeem_codes(remaining);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_licenses_channel_order
+  ON licenses(channel_id, order_no)
+  WHERE order_no IS NOT NULL AND order_no != '';

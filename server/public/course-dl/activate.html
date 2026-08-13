@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>激活软件 — 小鹅通课程下载器</title>
+  <link rel="stylesheet" href="/course-dl/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>激活软件</h1>
+      <p>填写激活码、机器码与订单号。每个订单号只能成功激活一次。</p>
+    </header>
+    <nav>
+      <a href="/course-dl/">首页</a>
+      <a class="active" href="/course-dl/activate.html">激活软件</a>
+      <a href="/course-dl/guide.html">使用教程</a>
+    </nav>
+
+    <div class="card">
+      <form id="form">
+        <label for="code">激活码（卖家私发）</label>
+        <input id="code" class="mono" placeholder="例如 XET-XXXX-XXXX-XXXX" autocomplete="off" required />
+
+        <label for="device">机器码（软件窗口里复制）</label>
+        <input id="device" class="mono" placeholder="打开软件后显示的机器码" autocomplete="off" required />
+
+        <label for="order">订单号</label>
+        <input id="order" placeholder="支付订单号" autocomplete="off" required />
+        <p class="hint">订单号仅用于激活登记，每个订单号只能使用一次。</p>
+
+        <div class="row" style="margin-top:18px">
+          <button class="btn" type="submit" id="submit">提交激活</button>
+        </div>
+      </form>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+  <script>
+    const msg = document.getElementById("msg");
+    function show(text, ok) {
+      msg.textContent = text;
+      msg.className = "msg show " + (ok ? "ok" : "err");
+    }
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("submit");
+      btn.disabled = true;
+      try {
+        const body = {
+          code: document.getElementById("code").value.trim(),
+          device_id: document.getElementById("device").value.trim(),
+          order_no: document.getElementById("order").value.trim(),
+        };
+        const r = await fetch("/api/activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        if (d.ok) {
+          show("激活成功！请回到软件，粘贴同一个激活码完成登录（若软件已自动可用可直接使用）。", true);
+        } else {
+          show(d.error || d.message || "激活失败", false);
+        }
+      } catch (err) {
+        show("网络错误：" + err, false);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
