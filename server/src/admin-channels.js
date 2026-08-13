@@ -11,9 +11,10 @@ const LABEL_FALLBACK = {
   tencentmeeting: "腾讯会议",
   feishu: "飞书",
   quanneng: "全能",
+  "course-dl": "课程下载器",
 };
 
-const DEFAULT_CHANNEL_IDS = ["xiaoetong", "tencentmeeting", "feishu", "quanneng"];
+const DEFAULT_CHANNEL_IDS = ["xiaoetong", "tencentmeeting", "feishu", "quanneng", "course-dl"];
 
 function parseLabelOverrides(envValue) {
   const map = new Map();

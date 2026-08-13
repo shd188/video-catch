@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS licenses (
   single_use INTEGER NOT NULL DEFAULT 0,
   expires_at TEXT,
   note TEXT,
+  sent_at TEXT,
+  claim_token TEXT,
+  order_no TEXT,
+  revoked INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

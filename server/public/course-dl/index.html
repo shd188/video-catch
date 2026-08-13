@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>小鹅通课程下载器 — 发货中心</title>
+  <link rel="stylesheet" href="/course-dl/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>小鹅通课程下载器</h1>
+      <p>安装包下载 · 激活 · 使用教程（仅限已购课程的个人离线备份）</p>
+    </header>
+    <nav>
+      <a class="active" href="/course-dl/">首页</a>
+      <a href="/course-dl/activate.html">领取激活码</a>
+      <a href="/course-dl/guide.html">使用教程</a>
+    </nav>
+
+    <div class="card">
+      <h2>1. 下载安装包</h2>
+      <p>请按你的电脑系统下载对应版本，不要混用。</p>
+      <p class="hint" id="os-hint"></p>
+      <div class="os-grid">
+        <article class="os-card" id="card-mac" data-os="mac">
+          <div class="os-top">
+            <h3>macOS</h3>
+            <span class="os-badge" id="badge-mac" hidden>当前系统</span>
+          </div>
+          <p class="os-file">安装包：.dmg</p>
+          <a class="btn" id="btn-mac" href="#" target="_blank" rel="noopener">下载 Mac 版</a>
+          <ol class="os-steps">
+            <li>打开下载的 DMG</li>
+            <li>把「小鹅通课程下载器」拖到「应用程序」</li>
+            <li>若被拦截：系统设置 → 隐私与安全性 → 仍要打开</li>
+          </ol>
+        </article>
+        <article class="os-card" id="card-win" data-os="win">
+          <div class="os-top">
+            <h3>Windows</h3>
+            <span class="os-badge" id="badge-win" hidden>当前系统</span>
+          </div>
+          <p class="os-file">安装包：.exe</p>
+          <a class="btn secondary" id="btn-win" href="#" target="_blank" rel="noopener">下载 Windows 版</a>
+          <ol class="os-steps">
+            <li>运行下载的安装程序</li>
+            <li>若 SmartScreen 拦截：点「更多信息」→「仍要运行」</li>
+            <li>安装完成后从开始菜单打开软件</li>
+          </ol>
+        </article>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. 领取激活码</h2>
+      <ol>
+        <li>打开 <a href="/course-dl/activate.html">领取页面</a>，填写<strong>小红书订单号</strong>（P 开头 + 18 位数字，共 19 位）</li>
+        <li>点击「生成激活码」，页面会显示你的激活码（可复制）</li>
+        <li>打开软件，把激活码粘贴进去完成绑定</li>
+      </ol>
+      <div class="row" style="margin-top:14px">
+        <a class="btn" href="/course-dl/activate.html">去领取激活码</a>
+        <a class="btn secondary" href="/course-dl/guide.html">查看教程</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>注意事项</h2>
+      <ul>
+        <li>一个小红书订单号只能领取一次激活码；一个激活码只能绑定一台电脑。</li>
+        <li>若更换电脑需重新购买。</li>
+        <li>请仅下载你已付费、有权观看的课程内容。</li>
+      </ul>
+    </div>
+
+    <footer>© 小鹅通课程下载器发货中心</footer>
+  </div>
+  <script>
+    function detectOs() {
+      const ua = navigator.userAgent || "";
+      const plat = navigator.userAgentData?.platform || navigator.platform || "";
+      if (/Mac|iPhone|iPad/i.test(plat) || /Mac OS X/i.test(ua)) return "mac";
+      if (/Win/i.test(plat) || /Windows/i.test(ua)) return "win";
+      return "";
+    }
+
+    function bindDownload(el, url, missingText) {
+      if (url) {
+        el.href = url;
+        el.classList.remove("is-off");
+        el.removeAttribute("aria-disabled");
+        return;
+      }
+      el.href = "#";
+      el.classList.add("is-off");
+      el.setAttribute("aria-disabled", "true");
+      el.textContent = missingText;
+    }
+
+    async function load() {
+      const os = detectOs();
+      const hint = document.getElementById("os-hint");
+      if (os === "mac") {
+        document.getElementById("card-mac").classList.add("current");
+        document.getElementById("badge-mac").hidden = false;
+        document.getElementById("btn-mac").classList.remove("secondary");
+        document.getElementById("btn-win").classList.add("secondary");
+        hint.textContent = "检测到你正在使用 Mac，请下载 macOS 版（.dmg）。";
+      } else if (os === "win") {
+        document.getElementById("card-win").classList.add("current");
+        document.getElementById("badge-win").hidden = false;
+        document.getElementById("btn-win").classList.remove("secondary");
+        document.getElementById("btn-mac").classList.add("secondary");
+        hint.textContent = "检测到你正在使用 Windows，请下载 Windows 版（.exe）。";
+      } else {
+        hint.textContent = "无法自动识别系统时，请对照电脑类型选择：Mac 用 .dmg，Windows 用 .exe。";
+      }
+
+      try {
+        const r = await fetch("/api/config");
+        const d = await r.json();
+        bindDownload(
+          document.getElementById("btn-mac"),
+          d.download_mac_url,
+          "Mac 版暂未上架"
+        );
+        bindDownload(
+          document.getElementById("btn-win"),
+          d.download_win_url,
+          "Windows 版暂未上架"
+        );
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

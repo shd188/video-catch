@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>使用教程 — 小鹅通课程下载器</title>
+  <link rel="stylesheet" href="/course-dl/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>使用教程</h1>
+      <p>安装、激活、登录课程平台并下载。</p>
+    </header>
+    <nav>
+      <a href="/course-dl/">首页</a>
+      <a href="/course-dl/activate.html">领取激活码</a>
+      <a class="active" href="/course-dl/guide.html">使用教程</a>
+    </nav>
+
+    <div class="card" id="video-card" style="display:none">
+      <h2>视频教程</h2>
+      <div id="video-wrap"></div>
+    </div>
+
+    <div class="card">
+      <h2>文字教程</h2>
+      <ol>
+        <li><strong>下载安装</strong>：在首页按系统选择——<strong>Mac 下 macOS（.dmg）</strong>，<strong>Windows 下 Windows（.exe）</strong>，不要混用。</li>
+        <li><strong>激活</strong>：打开「领取激活码」页，填写小红书订单号（P + 18 位数字，共 19 位，如 P802096514294231571）→ 生成并复制激活码 → 打开软件粘贴完成绑定。</li>
+        <li><strong>打开浏览器登录</strong>：在软件中点击「打开浏览器登录」，用微信/手机号登录小鹅通（或店铺自定义域名）。</li>
+        <li><strong>粘贴课程链接</strong>：打开专栏/课程的「目录」页，复制浏览器地址栏链接，粘贴到软件。</li>
+        <li><strong>开始下载</strong>：选择保存目录，点击开始下载。视频按原标题保存；资料在课程文件夹的「资料」子目录。</li>
+      </ol>
+      <p class="hint">若提示需要登录：请先在弹出的浏览器窗口完成登录，软件会自动继续。</p>
+    </div>
+
+    <div class="card">
+      <h2>常见问题</h2>
+      <ul>
+        <li><strong>激活码已在其他设备使用</strong>：一码一台电脑，若更换电脑需重新购买。</li>
+        <li><strong>订单号已领取过</strong>：同一小红书订单号会显示同一份激活码，不会再发新码。</li>
+        <li><strong>读不到目录</strong>：确认已登录，且打开的是目录页（不是纯商品购买页）。</li>
+      </ul>
+    </div>
+
+    <footer>© 小鹅通课程下载器发货中心</footer>
+  </div>
+  <script>
+    async function loadVideo() {
+      try {
+        const r = await fetch("/api/config");
+        const d = await r.json();
+        const url = d.guide_video_url;
+        if (!url) return;
+        const card = document.getElementById("video-card");
+        const wrap = document.getElementById("video-wrap");
+        card.style.display = "block";
+        const safe = String(url).replace(/"/g, "");
+        if (/bilibili|youtube|qq\.com|v\.qq/.test(url)) {
+          wrap.innerHTML = `<iframe src="${safe}" style="width:100%;aspect-ratio:16/9;border:0;border-radius:10px" allowfullscreen></iframe>`;
+        } else if (/\.(mp4|webm)(\?|$)/i.test(url)) {
+          wrap.innerHTML = `<video src="${safe}" controls style="width:100%;border-radius:10px"></video>`;
+        } else {
+          wrap.innerHTML = `<a class="btn" href="${safe}" target="_blank" rel="noopener">打开视频教程</a>`;
+        }
+      } catch (_) {}
+    }
+    loadVideo();
+  </script>
+</body>
+</html>

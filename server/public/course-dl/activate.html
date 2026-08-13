@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>领取激活码 — 小鹅通课程下载器</title>
+  <link rel="stylesheet" href="/course-dl/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>领取激活码</h1>
+      <p>填写小红书订单号，系统自动发放一个未使用的激活码。</p>
+    </header>
+    <nav>
+      <a href="/course-dl/">首页</a>
+      <a class="active" href="/course-dl/activate.html">领取激活码</a>
+      <a href="/course-dl/guide.html">使用教程</a>
+    </nav>
+
+    <div class="card">
+      <form id="form">
+        <label for="order">小红书订单号</label>
+        <input
+          id="order"
+          class="mono"
+          placeholder="P802096514294231571"
+          autocomplete="off"
+          required
+          maxlength="19"
+          minlength="19"
+          pattern="P[0-9]{18}"
+          inputmode="text"
+          spellcheck="false"
+        />
+        <p class="hint" id="order-hint">须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能领取一次。</p>
+
+        <div class="row" style="margin-top:18px">
+          <button class="btn" type="submit" id="submit">生成激活码</button>
+        </div>
+      </form>
+      <div class="msg" id="msg"></div>
+      <div class="reveal" id="reveal">
+        <h3>你的激活码</h3>
+        <div class="code-box">
+          <strong id="code-out"></strong>
+          <button class="btn secondary" type="button" id="copy">复制</button>
+        </div>
+        <p class="hint">请打开软件，把激活码粘贴进去完成绑定。一个激活码只能绑定一台电脑。</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    const msg = document.getElementById("msg");
+    const reveal = document.getElementById("reveal");
+    const codeOut = document.getElementById("code-out");
+
+    function show(text, ok) {
+      msg.textContent = text;
+      msg.className = "msg show " + (ok ? "ok" : "err");
+    }
+
+    const ORDER_RE = /^P\d{18}$/;
+    const ORDER_LEN = 19;
+    const orderInput = document.getElementById("order");
+    const orderHint = document.getElementById("order-hint");
+
+    function normalizeOrder(raw) {
+      return String(raw || "")
+        .trim()
+        .replace(/\s+/g, "")
+        .toUpperCase();
+    }
+
+    function orderError(value) {
+      if (!value) return "请填写小红书订单号";
+      if (value[0] !== "P") return "订单号必须以 P 开头";
+      if (/[^P0-9]/.test(value)) return "订单号只能是 P 加数字，不能有空格或其它字符";
+      if (value.length !== ORDER_LEN) {
+        return "订单号须为 19 位（P + 18 位数字），当前 " + value.length + " 位";
+      }
+      if (!ORDER_RE.test(value)) return "格式不对，须为 P 加 18 位数字，例如 P802096514294231571";
+      return "";
+    }
+
+    orderInput.addEventListener("input", () => {
+      let v = orderInput.value.toUpperCase().replace(/[^P0-9]/g, "");
+      if (v.length > ORDER_LEN) v = v.slice(0, ORDER_LEN);
+      if (orderInput.value !== v) orderInput.value = v;
+      const err = orderError(v);
+      if (v && err) {
+        orderHint.textContent = err;
+        orderHint.style.color = "var(--bad)";
+      } else {
+        orderHint.innerHTML =
+          "须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能领取一次。";
+        orderHint.style.color = "";
+      }
+    });
+
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const order = normalizeOrder(orderInput.value);
+      orderInput.value = order;
+      const err = orderError(order);
+      if (err) {
+        show(err, false);
+        reveal.classList.remove("show");
+        return;
+      }
+      const btn = document.getElementById("submit");
+      btn.disabled = true;
+      reveal.classList.remove("show");
+      try {
+        const r = await fetch("/api/claim", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_no: order }),
+        });
+        const d = await r.json();
+        if (d.ok && d.license_key) {
+          codeOut.textContent = d.license_key;
+          reveal.classList.add("show");
+          show(
+            d.reused ? "该订单已领取过，以下是你的激活码。" : "领取成功，请复制激活码到软件中。",
+            true
+          );
+        } else {
+          show(d.error || d.message || "领取失败", false);
+        }
+      } catch (err) {
+        show("网络错误：" + err, false);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("copy").addEventListener("click", async () => {
+      const text = codeOut.textContent || "";
+      try {
+        await navigator.clipboard.writeText(text);
+        show("已复制激活码", true);
+      } catch {
+        show("复制失败，请手动选中激活码", false);
+      }
+    });
+  </script>
+</body>
+</html>

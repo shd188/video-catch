@@ -15,7 +15,14 @@ export function getDb() {
     db = new Database(dbPath);
     db.pragma("journal_mode = WAL");
     const schema = fs.readFileSync(path.join(root, "schema.sql"), "utf8");
-    db.exec(schema);
+    // Existing DBs already have `licenses`; schema.sql CREATE INDEX on new
+    // columns would throw before migrate() can ALTER TABLE. Apply schema
+    // best-effort, then add missing columns/indexes.
+    try {
+      db.exec(schema);
+    } catch (err) {
+      console.warn("schema.sql skipped (existing DB):", err && err.message ? err.message : err);
+    }
     migrate(db);
   }
   return db;
@@ -26,6 +33,25 @@ function migrate(database) {
   if (!cols.includes("single_use")) {
     database.exec(`ALTER TABLE licenses ADD COLUMN single_use INTEGER NOT NULL DEFAULT 0`);
   }
+  if (!cols.includes("sent_at")) {
+    database.exec(`ALTER TABLE licenses ADD COLUMN sent_at TEXT`);
+  }
+  if (!cols.includes("claim_token")) {
+    database.exec(`ALTER TABLE licenses ADD COLUMN claim_token TEXT`);
+  }
+  if (!cols.includes("order_no")) {
+    database.exec(`ALTER TABLE licenses ADD COLUMN order_no TEXT`);
+  }
+  if (!cols.includes("revoked")) {
+    database.exec(`ALTER TABLE licenses ADD COLUMN revoked INTEGER NOT NULL DEFAULT 0`);
+  }
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_licenses_channel_sent ON licenses(channel_id, sent_at);
+    CREATE INDEX IF NOT EXISTS idx_licenses_claim_token ON licenses(claim_token);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_licenses_channel_order
+      ON licenses(channel_id, order_no)
+      WHERE order_no IS NOT NULL AND order_no != '';
+  `);
   database.exec(`
     CREATE TABLE IF NOT EXISTS admin_settings (
       key TEXT PRIMARY KEY,

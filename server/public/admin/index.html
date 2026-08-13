@@ -344,6 +344,7 @@
     }
     .lic-status.used { background: var(--warn-soft); color: #b25000; }
     .lic-status.unused { background: var(--success-soft); color: #248a3d; }
+    .lic-status.revoked { background: rgba(215, 0, 21, 0.12); color: #d70015; }
     .filter-hint {
       margin: 0 0 var(--space-3);
       font-size: var(--text-sm);
@@ -528,6 +529,7 @@
 
     <div class="card card-info">
       <strong>推荐流程：</strong>每个渠道只 <b>发布一次 zip</b> → 批量生成激活码 → 下载 CSV → 每单发一个未使用的码。
+      <br />课程下载器（桌面端）选渠道「课程下载器」生成 <code>XET-</code> 码，发货页：<a href="/course-dl/" target="_blank">/course-dl/</a>
       <br />兑换码（按次数套餐，与激活码独立）可在「生成兑换码」页签批量生成。
     </div>
 
@@ -535,6 +537,8 @@
       <button type="button" data-tab="bulk" class="active">生成激活码</button>
       <button type="button" data-tab="redeem-bulk">生成兑换码</button>
       <button type="button" data-tab="release">发布渠道包</button>
+      <button type="button" data-tab="delivery">发货页/网盘</button>
+      <button type="button" data-tab="coursedl">课程下载器</button>
       <button type="button" data-tab="licenses">激活码查询</button>
       <button type="button" data-tab="redeem-list">兑换码查询</button>
       <button type="button" data-tab="releases">版本列表</button>
@@ -631,6 +635,43 @@
       <div id="relResult"></div>
     </section>
 
+    <section id="panel-delivery" class="card" hidden>
+      <h3>发货页 / 网盘</h3>
+      <p class="section-desc">
+        小红书自动发货每渠道填一个固定链接。客户打开后可手动领取激活码。
+        链接形如 <code id="deliveryUrlExample">https://api…/d/a8f3c2…</code>（不透明 token，无法从地址猜到其它渠道）。
+      </p>
+      <div id="deliveryChannelTabs" class="channel-tabs"></div>
+      <p id="deliveryPageUrl" class="stats-box" style="margin-top:12px">—</p>
+      <label>网盘分享链接</label>
+      <input id="deliveryPanUrl" type="url" placeholder="https://pan.baidu.com/s/…" />
+      <label>提取码（可选）</label>
+      <input id="deliveryPanCode" placeholder="例如：ab12" />
+      <button type="button" id="saveDeliveryPanBtn" data-require-auth>保存网盘配置</button>
+      <div id="deliveryPanResult"></div>
+      <p class="section-desc" style="margin-top:16px">
+        未发库存不足时请到「生成激活码」批量补货。发货页只发放「未发出且未激活」的码。
+      </p>
+      <div id="deliveryStockStats" class="stats-box">—</div>
+    </section>
+
+    <section id="panel-coursedl" class="card" hidden>
+      <h3>课程下载器发货页</h3>
+      <p class="section-desc">
+        买家入口：<a id="courseDlPageLink" href="/course-dl/" target="_blank">/course-dl/</a>
+        买家填<strong>小红书订单号</strong>（如 <code>P802096514294231571</code>）点「生成激活码」，系统绑定一条未发出且未激活的库存码并显示在网页上。
+        请先在「生成激活码」选渠道 <b>课程下载器</b> 批量备货；库存空时会自动补生成 1 个。
+      </p>
+      <label>macOS 安装包链接</label>
+      <input id="cdlMacUrl" placeholder="https://...dmg 或网盘直链" />
+      <label>Windows 安装包链接</label>
+      <input id="cdlWinUrl" placeholder="https://...exe 或网盘直链" />
+      <label>教程视频链接（可选）</label>
+      <input id="cdlVideoUrl" placeholder="B 站 / YouTube / mp4 直链" />
+      <button type="button" id="cdlSaveBtn" data-require-auth style="margin-top:14px">保存下载链接</button>
+      <div id="cdlResult"></div>
+    </section>
+
     <section id="panel-licenses" class="card" hidden>
       <h3>激活码查询</h3>
       <p class="section-desc">按渠道查看激活码使用情况。</p>
@@ -641,14 +682,17 @@
           <label style="margin:0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary)">
             <input type="checkbox" id="unusedOnly" checked /> 仅显示未使用
           </label>
+          <label style="margin:0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary)">
+            <input type="checkbox" id="unsentOnly" /> 仅未发出（可发库存）
+          </label>
           <button type="button" class="secondary btn-sm" id="refreshLicBtn" data-require-auth>刷新</button>
         </div>
       </div>
-      <p id="licenseFilterHint" class="filter-hint" hidden>已勾选「仅显示未使用」时，已激活的码不会出现在列表中；取消勾选可查看全部并核对状态。</p>
+      <p id="licenseFilterHint" class="filter-hint" hidden>已勾选「仅显示未使用」时，已激活的码不会出现在列表中；取消勾选可查看全部及<strong>使用时间</strong>。</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead>
-            <tr><th>激活码</th><th>状态</th><th>一次性</th><th>首次使用</th><th>过期</th><th>备注</th><th>创建</th></tr>
+            <tr><th>激活码</th><th>状态</th><th>订单号</th><th>发送时间</th><th>一次性</th><th>使用时间</th><th>过期</th><th>备注</th><th>操作</th></tr>
           </thead>
           <tbody id="licTable"></tbody>
         </table>
@@ -756,6 +800,7 @@
     let adminChannels = [];
     let activeReleaseChannel = "";
     let activeLicenseChannel = "";
+    let activeDeliveryChannel = "";
     let licensePage = 1;
     const licensePageSize = 50;
     let redeemPage = 1;
@@ -965,6 +1010,13 @@
         },
         loadLicenses
       );
+      mountChannelTabs(
+        "deliveryChannelTabs",
+        null,
+        () => activeDeliveryChannel,
+        (id) => { activeDeliveryChannel = id; },
+        loadDeliveryPanel
+      );
     }
 
     async function loadChannels() {
@@ -989,7 +1041,9 @@
         const { stats } = await api("/api/admin/licenses/stats?channel_id=" + encodeURIComponent(ch));
         const low = stats.unused < 100;
         el.innerHTML =
-          `渠道 <b>${ch}</b>：共 <b>${stats.total}</b> 个，<b style="color:${low ? "#dc2626" : "#059669"}">${stats.unused}</b> 未使用，${stats.used} 已使用。` +
+          `渠道 <b>${ch}</b>：共 <b>${stats.total}</b> 个，` +
+          `<b style="color:${low ? "#dc2626" : "#059669"}">${stats.unused}</b> 未使用（其中可发库存 <b>${stats.unsent ?? "—"}</b>），` +
+          `${stats.used} 已使用，已发未激活 ${stats.sent_unused ?? 0}。` +
           (low ? ` <span style="color:#dc2626">建议补生成。</span>` : "");
       } catch (e) {
         el.textContent = e.message;
@@ -998,7 +1052,7 @@
 
     document.getElementById("bulkChannel").addEventListener("change", loadBulkStats);
 
-    const TAB_IDS = ["bulk", "redeem-bulk", "release", "licenses", "redeem-list", "releases", "license", "account"];
+    const TAB_IDS = ["bulk", "redeem-bulk", "release", "delivery", "coursedl", "licenses", "redeem-list", "releases", "license", "account"];
 
     function showTab(tab) {
       if (!TAB_IDS.includes(tab)) tab = "bulk";
@@ -1013,6 +1067,8 @@
       }
       if (tab === "bulk") loadBulkStats();
       if (tab === "redeem-bulk") loadRedeemBulkStats();
+      if (tab === "delivery" && isAuthenticated) loadDeliveryPanel();
+      if (tab === "coursedl" && isAuthenticated) loadCourseDlConfig();
       if (tab === "licenses" && isAuthenticated) loadLicenses();
       if (tab === "redeem-list" && isAuthenticated) loadRedeemCodes();
       if (tab === "releases" && isAuthenticated) loadReleases();
@@ -1182,6 +1238,11 @@
       return !!(l.is_used || Number(l.activation_count ?? l.devices_used ?? 0) > 0);
     }
 
+    function formatAdminTime(v) {
+      if (!v) return "";
+      return String(v).replace("T", " ").slice(0, 19);
+    }
+
     function goLicensePage(target, totalPages) {
       const n = Math.max(1, Math.min(totalPages, Number(target) || 1));
       if (n === licensePage) return;
@@ -1229,10 +1290,12 @@
       }
       const ch = activeLicenseChannel || "xiaoetong";
       const unusedOnly = document.getElementById("unusedOnly").checked;
+      const unsentOnly = document.getElementById("unsentOnly")?.checked;
       const filterHint = document.getElementById("licenseFilterHint");
-      if (filterHint) filterHint.hidden = !unusedOnly;
+      if (filterHint) filterHint.hidden = !unusedOnly && !unsentOnly;
       const unused = unusedOnly ? "&unused=1" : "";
-      const q = `?channel_id=${encodeURIComponent(ch)}${unused}&page=${licensePage}&page_size=${licensePageSize}`;
+      const unsent = unsentOnly ? "&unsent=1" : "";
+      const q = `?channel_id=${encodeURIComponent(ch)}${unused}${unsent}&page=${licensePage}&page_size=${licensePageSize}`;
       const data = await api("/api/admin/licenses" + q);
       const licenses = data.licenses || [];
       if (data.pagination && licensePage > data.pagination.total_pages) {
@@ -1243,17 +1306,42 @@
         licenses
           .map((l) => {
             const used = licenseRowIsUsed(l);
+            const sent = !!(l.is_sent || l.sent_at);
+            const revoked = !!l.revoked;
+            let statusCls = used ? "used" : "unused";
+            let statusText = used ? "已使用" : "未使用";
+            if (revoked) {
+              statusCls = "revoked";
+              statusText = "已作废";
+            }
+            const first = formatAdminTime(l.first_activated_at);
+            const last = formatAdminTime(l.last_seen_at);
+            let usedText = "—";
+            if (used && first) {
+              usedText = last && last !== first ? `${first} · 最近 ${last}` : first;
+            }
+            const keyAttr = encodeURIComponent(l.license_key);
             return `<tr>
         <td class="mono" data-label="激活码">${escapeHtml(l.license_key)}</td>
-        <td data-label="状态"><span class="lic-status ${used ? "used" : "unused"}">${used ? "已使用" : "未使用"}</span></td>
+        <td data-label="状态"><span class="lic-status ${statusCls}">${statusText}</span></td>
+        <td class="mono" data-label="订单号">${escapeHtml(l.order_no || "—")}</td>
+        <td data-label="发送时间">${sent ? escapeHtml(formatAdminTime(l.sent_at) || "已发") : "—"}</td>
         <td data-label="一次性">${l.single_use ? "是" : "否"}</td>
-        <td data-label="首次使用">${used ? escapeHtml(l.first_activated_at || "—") : "—"}</td>
+        <td data-label="使用时间">${usedText}</td>
         <td data-label="过期">${escapeHtml(l.expires_at || "—")}</td>
         <td data-label="备注">${escapeHtml(l.note || "—")}</td>
-        <td data-label="创建">${escapeHtml(l.created_at || "")}</td>
+        <td data-label="操作">
+          <div class="row-actions">
+            ${revoked ? "" : `<button type="button" class="secondary btn-sm" data-act="unbind" data-key="${keyAttr}">解绑</button>`}
+            ${revoked ? "" : `<button type="button" class="btn-danger btn-sm" data-act="revoke" data-key="${keyAttr}">作废</button>`}
+          </div>
+        </td>
       </tr>`;
           })
-          .join("") || `<tr class="empty-row"><td colspan="7">${unusedOnly ? "该渠道暂无未使用的激活码" : "该渠道暂无激活码"}</td></tr>`;
+          .join("") ||
+        `<tr class="empty-row"><td colspan="9">${
+          unsentOnly ? "该渠道暂无可发库存" : unusedOnly ? "该渠道暂无未使用的激活码" : "该渠道暂无激活码"
+        }</td></tr>`;
       renderLicensePagination(data.pagination);
     }
 
@@ -1265,6 +1353,153 @@
       licensePage = 1;
       if (isAuthenticated) loadLicenses();
     });
+    document.getElementById("unsentOnly")?.addEventListener("change", () => {
+      licensePage = 1;
+      if (isAuthenticated) loadLicenses();
+    });
+
+    document.getElementById("licTable").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn || !requireAuth()) return;
+      const key = decodeURIComponent(btn.dataset.key || "");
+      const act = btn.dataset.act;
+      if (!key) return;
+      if (act === "revoke" && !confirm(`确定作废 ${key}？对方下次联网将无法使用。`)) return;
+      if (act === "unbind" && !confirm(`确定解绑 ${key}？可用同一订单号在新机器重新激活。`)) return;
+      btn.disabled = true;
+      try {
+        await api("/api/admin/licenses/" + act, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ license_key: key }),
+        });
+        loadLicenses();
+      } catch (err) {
+        alert(err.message || "操作失败");
+        btn.disabled = false;
+      }
+    });
+
+    async function loadCourseDlConfig() {
+      if (!requireAuth()) return;
+      const link = document.getElementById("courseDlPageLink");
+      if (link) {
+        link.href = location.origin + "/course-dl/";
+        link.textContent = location.origin + "/course-dl/";
+      }
+      try {
+        const data = await api("/api/admin/course-dl/config");
+        document.getElementById("cdlMacUrl").value = data.download_mac_url || "";
+        document.getElementById("cdlWinUrl").value = data.download_win_url || "";
+        document.getElementById("cdlVideoUrl").value = data.guide_video_url || "";
+      } catch (e) {
+        document.getElementById("cdlResult").innerHTML = `<p class="err">${e.message}</p>`;
+      }
+    }
+
+    document.getElementById("cdlSaveBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const el = document.getElementById("cdlResult");
+      try {
+        await api("/api/admin/course-dl/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            download_mac_url: document.getElementById("cdlMacUrl").value.trim(),
+            download_win_url: document.getElementById("cdlWinUrl").value.trim(),
+            guide_video_url: document.getElementById("cdlVideoUrl").value.trim(),
+          }),
+        });
+        el.innerHTML = `<div class="success-box">已保存。买家打开 ${location.origin}/course-dl/ 即可下载。</div>`;
+      } catch (e) {
+        el.innerHTML = `<p class="err">${e.message}</p>`;
+      }
+    };
+
+    async function loadDeliveryPanel() {
+      if (!requireAuth()) return;
+      if (!activeDeliveryChannel && adminChannels.length) {
+        activeDeliveryChannel = adminChannels[0].id;
+      }
+      const ch = activeDeliveryChannel || "xiaoetong";
+      const urlEl = document.getElementById("deliveryPageUrl");
+      const ex = document.getElementById("deliveryUrlExample");
+      if (ex) ex.textContent = `${location.origin}/d/a8f3c2…`;
+
+      const stock = document.getElementById("deliveryStockStats");
+      try {
+        const { stats } = await api(
+          "/api/admin/licenses/stats?channel_id=" + encodeURIComponent(ch)
+        );
+        const low = (stats.unsent ?? 0) < 50;
+        stock.innerHTML =
+          `可发库存（未发且未用）<b style="color:${low ? "#dc2626" : "#059669"}">${stats.unsent ?? 0}</b>；` +
+          `已发未激活 ${stats.sent_unused ?? 0}；未使用合计 ${stats.unused}；已使用 ${stats.used}。` +
+          (low ? ` <span style="color:#dc2626">请尽快补生成激活码。</span>` : "");
+      } catch (e) {
+        stock.textContent = e.message;
+      }
+
+      try {
+        const data = await api(
+          "/api/admin/delivery/pan?channel_id=" + encodeURIComponent(ch)
+        );
+        document.getElementById("deliveryPanUrl").value = data.pan?.url || "";
+        document.getElementById("deliveryPanCode").value = data.pan?.code || "";
+        const pageUrl = data.page_url || "";
+        if (urlEl) {
+          if (pageUrl) {
+            urlEl.innerHTML = `发货链接（填入小红书）：<a href="${escapeHtml(pageUrl)}" target="_blank" rel="noopener"><b>${escapeHtml(pageUrl)}</b></a>
+              <button type="button" class="secondary btn-sm" id="copyDeliveryUrlBtn" style="margin-left:8px">复制链接</button>
+              <button type="button" class="secondary btn-sm" id="rotateDeliverySlugBtn" style="margin-left:8px">重新生成链接</button>`;
+            document.getElementById("copyDeliveryUrlBtn")?.addEventListener("click", () => {
+              navigator.clipboard.writeText(pageUrl);
+            });
+            document.getElementById("rotateDeliverySlugBtn")?.addEventListener("click", async () => {
+              if (!requireAuth()) return;
+              if (!confirm("重新生成后，旧发货链接将立即失效。确定继续？")) return;
+              try {
+                await api("/api/admin/delivery/slug/rotate", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ channel_id: ch }),
+                });
+                loadDeliveryPanel();
+              } catch (e) {
+                alert(e.message || "重新生成失败");
+              }
+            });
+          } else {
+            urlEl.textContent = "发货链接尚未生成";
+          }
+        }
+      } catch (e) {
+        document.getElementById("deliveryPanResult").innerHTML =
+          `<p class="err">${escapeHtml(e.message)}</p>`;
+      }
+    }
+
+    document.getElementById("saveDeliveryPanBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const ch = activeDeliveryChannel || adminChannels[0]?.id;
+      const el = document.getElementById("deliveryPanResult");
+      el.innerHTML = "";
+      try {
+        await api("/api/admin/delivery/pan", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channel_id: ch,
+            url: document.getElementById("deliveryPanUrl").value.trim(),
+            code: document.getElementById("deliveryPanCode").value.trim(),
+          }),
+        });
+        el.innerHTML = `<div class="success-box"><p>已保存 ${escapeHtml(ch)} 的网盘配置。</p></div>`;
+        loadDeliveryPanel();
+      } catch (e) {
+        el.innerHTML = `<p class="err">${escapeHtml(e.message)}</p>`;
+      }
+    };
 
     function redeemStatusLabel(row) {
       if (row.is_exhausted || row.remaining <= 0) return { text: "已用尽", cls: "used" };
