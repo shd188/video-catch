@@ -15,7 +15,14 @@ export function getDb() {
     db = new Database(dbPath);
     db.pragma("journal_mode = WAL");
     const schema = fs.readFileSync(path.join(root, "schema.sql"), "utf8");
-    db.exec(schema);
+    // Existing DBs already have `licenses`; schema.sql CREATE INDEX on new
+    // columns would throw before migrate() can ALTER TABLE. Apply schema
+    // best-effort, then add missing columns/indexes.
+    try {
+      db.exec(schema);
+    } catch (err) {
+      console.warn("schema.sql skipped (existing DB):", err && err.message ? err.message : err);
+    }
     migrate(db);
   }
   return db;

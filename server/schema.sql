@@ -57,6 +57,3 @@ CREATE INDEX IF NOT EXISTS idx_activations_license ON activations(license_id);
 CREATE INDEX IF NOT EXISTS idx_releases_channel ON releases(channel_id);
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_pack ON redeem_codes(pack);
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_remaining ON redeem_codes(remaining);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_licenses_channel_order
-  ON licenses(channel_id, order_no)
-  WHERE order_no IS NOT NULL AND order_no != '';
