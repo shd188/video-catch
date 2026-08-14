@@ -21,6 +21,7 @@ import {
   activateCourseDl,
   verifyCourseDl,
   claimCourseDlByOrder,
+  claimAndActivateCourseDl,
   COURSE_DL_CHANNEL,
   getCourseDlConfig,
   setCourseDlConfig,
@@ -418,6 +419,31 @@ app.post("/api/claim", (req, res) => {
   }
   const result = claimCourseDlByOrder(orderNo);
   const status = result.ok ? 200 : result.code === "BAD_ORDER" ? 400 : 403;
+  res.status(status).json(result);
+});
+
+app.post("/api/web-activate", (req, res) => {
+  const body = req.body || {};
+  const rate = checkClaimRateLimit(clientIp(req), COURSE_DL_CHANNEL, { maxPerDay: 30 });
+  if (!rate.ok) {
+    return res.status(429).json({
+      ok: false,
+      error: rate.message || "提交过于频繁，请稍后再试",
+      message: rate.message || "提交过于频繁，请稍后再试",
+    });
+  }
+  const result = claimAndActivateCourseDl({
+    orderNo: body.order_no || body.orderNo || body.order,
+    deviceId: body.device_id || body.deviceId || body.installation_id,
+    userAgent: req.headers["user-agent"],
+  });
+  const status = result.ok
+    ? 200
+    : result.code === "BAD_ORDER" || result.code === "BAD_DEVICE"
+      ? 400
+      : result.code === "INVALID_KEY"
+        ? 404
+        : 403;
   res.status(status).json(result);
 });
 

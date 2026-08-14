@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>领取激活码 — 小鹅通课程下载器</title>
+  <title>激活软件 — 小鹅通课程下载器</title>
   <link rel="stylesheet" href="/course-dl/styles.css" />
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>领取激活码</h1>
-      <p>填写小红书订单号，系统自动发放一个未使用的激活码。</p>
+      <h1>激活软件</h1>
+      <p>在软件里复制本机机器码，再填写小红书订单号提交。订单号、机器码和激活码会写入数据库。</p>
     </header>
     <nav>
       <a href="/course-dl/">首页</a>
-      <a class="active" href="/course-dl/activate.html">领取激活码</a>
+      <a class="active" href="/course-dl/activate.html">激活软件</a>
       <a href="/course-dl/guide.html">使用教程</a>
     </nav>
 
@@ -33,10 +33,21 @@
           inputmode="text"
           spellcheck="false"
         />
-        <p class="hint" id="order-hint">须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能领取一次。</p>
+        <p class="hint" id="order-hint">须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能激活一次。</p>
+
+        <label for="device">本机机器码（在软件窗口复制）</label>
+        <input
+          id="device"
+          class="mono"
+          placeholder="XXXX-XXXX-XXXX-XXXX"
+          autocomplete="off"
+          required
+          spellcheck="false"
+        />
+        <p class="hint">打开软件即可看到机器码。激活完成后，把下面显示的激活码粘贴回软件即可。</p>
 
         <div class="row" style="margin-top:18px">
-          <button class="btn" type="submit" id="submit">生成激活码</button>
+          <button class="btn" type="submit" id="submit">提交激活</button>
         </div>
       </form>
       <div class="msg" id="msg"></div>
@@ -46,7 +57,7 @@
           <strong id="code-out"></strong>
           <button class="btn secondary" type="button" id="copy">复制</button>
         </div>
-        <p class="hint">请打开软件，把激活码粘贴进去完成绑定。一个激活码只能绑定一台电脑。</p>
+        <p class="hint">请回到软件，把激活码粘贴进去完成验证。订单号无需再填。</p>
       </div>
     </div>
   </div>
@@ -64,12 +75,20 @@
     const ORDER_LEN = 19;
     const orderInput = document.getElementById("order");
     const orderHint = document.getElementById("order-hint");
+    const deviceInput = document.getElementById("device");
 
     function normalizeOrder(raw) {
       return String(raw || "")
         .trim()
         .replace(/\s+/g, "")
         .toUpperCase();
+    }
+
+    function normalizeDevice(raw) {
+      return String(raw || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9-]/g, "");
     }
 
     function orderError(value) {
@@ -93,18 +112,30 @@
         orderHint.style.color = "var(--bad)";
       } else {
         orderHint.innerHTML =
-          "须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能领取一次。";
+          "须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能激活一次。";
         orderHint.style.color = "";
       }
+    });
+
+    deviceInput.addEventListener("input", () => {
+      const v = normalizeDevice(deviceInput.value);
+      if (deviceInput.value !== v) deviceInput.value = v;
     });
 
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const order = normalizeOrder(orderInput.value);
+      const deviceId = normalizeDevice(deviceInput.value);
       orderInput.value = order;
+      deviceInput.value = deviceId;
       const err = orderError(order);
       if (err) {
         show(err, false);
+        reveal.classList.remove("show");
+        return;
+      }
+      if (!deviceId || deviceId.replace(/-/g, "").length < 8) {
+        show("请填写软件里显示的本机机器码", false);
         reveal.classList.remove("show");
         return;
       }
@@ -112,21 +143,19 @@
       btn.disabled = true;
       reveal.classList.remove("show");
       try {
-        const r = await fetch("/api/claim", {
+        const r = await fetch("/api/web-activate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order_no: order }),
+          body: JSON.stringify({ order_no: order, device_id: deviceId }),
         });
         const d = await r.json();
-        if (d.ok && d.license_key) {
-          codeOut.textContent = d.license_key;
+        const code = d.license_key || d.code;
+        if (d.ok && code) {
+          codeOut.textContent = code;
           reveal.classList.add("show");
-          show(
-            d.reused ? "该订单已领取过，以下是你的激活码。" : "领取成功，请复制激活码到软件中。",
-            true
-          );
+          show(d.message || "激活成功，记录已写入数据库。请把激活码粘贴回软件。", true);
         } else {
-          show(d.error || d.message || "领取失败", false);
+          show(d.error || d.message || "激活失败", false);
         }
       } catch (err) {
         show("网络错误：" + err, false);

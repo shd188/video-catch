@@ -104,7 +104,9 @@ export function activateLicense({ licenseKey, channelId, installationId, userAge
       return {
         ok: false,
         code: "BAD_ORDER",
-        message: XHS_ORDER_HINT,
+        message: order
+          ? XHS_ORDER_HINT
+          : "请先在激活网页填写小红书订单号和本机机器码",
       };
     }
     const orderToBind = bound || order;
@@ -691,6 +693,39 @@ export function claimCourseDlByOrder(orderNo) {
     order_no: order,
     reused: false,
     message: "领取成功",
+  };
+}
+
+/**
+ * 激活网页：订单号领取/复用激活码，并立刻绑定机器码，写入 licenses + activations。
+ */
+export function claimAndActivateCourseDl({ orderNo, deviceId, userAgent }) {
+  const installationId = String(deviceId || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, "");
+  if (!installationId || installationId.replace(/-/g, "").length < 8) {
+    return {
+      ok: false,
+      code: "BAD_DEVICE",
+      error: "请填写软件里显示的本机机器码",
+      message: "请填写软件里显示的本机机器码",
+    };
+  }
+  const claimed = claimCourseDlByOrder(orderNo);
+  if (!claimed.ok) return claimed;
+  const result = activateCourseDl({
+    code: claimed.license_key,
+    deviceId: installationId,
+    orderNo: claimed.order_no,
+    userAgent,
+  });
+  if (!result.ok) return result;
+  return {
+    ...result,
+    license_key: claimed.license_key,
+    reused: Boolean(claimed.reused),
+    message: claimed.reused ? "该订单已激活过，已重新绑定本机" : "激活成功，请把激活码粘贴回软件",
   };
 }
 
