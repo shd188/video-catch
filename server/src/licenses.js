@@ -530,6 +530,8 @@ const COURSE_DL_CONFIG_KEYS = {
   download_mac_url: "course_dl_download_mac_url",
   download_win_url: "course_dl_download_win_url",
   guide_video_url: "course_dl_guide_video_url",
+  latest_version: "course_dl_latest_version",
+  release_notes: "course_dl_release_notes",
 };
 
 function getSetting(key) {

@@ -687,6 +687,10 @@
       <input id="cdlMacUrl" placeholder="https://...dmg 或网盘直链" />
       <label>Windows 安装包链接</label>
       <input id="cdlWinUrl" placeholder="https://...exe 或网盘直链" />
+      <label>最新版本号（软件内可选升级，例如 0.1.1）</label>
+      <input id="cdlLatestVersion" placeholder="0.1.1" />
+      <label>更新说明（可选，会显示在升级提示里）</label>
+      <input id="cdlReleaseNotes" placeholder="例如：修复激活、优化目录读取" />
       <label>教程视频链接（可选）</label>
       <input id="cdlVideoUrl" placeholder="B 站 / YouTube / mp4 直链" />
       <button type="button" id="cdlSaveBtn" data-require-auth style="margin-top:14px">保存下载链接</button>
@@ -1509,6 +1513,8 @@
         const data = await api("/api/admin/course-dl/config");
         document.getElementById("cdlMacUrl").value = data.download_mac_url || "";
         document.getElementById("cdlWinUrl").value = data.download_win_url || "";
+        document.getElementById("cdlLatestVersion").value = data.latest_version || "";
+        document.getElementById("cdlReleaseNotes").value = data.release_notes || "";
         document.getElementById("cdlVideoUrl").value = data.guide_video_url || "";
       } catch (e) {
         document.getElementById("cdlResult").innerHTML = `<p class="err">${e.message}</p>`;
@@ -1525,6 +1531,8 @@
           body: JSON.stringify({
             download_mac_url: document.getElementById("cdlMacUrl").value.trim(),
             download_win_url: document.getElementById("cdlWinUrl").value.trim(),
+            latest_version: document.getElementById("cdlLatestVersion").value.trim(),
+            release_notes: document.getElementById("cdlReleaseNotes").value.trim(),
             guide_video_url: document.getElementById("cdlVideoUrl").value.trim(),
           }),
         });
