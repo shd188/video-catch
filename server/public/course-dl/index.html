@@ -90,12 +90,41 @@
         el.href = url;
         el.classList.remove("is-off");
         el.removeAttribute("aria-disabled");
+        el.onclick = null;
         return;
       }
       el.href = "#";
       el.classList.add("is-off");
       el.setAttribute("aria-disabled", "true");
       el.textContent = missingText;
+      el.onclick = (e) => {
+        e.preventDefault();
+      };
+    }
+
+    function lockWrongOs(os) {
+      const macBtn = document.getElementById("btn-mac");
+      const winBtn = document.getElementById("btn-win");
+      const macCard = document.getElementById("card-mac");
+      const winCard = document.getElementById("card-win");
+      function lock(el, card, message) {
+        el.href = "#";
+        el.removeAttribute("target");
+        el.classList.add("is-off", "secondary");
+        el.setAttribute("aria-disabled", "true");
+        el.setAttribute("title", message);
+        card.classList.add("locked");
+        el.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          alert(message);
+        };
+      }
+      if (os === "mac") {
+        lock(winBtn, winCard, "当前是 Mac，请下载 macOS 版。Windows 安装包无法在这台电脑上使用。");
+      } else if (os === "win") {
+        lock(macBtn, macCard, "当前是 Windows，请下载 Windows 版。Mac 安装包无法在这台电脑上使用。");
+      }
     }
 
     async function load() {
@@ -106,13 +135,13 @@
         document.getElementById("badge-mac").hidden = false;
         document.getElementById("btn-mac").classList.remove("secondary");
         document.getElementById("btn-win").classList.add("secondary");
-        hint.textContent = "检测到你正在使用 Mac，请下载 macOS 版（.dmg）。";
+        hint.textContent = "检测到你正在使用 Mac，已锁定 macOS 版。Windows 下载不可用。";
       } else if (os === "win") {
         document.getElementById("card-win").classList.add("current");
         document.getElementById("badge-win").hidden = false;
         document.getElementById("btn-win").classList.remove("secondary");
         document.getElementById("btn-mac").classList.add("secondary");
-        hint.textContent = "检测到你正在使用 Windows，请下载 Windows 版（.exe）。";
+        hint.textContent = "检测到你正在使用 Windows，已锁定 Windows 版。Mac 下载不可用。";
       } else {
         hint.textContent = "无法自动识别系统时，请对照电脑类型选择：Mac 用 .dmg，Windows 用 .exe。";
       }
@@ -133,6 +162,7 @@
       } catch (e) {
         console.warn(e);
       }
+      lockWrongOs(os);
     }
     load();
   </script>

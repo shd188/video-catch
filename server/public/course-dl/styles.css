@@ -170,6 +170,12 @@ footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
   border-color: var(--accent);
   box-shadow: 0 0 0 1px rgba(61, 156, 240, 0.25);
 }
+.os-card.locked {
+  opacity: 0.48;
+}
+.os-card.locked .btn.is-off:hover {
+  background: transparent;
+}
 .os-card .os-top {
   display: flex;
   align-items: center;
@@ -204,6 +210,9 @@ footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
   opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
+}
+.os-card .btn.is-off:hover {
+  background: transparent;
 }
 .os-card .os-steps {
   margin: 14px 0 0;
