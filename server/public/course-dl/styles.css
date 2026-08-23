@@ -222,6 +222,31 @@ footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
 }
 .os-card .os-steps li { margin: 4px 0; }
 
+.guide-shot {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  margin: 10px 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0f1419;
+}
+.guide-note {
+  margin: 12px 0 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(61, 156, 240, 0.35);
+  background: rgba(61, 156, 240, 0.08);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.card ol > li { margin: 8px 0; }
+.card code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  color: var(--text);
+}
+
 @media (max-width: 640px) {
   table { display: block; overflow-x: auto; }
   .os-grid { grid-template-columns: 1fr; }
