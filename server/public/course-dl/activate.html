@@ -158,7 +158,11 @@
           show(d.error || d.message || "激活失败", false);
         }
       } catch (err) {
-        show("网络错误：" + err, false);
+        show(
+          "提交失败。请用 Chrome 或 Edge 打开本页（不要用微信），并关闭 360/电脑管家 的 HTTPS 扫描后重试。详情：" +
+            err,
+          false
+        );
       } finally {
         btn.disabled = false;
       }
