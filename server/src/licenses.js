@@ -549,11 +549,11 @@ function setSetting(key, value) {
 }
 
 export function getCourseDlConfig() {
-  return {
-    download_mac_url: getSetting(COURSE_DL_CONFIG_KEYS.download_mac_url),
-    download_win_url: getSetting(COURSE_DL_CONFIG_KEYS.download_win_url),
-    guide_video_url: getSetting(COURSE_DL_CONFIG_KEYS.guide_video_url),
-  };
+  const out = {};
+  for (const [field, key] of Object.entries(COURSE_DL_CONFIG_KEYS)) {
+    out[field] = getSetting(key);
+  }
+  return out;
 }
 
 export function setCourseDlConfig(body = {}) {
