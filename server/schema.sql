@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS redeem_codes (
   total INTEGER NOT NULL,
   remaining INTEGER NOT NULL,
   note TEXT,
+  activated_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT
 );

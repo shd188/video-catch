@@ -21,18 +21,28 @@ export function findRedeemByCode(code) {
   return getDb().prepare(`SELECT * FROM redeem_codes WHERE code = ?`).get(key);
 }
 
+function isActivatedAt(value) {
+  return Boolean(value);
+}
+
 function mapRedeemRow(row) {
   if (!row) return null;
   const remaining = Number(row.remaining);
   const total = Number(row.total);
+  const activated_at = row.activated_at || null;
+  const is_used = remaining < total;
+  const is_activated = !is_used && isActivatedAt(activated_at);
   return {
     ...row,
     pack: Number(row.pack),
     total,
     remaining,
     used: Math.max(0, total - remaining),
+    activated_at,
+    is_used,
+    is_activated,
+    is_unused: !is_used && !is_activated,
     is_exhausted: remaining <= 0,
-    is_unused: remaining === total,
   };
 }
 
@@ -120,7 +130,12 @@ export async function syncRedeemRemaining(codes) {
   }
   const update = getDb().prepare(
     `UPDATE redeem_codes
-     SET remaining = ?, updated_at = datetime('now')
+     SET remaining = ?,
+         activated_at = CASE
+           WHEN ? IS NOT NULL AND (activated_at IS NULL OR activated_at = '') THEN ?
+           ELSE activated_at
+         END,
+         updated_at = datetime('now')
      WHERE code = ?`
   );
   let synced = 0;
@@ -130,7 +145,8 @@ export async function syncRedeemRemaining(codes) {
     try {
       const info = await sphDlLookupCode(code);
       if (info?.ok && info.remaining != null) {
-        update.run(Number(info.remaining), code);
+        const activatedAt = info.activatedAt || info.activated_at || null;
+        update.run(Number(info.remaining), activatedAt, activatedAt, code);
         synced += 1;
       }
     } catch {
@@ -148,9 +164,9 @@ export function redeemCodeStats({ pack } = {}) {
           .prepare(
             `SELECT
               COUNT(*) AS total,
-              SUM(CASE WHEN remaining = total THEN 1 ELSE 0 END) AS unused,
-              SUM(CASE WHEN remaining > 0 AND remaining < total THEN 1 ELSE 0 END) AS partial,
-              SUM(CASE WHEN remaining = 0 THEN 1 ELSE 0 END) AS exhausted,
+              SUM(CASE WHEN remaining = total AND (activated_at IS NULL OR activated_at = '') THEN 1 ELSE 0 END) AS unused,
+              SUM(CASE WHEN remaining = total AND activated_at IS NOT NULL AND activated_at != '' THEN 1 ELSE 0 END) AS activated,
+              SUM(CASE WHEN remaining < total THEN 1 ELSE 0 END) AS used,
               COALESCE(SUM(remaining), 0) AS remaining_credits
              FROM redeem_codes WHERE pack = ?`
           )
@@ -159,9 +175,9 @@ export function redeemCodeStats({ pack } = {}) {
           .prepare(
             `SELECT
               COUNT(*) AS total,
-              SUM(CASE WHEN remaining = total THEN 1 ELSE 0 END) AS unused,
-              SUM(CASE WHEN remaining > 0 AND remaining < total THEN 1 ELSE 0 END) AS partial,
-              SUM(CASE WHEN remaining = 0 THEN 1 ELSE 0 END) AS exhausted,
+              SUM(CASE WHEN remaining = total AND (activated_at IS NULL OR activated_at = '') THEN 1 ELSE 0 END) AS unused,
+              SUM(CASE WHEN remaining = total AND activated_at IS NOT NULL AND activated_at != '' THEN 1 ELSE 0 END) AS activated,
+              SUM(CASE WHEN remaining < total THEN 1 ELSE 0 END) AS used,
               COALESCE(SUM(remaining), 0) AS remaining_credits
              FROM redeem_codes`
           )
@@ -171,17 +187,21 @@ export function redeemCodeStats({ pack } = {}) {
     packs: REDEEM_PACKS,
     total: Number(row?.total ?? 0),
     unused: Number(row?.unused ?? 0),
-    partial: Number(row?.partial ?? 0),
-    exhausted: Number(row?.exhausted ?? 0),
+    activated: Number(row?.activated ?? 0),
+    used: Number(row?.used ?? 0),
     remaining_credits: Number(row?.remaining_credits ?? 0),
   };
 }
 
+/** unused=未激活未使用, activated=已激活未使用, used=只要用过 1 次 */
 function statusClause(status) {
-  if (status === "unused") return "AND remaining = total";
-  if (status === "partial") return "AND remaining > 0 AND remaining < total";
-  if (status === "exhausted") return "AND remaining = 0";
-  if (status === "available") return "AND remaining > 0";
+  if (status === "unused") {
+    return "AND remaining = total AND (activated_at IS NULL OR activated_at = '')";
+  }
+  if (status === "activated") {
+    return "AND remaining = total AND activated_at IS NOT NULL AND activated_at != ''";
+  }
+  if (status === "used") return "AND remaining < total";
   return "";
 }
 

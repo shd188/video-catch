@@ -384,6 +384,7 @@
     }
     .lic-status.used { background: var(--warn-soft); color: #b25000; }
     .lic-status.unused { background: var(--success-soft); color: #248a3d; }
+    .lic-status.sent { background: var(--primary-soft); color: var(--primary); }
     .lic-status.revoked { background: rgba(215, 0, 21, 0.12); color: #d70015; }
     .filter-hint {
       margin: 0 0 var(--space-3);
@@ -699,25 +700,27 @@
 
     <section id="panel-licenses" class="card" hidden>
       <h3>激活码列表</h3>
-      <p class="section-desc">按渠道查看激活码使用情况。</p>
+      <p class="section-desc">按渠道查看激活码。未使用=未发送未激活，已发送=已发给客户但未激活，已使用=已激活。</p>
       <div id="licenseChannelTabs" class="channel-tabs"></div>
       <div class="releases-toolbar">
         <span id="licenseChannelHint" class="section-desc" style="margin:0"></span>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <label style="margin:0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary)">
-            <input type="checkbox" id="unusedOnly" checked /> 仅显示未使用
-          </label>
-          <label style="margin:0;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary)">
-            <input type="checkbox" id="unsentOnly" /> 仅未发出（可发库存）
+          <label style="margin:0;font-size:13px;color:var(--text-secondary)">
+            状态
+            <select id="licenseStatusFilter" style="width:auto;margin:0 0 0 6px;padding:6px 10px">
+              <option value="">全部</option>
+              <option value="unused">未使用</option>
+              <option value="sent">已发送</option>
+              <option value="used">已使用</option>
+            </select>
           </label>
           <button type="button" class="secondary btn-sm" id="refreshLicBtn" data-require-auth>刷新</button>
         </div>
       </div>
-      <p id="licenseFilterHint" class="filter-hint" hidden>已勾选「仅显示未使用」时，已激活的码不会出现在列表中；取消勾选可查看全部及<strong>使用时间</strong>。</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead>
-            <tr><th>激活码</th><th>状态</th><th>订单号</th><th>发送时间</th><th>一次性</th><th>使用时间</th><th>过期</th><th>备注</th><th>操作</th></tr>
+            <tr><th>激活码</th><th>状态</th><th>订单号</th><th>发送时间</th><th>使用时间</th><th>操作</th></tr>
           </thead>
           <tbody id="licTable"></tbody>
         </table>
@@ -727,7 +730,7 @@
 
     <section id="panel-redeem-list" class="card" hidden>
       <h3>兑换码列表</h3>
-      <p class="section-desc">本地镜像列表；点「刷新」会向 sph-dl 同步当前页剩余次数。</p>
+      <p class="section-desc">未使用=未激活且未用过；已激活=客户已绑定兑换码但次数未扣；已使用=只要用过 1 次。点「刷新」会向 sph-dl 同步当前页。</p>
       <div class="releases-toolbar">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <label style="margin:0;font-size:13px;color:var(--text-secondary)">
@@ -747,9 +750,8 @@
             <select id="redeemListStatus" style="width:auto;margin:0 0 0 6px;padding:6px 10px">
               <option value="">全部</option>
               <option value="unused">未使用</option>
-              <option value="partial">部分使用</option>
-              <option value="available">仍有余量</option>
-              <option value="exhausted">已用尽</option>
+              <option value="activated">已激活</option>
+              <option value="used">已使用</option>
             </select>
           </label>
           <button type="button" class="secondary btn-sm" id="refreshRedeemBtn" data-require-auth>刷新</button>
@@ -759,7 +761,7 @@
       <div class="table-wrap">
         <table class="data-table">
           <thead>
-            <tr><th>兑换码</th><th>套餐</th><th>剩余/总量</th><th>状态</th><th>备注</th><th>创建</th></tr>
+            <tr><th>兑换码</th><th>套餐</th><th>剩余/总量</th><th>状态</th><th>创建</th></tr>
           </thead>
           <tbody id="redeemTable"></tbody>
         </table>
@@ -1259,7 +1261,7 @@
         el.innerHTML =
           `套餐 <b>${pack} 次</b>：共 <b>${stats.total}</b> 个，` +
           `<b style="color:#059669">${stats.unused}</b> 未使用，` +
-          `${stats.partial} 部分使用，${stats.exhausted} 已用尽；` +
+          `已激活 ${stats.activated ?? 0}，已使用 ${stats.used ?? 0}；` +
           `剩余次数合计 <b>${stats.remaining_credits}</b>。` +
           cfg;
       } catch (e) {
@@ -1411,47 +1413,49 @@
         if (list.length) activeLicenseChannel = list[0].id;
       }
       const ch = activeLicenseChannel || "xiaoetong";
-      const unusedOnly = document.getElementById("unusedOnly").checked;
-      const unsentOnly = document.getElementById("unsentOnly")?.checked;
-      const filterHint = document.getElementById("licenseFilterHint");
-      if (filterHint) filterHint.hidden = !unusedOnly && !unsentOnly;
-      const unused = unusedOnly ? "&unused=1" : "";
-      const unsent = unsentOnly ? "&unsent=1" : "";
-      const q = `?channel_id=${encodeURIComponent(ch)}${unused}${unsent}&page=${licensePage}&page_size=${licensePageSize}`;
+      const status = document.getElementById("licenseStatusFilter")?.value || "";
+      const statusQs = status ? `&status=${encodeURIComponent(status)}` : "";
+      const q = `?channel_id=${encodeURIComponent(ch)}${statusQs}&page=${licensePage}&page_size=${licensePageSize}`;
       const data = await api("/api/admin/licenses" + q);
       const licenses = data.licenses || [];
       if (data.pagination && licensePage > data.pagination.total_pages) {
         licensePage = Math.max(1, data.pagination.total_pages);
         return loadLicenses();
       }
+      const emptyText =
+        status === "unused"
+          ? "该渠道暂无未使用的激活码"
+          : status === "sent"
+            ? "该渠道暂无已发送未激活的码"
+            : status === "used"
+              ? "该渠道暂无已使用的激活码"
+              : "该渠道暂无激活码";
       document.getElementById("licTable").innerHTML =
         licenses
           .map((l) => {
             const used = licenseRowIsUsed(l);
             const sent = !!(l.is_sent || l.sent_at);
             const revoked = !!l.revoked;
-            let statusCls = used ? "used" : "unused";
-            let statusText = used ? "已使用" : "未使用";
+            let statusCls = "unused";
+            let statusText = "未使用";
             if (revoked) {
               statusCls = "revoked";
               statusText = "已作废";
+            } else if (used) {
+              statusCls = "used";
+              statusText = "已使用";
+            } else if (sent) {
+              statusCls = "sent";
+              statusText = "已发送";
             }
-            const first = formatAdminTime(l.first_activated_at);
-            const last = formatAdminTime(l.last_seen_at);
-            let usedText = "—";
-            if (used && first) {
-              usedText = last && last !== first ? `${first} · 最近 ${last}` : first;
-            }
+            const usedText = used ? escapeHtml(formatAdminTime(l.first_activated_at) || "—") : "—";
             const keyAttr = encodeURIComponent(l.license_key);
             return `<tr>
         <td class="mono" data-label="激活码">${escapeHtml(l.license_key)}</td>
         <td data-label="状态"><span class="lic-status ${statusCls}">${statusText}</span></td>
         <td class="mono" data-label="订单号">${escapeHtml(l.order_no || "—")}</td>
         <td data-label="发送时间">${sent ? escapeHtml(formatAdminTime(l.sent_at) || "已发") : "—"}</td>
-        <td data-label="一次性">${l.single_use ? "是" : "否"}</td>
         <td data-label="使用时间">${usedText}</td>
-        <td data-label="过期">${escapeHtml(l.expires_at || "—")}</td>
-        <td data-label="备注">${escapeHtml(l.note || "—")}</td>
         <td data-label="操作">
           <div class="row-actions">
             ${revoked ? "" : `<button type="button" class="secondary btn-sm" data-act="unbind" data-key="${keyAttr}">解绑</button>`}
@@ -1460,10 +1464,7 @@
         </td>
       </tr>`;
           })
-          .join("") ||
-        `<tr class="empty-row"><td colspan="9">${
-          unsentOnly ? "该渠道暂无可发库存" : unusedOnly ? "该渠道暂无未使用的激活码" : "该渠道暂无激活码"
-        }</td></tr>`;
+          .join("") || `<tr class="empty-row"><td colspan="6">${emptyText}</td></tr>`;
       renderLicensePagination(data.pagination);
     }
 
@@ -1471,11 +1472,7 @@
       licensePage = 1;
       loadLicenses();
     };
-    document.getElementById("unusedOnly").addEventListener("change", () => {
-      licensePage = 1;
-      if (isAuthenticated) loadLicenses();
-    });
-    document.getElementById("unsentOnly")?.addEventListener("change", () => {
+    document.getElementById("licenseStatusFilter")?.addEventListener("change", () => {
       licensePage = 1;
       if (isAuthenticated) loadLicenses();
     });
@@ -1629,9 +1626,13 @@
     };
 
     function redeemStatusLabel(row) {
-      if (row.is_exhausted || row.remaining <= 0) return { text: "已用尽", cls: "used" };
-      if (row.is_unused || row.remaining === row.total) return { text: "未使用", cls: "unused" };
-      return { text: "部分使用", cls: "unused" };
+      if (row.is_used || Number(row.remaining) < Number(row.total)) {
+        return { text: "已使用", cls: "used" };
+      }
+      if (row.is_activated || row.activated_at) {
+        return { text: "已激活", cls: "sent" };
+      }
+      return { text: "未使用", cls: "unused" };
     }
 
     function goRedeemPage(target, totalPages) {
@@ -1702,7 +1703,7 @@
           : "；<span style=\"color:#dc2626\">未配置 sph-dl</span>";
         document.getElementById("redeemListStats").innerHTML =
           `${pack ? `套餐 <b>${pack} 次</b>` : "全部套餐"}：共 <b>${stats.total}</b>，` +
-          `未使用 <b>${stats.unused}</b>，部分使用 ${stats.partial}，已用尽 ${stats.exhausted}，` +
+          `未使用 <b>${stats.unused}</b>，已激活 ${stats.activated ?? 0}，已使用 ${stats.used ?? 0}，` +
           `剩余次数合计 <b>${stats.remaining_credits}</b>${syncHint}${cfgHint}`;
 
         if (data.pagination && redeemPage > data.pagination.total_pages) {
@@ -1710,6 +1711,14 @@
           return loadRedeemCodes(opts);
         }
         const codes = data.codes || [];
+        const emptyText =
+          status === "unused"
+            ? "暂无未使用的兑换码"
+            : status === "activated"
+              ? "暂无已激活未使用的兑换码"
+              : status === "used"
+                ? "暂无已使用的兑换码"
+                : "暂无兑换码";
         document.getElementById("redeemTable").innerHTML =
           codes
             .map((r) => {
@@ -1719,16 +1728,15 @@
           <td data-label="套餐">${r.pack} 次</td>
           <td data-label="剩余/总量">${r.remaining} / ${r.total}</td>
           <td data-label="状态"><span class="lic-status ${st.cls}">${st.text}</span></td>
-          <td data-label="备注">${escapeHtml(r.note || "—")}</td>
-          <td data-label="创建">${escapeHtml(r.created_at || "")}</td>
+          <td data-label="创建">${escapeHtml(formatAdminTime(r.created_at) || r.created_at || "")}</td>
         </tr>`;
             })
-            .join("") || `<tr class="empty-row"><td colspan="6">暂无兑换码</td></tr>`;
+            .join("") || `<tr class="empty-row"><td colspan="5">${emptyText}</td></tr>`;
         renderRedeemPagination(data.pagination);
       } catch (e) {
         document.getElementById("redeemListStats").textContent = e.message;
         document.getElementById("redeemTable").innerHTML =
-          `<tr class="empty-row"><td colspan="6">${escapeHtml(e.message)}</td></tr>`;
+          `<tr class="empty-row"><td colspan="5">${escapeHtml(e.message)}</td></tr>`;
       }
     }
 

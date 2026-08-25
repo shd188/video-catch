@@ -281,6 +281,27 @@ function unsentOnlyClause(unsentOnly) {
     : "";
 }
 
+/** unused=未发送未激活, sent=已发送未激活, used=已激活 */
+function licenseStatusClause(status) {
+  const notRevoked = `AND ifnull(l.revoked, 0) = 0`;
+  if (status === "unused") {
+    return `AND l.sent_at IS NULL AND ${LICENSE_ACTIVATION_COUNT_SQL} = 0 ${notRevoked}`;
+  }
+  if (status === "sent") {
+    return `AND l.sent_at IS NOT NULL AND ${LICENSE_ACTIVATION_COUNT_SQL} = 0 ${notRevoked}`;
+  }
+  if (status === "used") {
+    return `AND ${LICENSE_ACTIVATION_COUNT_SQL} > 0 ${notRevoked}`;
+  }
+  return "";
+}
+
+function licenseFilterClause({ unusedOnly = false, unsentOnly = false, status = "" } = {}) {
+  const statusClause = licenseStatusClause(status);
+  if (statusClause) return statusClause;
+  return `${unusedOnlyClause(unusedOnly)} ${unsentOnlyClause(unsentOnly)}`;
+}
+
 function mapLicenseRow(row) {
   const activation_count = Number(row.activation_count ?? row.devices_used ?? 0);
   const revoked = Number(row.revoked) === 1;
@@ -299,27 +320,26 @@ function mapLicenseRow(row) {
   };
 }
 
-export function countLicenses(channelId, { unusedOnly = false, unsentOnly = false } = {}) {
-  const usedClause = unusedOnlyClause(unusedOnly);
-  const sentClause = unsentOnlyClause(unsentOnly);
+export function countLicenses(
+  channelId,
+  { unusedOnly = false, unsentOnly = false, status = "" } = {}
+) {
+  const filterClause = licenseFilterClause({ unusedOnly, unsentOnly, status });
   const row = channelId
     ? getDb()
-        .prepare(
-          `SELECT COUNT(*) AS c FROM licenses l WHERE channel_id = ? ${usedClause} ${sentClause}`
-        )
+        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE channel_id = ? ${filterClause}`)
         .get(channelId)
     : getDb()
-        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE 1=1 ${usedClause} ${sentClause}`)
+        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE 1=1 ${filterClause}`)
         .get();
   return Number(row?.c ?? 0);
 }
 
 export function listLicenses(
   channelId,
-  { limit = 50, offset = 0, unusedOnly = false, unsentOnly = false } = {}
+  { limit = 50, offset = 0, unusedOnly = false, unsentOnly = false, status = "" } = {}
 ) {
-  const usedClause = unusedOnlyClause(unusedOnly);
-  const sentClause = unsentOnlyClause(unsentOnly);
+  const filterClause = licenseFilterClause({ unusedOnly, unsentOnly, status });
   const selectSql = `SELECT l.*,
           ${LICENSE_ACTIVATION_COUNT_SQL} AS activation_count,
           ${LICENSE_ACTIVATION_COUNT_SQL} AS devices_used,
@@ -329,13 +349,13 @@ export function listLicenses(
   const rows = channelId
     ? getDb()
         .prepare(
-          `${selectSql} WHERE channel_id = ? ${usedClause} ${sentClause}
+          `${selectSql} WHERE channel_id = ? ${filterClause}
          ORDER BY l.id DESC LIMIT ? OFFSET ?`
         )
         .all(channelId, limit, offset)
     : getDb()
         .prepare(
-          `${selectSql} WHERE 1=1 ${usedClause} ${sentClause}
+          `${selectSql} WHERE 1=1 ${filterClause}
        ORDER BY l.id DESC LIMIT ? OFFSET ?`
         )
         .all(limit, offset);

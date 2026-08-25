@@ -573,15 +573,17 @@ app.get("/api/admin/licenses", adminAuth, (req, res) => {
   const channelId = req.query.channel_id ? String(req.query.channel_id) : null;
   const unusedOnly = req.query.unused === "1";
   const unsentOnly = req.query.unsent === "1";
+  const status = String(req.query.status || "").trim();
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const pageSize = Math.min(Math.max(parseInt(req.query.page_size, 10) || 50, 1), 200);
   const offset = (page - 1) * pageSize;
-  const total = countLicenses(channelId, { unusedOnly, unsentOnly });
+  const total = countLicenses(channelId, { unusedOnly, unsentOnly, status });
   const licenses = listLicenses(channelId, {
     limit: pageSize,
     offset,
     unusedOnly,
     unsentOnly,
+    status,
   });
   res.json({
     ok: true,
