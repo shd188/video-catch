@@ -94,6 +94,11 @@
         "url": "https://*.h5.xet.pomoho.com/*",
         "state": true,
         "comment": "小鹅通学员版统一入口（*.h5.xet.pomoho.com）"
+      },
+      {
+        "url": "https://www.tuyaedu.com/*",
+        "state": true,
+        "comment": "商家独立域名：www.tuyaedu.com"
       }
     ],
     "deepSearch": false,
