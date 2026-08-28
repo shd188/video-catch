@@ -64,7 +64,7 @@
     if (!urlEl) return;
     if (pan && pan.url) {
       urlEl.href = pan.url;
-      urlEl.textContent = "打开网盘下载安装包";
+      urlEl.textContent = "点击下载安装包";
       urlEl.hidden = false;
       if (missing) missing.hidden = true;
       if (codeWrap && codeEl) {
@@ -105,7 +105,7 @@
     if (btn) {
       btn.hidden = false;
       btn.disabled = false;
-      btn.textContent = "领取激活码";
+      btn.textContent = "点击获取激活码";
     }
     if (keyBox) keyBox.hidden = true;
   }

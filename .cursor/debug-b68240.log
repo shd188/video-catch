@@ -1,0 +1,4 @@
+{"sessionId":"b68240","runId":"pre-fix","hypothesisId":"H1","location":"curl-verify","message":"If-None-Match returns 304 without Content-Type","data":{"status":304,"etag":"W/\"9f15-rnagrAg5mUMLX+aXXI9Jn48sZ4c\"","contentTypeOn304":null},"timestamp":1754535700000}
+{"sessionId":"b68240","runId":"pre-fix","hypothesisId":"H2","location":"curl-verify","message":"Fresh GET returns text/html","data":{"status":200,"contentType":"text/html; charset=utf-8"},"timestamp":1754535700001}
+{"sessionId":"b68240","runId":"pre-fix","hypothesisId":"H1","location":"curl-verify","message":"If-None-Match returned 304 without Content-Type; stale octet-stream cache CONFIRMED","data":{"status":304},"timestamp":1754535900000}
+{"sessionId":"b68240","runId":"post-fix","hypothesisId":"H1","location":"curl-verify","message":"After cache-bust, old ETag gets 200 text/html","data":{"status":200,"contentType":"text/html; charset=utf-8","cacheControl":"no-store"},"timestamp":1754535900001}
