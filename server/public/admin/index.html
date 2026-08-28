@@ -700,11 +700,16 @@
 
     <section id="panel-licenses" class="card" hidden>
       <h3>激活码列表</h3>
-      <p class="section-desc">按渠道查看激活码。未使用=未发送未激活，已发送=已发给客户但未激活，已使用=已激活。</p>
+      <p class="section-desc">按渠道查看激活码。未使用=未发送未激活，已发送=已发给客户但未激活，已使用=已激活。时间均为北京时间。</p>
       <div id="licenseChannelTabs" class="channel-tabs"></div>
       <div class="releases-toolbar">
         <span id="licenseChannelHint" class="section-desc" style="margin:0"></span>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label style="margin:0;font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px">
+            搜索
+            <input id="licenseSearch" type="search" placeholder="激活码 / 订单号" style="width:200px;margin:0;padding:6px 10px" />
+          </label>
+          <button type="button" class="secondary btn-sm" id="licenseSearchBtn" data-require-auth>查询</button>
           <label style="margin:0;font-size:13px;color:var(--text-secondary)">
             状态
             <select id="licenseStatusFilter" style="width:auto;margin:0 0 0 6px;padding:6px 10px">
@@ -730,9 +735,14 @@
 
     <section id="panel-redeem-list" class="card" hidden>
       <h3>兑换码列表</h3>
-      <p class="section-desc">未使用=未激活且未用过；已激活=客户已绑定兑换码但次数未扣；已使用=只要用过 1 次。点「刷新」会向 sph-dl 同步当前页。</p>
+      <p class="section-desc">未使用=未激活且未用过；已激活=客户已绑定兑换码但次数未扣；已使用=只要用过 1 次。点「刷新」会向 sph-dl 同步当前页。时间均为北京时间。</p>
       <div class="releases-toolbar">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label style="margin:0;font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px">
+            搜索
+            <input id="redeemSearch" type="search" placeholder="兑换码" style="width:200px;margin:0;padding:6px 10px" />
+          </label>
+          <button type="button" class="secondary btn-sm" id="redeemSearchBtn" data-require-auth>查询</button>
           <label style="margin:0;font-size:13px;color:var(--text-secondary)">
             套餐
             <select id="redeemListPack" style="width:auto;margin:0 0 0 6px;padding:6px 10px">
@@ -1361,9 +1371,35 @@
       return !!(l.is_used || Number(l.activation_count ?? l.devices_used ?? 0) > 0);
     }
 
+    /** DB 存 UTC（SQLite datetime('now')），后台统一按北京时间展示 */
     function formatAdminTime(v) {
       if (!v) return "";
-      return String(v).replace("T", " ").slice(0, 19);
+      const raw = String(v).trim();
+      if (!raw) return "";
+      // "2026-08-28 09:07:55" / "2026-08-28T09:07:55" / 带 Z 或毫秒
+      const normalized = raw.includes("T")
+        ? raw
+        : raw.replace(" ", "T");
+      const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(normalized);
+      const iso = hasTz
+        ? normalized
+        : normalized.replace(/(\.\d+)?$/, (m) => (m || "") + "Z");
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) {
+        return raw.replace("T", " ").slice(0, 19);
+      }
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).formatToParts(d);
+      const get = (type) => parts.find((p) => p.type === type)?.value || "";
+      return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
     }
 
     function goLicensePage(target, totalPages) {
@@ -1414,16 +1450,23 @@
       }
       const ch = activeLicenseChannel || "xiaoetong";
       const status = document.getElementById("licenseStatusFilter")?.value || "";
-      const statusQs = status ? `&status=${encodeURIComponent(status)}` : "";
-      const q = `?channel_id=${encodeURIComponent(ch)}${statusQs}&page=${licensePage}&page_size=${licensePageSize}`;
-      const data = await api("/api/admin/licenses" + q);
+      const search = (document.getElementById("licenseSearch")?.value || "").trim();
+      const qs = new URLSearchParams({
+        channel_id: ch,
+        page: String(licensePage),
+        page_size: String(licensePageSize),
+      });
+      if (status) qs.set("status", status);
+      if (search) qs.set("q", search);
+      const data = await api("/api/admin/licenses?" + qs.toString());
       const licenses = data.licenses || [];
       if (data.pagination && licensePage > data.pagination.total_pages) {
         licensePage = Math.max(1, data.pagination.total_pages);
         return loadLicenses();
       }
-      const emptyText =
-        status === "unused"
+      const emptyText = search
+        ? "没有匹配的激活码"
+        : status === "unused"
           ? "该渠道暂无未使用的激活码"
           : status === "sent"
             ? "该渠道暂无已发送未激活的码"
@@ -1468,6 +1511,11 @@
       renderLicensePagination(data.pagination);
     }
 
+    function runLicenseSearch() {
+      licensePage = 1;
+      if (isAuthenticated) loadLicenses();
+    }
+
     document.getElementById("refreshLicBtn").onclick = () => {
       licensePage = 1;
       loadLicenses();
@@ -1475,6 +1523,17 @@
     document.getElementById("licenseStatusFilter")?.addEventListener("change", () => {
       licensePage = 1;
       if (isAuthenticated) loadLicenses();
+    });
+    document.getElementById("licenseSearchBtn")?.addEventListener("click", runLicenseSearch);
+    document.getElementById("licenseSearch")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        runLicenseSearch();
+      }
+    });
+    document.getElementById("licenseSearch")?.addEventListener("search", () => {
+      // 点清除按钮时重新加载
+      runLicenseSearch();
     });
 
     document.getElementById("licTable").addEventListener("click", async (e) => {
@@ -1680,12 +1739,14 @@
       const sync = opts.sync === true;
       const pack = document.getElementById("redeemListPack").value;
       const status = document.getElementById("redeemListStatus").value;
+      const search = (document.getElementById("redeemSearch")?.value || "").trim();
       const qs = new URLSearchParams({
         page: String(redeemPage),
         page_size: String(redeemPageSize),
       });
       if (pack) qs.set("pack", pack);
       if (status) qs.set("status", status);
+      if (search) qs.set("q", search);
       if (sync) qs.set("sync", "1");
 
       const statsQs = pack ? `?pack=${encodeURIComponent(pack)}` : "";
@@ -1701,18 +1762,22 @@
         const cfgHint = sph_dl_configured
           ? ""
           : "；<span style=\"color:#dc2626\">未配置 sph-dl</span>";
+        const listTotal = data.pagination?.total;
+        const searchHint =
+          search && listTotal != null ? `；当前搜索命中 <b>${listTotal}</b>` : "";
         document.getElementById("redeemListStats").innerHTML =
           `${pack ? `套餐 <b>${pack} 次</b>` : "全部套餐"}：共 <b>${stats.total}</b>，` +
           `未使用 <b>${stats.unused}</b>，已激活 ${stats.activated ?? 0}，已使用 ${stats.used ?? 0}，` +
-          `剩余次数合计 <b>${stats.remaining_credits}</b>${syncHint}${cfgHint}`;
+          `剩余次数合计 <b>${stats.remaining_credits}</b>${searchHint}${syncHint}${cfgHint}`;
 
         if (data.pagination && redeemPage > data.pagination.total_pages) {
           redeemPage = Math.max(1, data.pagination.total_pages);
           return loadRedeemCodes(opts);
         }
         const codes = data.codes || [];
-        const emptyText =
-          status === "unused"
+        const emptyText = search
+          ? "没有匹配的兑换码"
+          : status === "unused"
             ? "暂无未使用的兑换码"
             : status === "activated"
               ? "暂无已激活未使用的兑换码"
@@ -1740,6 +1805,11 @@
       }
     }
 
+    function runRedeemSearch() {
+      redeemPage = 1;
+      if (isAuthenticated) loadRedeemCodes();
+    }
+
     document.getElementById("refreshRedeemBtn").onclick = () => {
       redeemPage = 1;
       loadRedeemCodes({ sync: true });
@@ -1751,6 +1821,16 @@
     document.getElementById("redeemListStatus").addEventListener("change", () => {
       redeemPage = 1;
       if (isAuthenticated) loadRedeemCodes();
+    });
+    document.getElementById("redeemSearchBtn")?.addEventListener("click", runRedeemSearch);
+    document.getElementById("redeemSearch")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        runRedeemSearch();
+      }
+    });
+    document.getElementById("redeemSearch")?.addEventListener("search", () => {
+      runRedeemSearch();
     });
 
     document.getElementById("changePasswordBtn").onclick = async () => {

@@ -205,37 +205,54 @@ function statusClause(status) {
   return "";
 }
 
-export function countRedeemCodes({ pack, status } = {}) {
+/** 模糊搜兑换码 */
+function redeemSearchClause(q) {
+  const raw = String(q || "").trim();
+  if (!raw) return { clause: "", params: [] };
+  const needle = `%${raw.replace(/[%_\\]/g, "\\$&")}%`;
+  return {
+    clause: `AND code LIKE ? ESCAPE '\\'`,
+    params: [needle],
+  };
+}
+
+export function countRedeemCodes({ pack, status, q = "" } = {}) {
   const packNum = pack != null && pack !== "" ? Number(pack) : null;
   const st = statusClause(status);
+  const search = redeemSearchClause(q);
   if (packNum != null && isValidRedeemPack(packNum)) {
     return Number(
       getDb()
-        .prepare(`SELECT COUNT(*) AS c FROM redeem_codes WHERE pack = ? ${st}`)
-        .get(packNum)?.c ?? 0
+        .prepare(`SELECT COUNT(*) AS c FROM redeem_codes WHERE pack = ? ${st} ${search.clause}`)
+        .get(packNum, ...search.params)?.c ?? 0
     );
   }
-  return Number(getDb().prepare(`SELECT COUNT(*) AS c FROM redeem_codes WHERE 1=1 ${st}`).get()?.c ?? 0);
+  return Number(
+    getDb()
+      .prepare(`SELECT COUNT(*) AS c FROM redeem_codes WHERE 1=1 ${st} ${search.clause}`)
+      .get(...search.params)?.c ?? 0
+  );
 }
 
-export function listRedeemCodes({ pack, status, limit = 50, offset = 0 } = {}) {
+export function listRedeemCodes({ pack, status, limit = 50, offset = 0, q = "" } = {}) {
   const packNum = pack != null && pack !== "" ? Number(pack) : null;
   const st = statusClause(status);
+  const search = redeemSearchClause(q);
   const lim = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
   const off = Math.max(parseInt(offset, 10) || 0, 0);
   const rows =
     packNum != null && isValidRedeemPack(packNum)
       ? getDb()
           .prepare(
-            `SELECT * FROM redeem_codes WHERE pack = ? ${st}
+            `SELECT * FROM redeem_codes WHERE pack = ? ${st} ${search.clause}
              ORDER BY id DESC LIMIT ? OFFSET ?`
           )
-          .all(packNum, lim, off)
+          .all(packNum, ...search.params, lim, off)
       : getDb()
           .prepare(
-            `SELECT * FROM redeem_codes WHERE 1=1 ${st}
+            `SELECT * FROM redeem_codes WHERE 1=1 ${st} ${search.clause}
              ORDER BY id DESC LIMIT ? OFFSET ?`
           )
-          .all(lim, off);
+          .all(...search.params, lim, off);
   return rows.map(mapRedeemRow);
 }

@@ -482,22 +482,25 @@ hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
 hls.on(Hls.Events.LEVEL_LOADED, function (event, data) {
     // console.log(data);
     parseTs(data.details);  // 提取Ts链接
-    // 获取视频信息
+    // 获取视频信息（临时 attach 探测宽高；play 可能被随后 detach 打断，需吞掉 AbortError）
     if ($(".videoInfo #info").html() == "") {
         let video = document.createElement("video");
         video.muted = true;
         video.autoplay = false;
         hls.attachMedia(video);
         hls.on(Hls.Events.MEDIA_ATTACHED, function () {
-            video && video.play();
+            if (!video) return;
+            video.play().catch(function () {});
         });
         video.oncanplay = function () {
+            try { video.pause(); } catch (_) {}
             hls.detachMedia(video);
             video.remove();
             video = null;
         }
         video.onerror = function () {
             hls.stopLoad();
+            try { video.pause(); } catch (_) {}
             hls.detachMedia(video);
             video.remove();
             video = null;
@@ -963,7 +966,7 @@ $("#play").click(function () {
         hls.attachMedia($("#video")[0]);
         $(this).html(i18n.close).data("switch", "off");
         hls.on(Hls.Events.MEDIA_ATTACHED, function () {
-            video.play();
+            video.play().catch(function () {});
         });
         return;
     }

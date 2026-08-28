@@ -302,6 +302,17 @@ function licenseFilterClause({ unusedOnly = false, unsentOnly = false, status = 
   return `${unusedOnlyClause(unusedOnly)} ${unsentOnlyClause(unsentOnly)}`;
 }
 
+/** 模糊搜激活码 / 订单号；返回 { clause, params } */
+function licenseSearchClause(q) {
+  const raw = String(q || "").trim();
+  if (!raw) return { clause: "", params: [] };
+  const needle = `%${raw.replace(/[%_\\]/g, "\\$&")}%`;
+  return {
+    clause: `AND (l.license_key LIKE ? ESCAPE '\\' OR ifnull(l.order_no, '') LIKE ? ESCAPE '\\')`,
+    params: [needle, needle],
+  };
+}
+
 function mapLicenseRow(row) {
   const activation_count = Number(row.activation_count ?? row.devices_used ?? 0);
   const revoked = Number(row.revoked) === 1;
@@ -322,24 +333,28 @@ function mapLicenseRow(row) {
 
 export function countLicenses(
   channelId,
-  { unusedOnly = false, unsentOnly = false, status = "" } = {}
+  { unusedOnly = false, unsentOnly = false, status = "", q = "" } = {}
 ) {
   const filterClause = licenseFilterClause({ unusedOnly, unsentOnly, status });
+  const search = licenseSearchClause(q);
   const row = channelId
     ? getDb()
-        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE channel_id = ? ${filterClause}`)
-        .get(channelId)
+        .prepare(
+          `SELECT COUNT(*) AS c FROM licenses l WHERE channel_id = ? ${filterClause} ${search.clause}`
+        )
+        .get(channelId, ...search.params)
     : getDb()
-        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE 1=1 ${filterClause}`)
-        .get();
+        .prepare(`SELECT COUNT(*) AS c FROM licenses l WHERE 1=1 ${filterClause} ${search.clause}`)
+        .get(...search.params);
   return Number(row?.c ?? 0);
 }
 
 export function listLicenses(
   channelId,
-  { limit = 50, offset = 0, unusedOnly = false, unsentOnly = false, status = "" } = {}
+  { limit = 50, offset = 0, unusedOnly = false, unsentOnly = false, status = "", q = "" } = {}
 ) {
   const filterClause = licenseFilterClause({ unusedOnly, unsentOnly, status });
+  const search = licenseSearchClause(q);
   const selectSql = `SELECT l.*,
           ${LICENSE_ACTIVATION_COUNT_SQL} AS activation_count,
           ${LICENSE_ACTIVATION_COUNT_SQL} AS devices_used,
@@ -349,16 +364,16 @@ export function listLicenses(
   const rows = channelId
     ? getDb()
         .prepare(
-          `${selectSql} WHERE channel_id = ? ${filterClause}
+          `${selectSql} WHERE channel_id = ? ${filterClause} ${search.clause}
          ORDER BY l.id DESC LIMIT ? OFFSET ?`
         )
-        .all(channelId, limit, offset)
+        .all(channelId, ...search.params, limit, offset)
     : getDb()
         .prepare(
-          `${selectSql} WHERE 1=1 ${filterClause}
+          `${selectSql} WHERE 1=1 ${filterClause} ${search.clause}
        ORDER BY l.id DESC LIMIT ? OFFSET ?`
         )
-        .all(limit, offset);
+        .all(...search.params, limit, offset);
   return rows.map(mapLicenseRow);
 }
 

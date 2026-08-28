@@ -574,16 +574,18 @@ app.get("/api/admin/licenses", adminAuth, (req, res) => {
   const unusedOnly = req.query.unused === "1";
   const unsentOnly = req.query.unsent === "1";
   const status = String(req.query.status || "").trim();
+  const q = String(req.query.q || "").trim();
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const pageSize = Math.min(Math.max(parseInt(req.query.page_size, 10) || 50, 1), 200);
   const offset = (page - 1) * pageSize;
-  const total = countLicenses(channelId, { unusedOnly, unsentOnly, status });
+  const total = countLicenses(channelId, { unusedOnly, unsentOnly, status, q });
   const licenses = listLicenses(channelId, {
     limit: pageSize,
     offset,
     unusedOnly,
     unsentOnly,
     status,
+    q,
   });
   res.json({
     ok: true,
@@ -732,17 +734,18 @@ app.get("/api/admin/redeem-codes", adminAuth, async (req, res) => {
   try {
     const pack = req.query.pack != null && req.query.pack !== "" ? Number(req.query.pack) : null;
     const status = req.query.status ? String(req.query.status).trim() : "";
+    const q = String(req.query.q || "").trim();
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const pageSize = Math.min(Math.max(parseInt(req.query.page_size, 10) || 50, 1), 200);
     const offset = (page - 1) * pageSize;
     const sync = req.query.sync === "1" || req.query.sync === "true";
-    let codes = listRedeemCodes({ pack, status, limit: pageSize, offset });
+    let codes = listRedeemCodes({ pack, status, limit: pageSize, offset, q });
     let syncResult = null;
     if (sync && codes.length) {
       syncResult = await syncRedeemRemaining(codes.map((c) => c.code));
-      codes = listRedeemCodes({ pack, status, limit: pageSize, offset });
+      codes = listRedeemCodes({ pack, status, limit: pageSize, offset, q });
     }
-    const total = countRedeemCodes({ pack, status });
+    const total = countRedeemCodes({ pack, status, q });
     const sph = getSphDlConfig();
     res.json({
       ok: true,
