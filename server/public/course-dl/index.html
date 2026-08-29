@@ -20,7 +20,7 @@
 
     <div class="card">
       <h2>1. 下载安装包</h2>
-      <p>请按你的电脑系统下载对应版本，不要混用。</p>
+      <p>请按你的电脑系统与芯片下载对应版本，不要混用。</p>
       <p class="hint" id="os-hint"></p>
       <div class="os-grid">
         <article class="os-card" id="card-mac" data-os="mac">
@@ -28,11 +28,18 @@
             <h3>macOS</h3>
             <span class="os-badge" id="badge-mac" hidden>当前系统</span>
           </div>
-          <p class="os-file">安装包：.dmg</p>
-          <a class="btn" id="btn-mac" href="#" target="_blank" rel="noopener">下载 Mac 版</a>
+          <p class="os-file">安装包：.dmg（Apple 芯片 / Intel 芯片分开）</p>
+          <a class="btn" id="btn-mac" href="#" target="_blank" rel="noopener">
+            下载 Apple 芯片版
+            <span class="chip-tag" id="tag-mac-arm" hidden>当前芯片</span>
+          </a>
+          <a class="btn secondary" id="btn-mac-intel" href="#" target="_blank" rel="noopener" style="margin-top:8px">
+            下载 Intel 芯片版
+            <span class="chip-tag" id="tag-mac-intel" hidden>当前芯片</span>
+          </a>
           <ol class="os-steps">
-            <li>打开下载的 DMG</li>
-            <li>把「小鹅通课程下载器」拖到「应用程序」</li>
+            <li>不确定芯片时：左上角 → 关于本机（写「芯片」= Apple，写「处理器」且带 Intel = Intel）</li>
+            <li>打开下载的 DMG，拖到「应用程序」</li>
             <li>若被拦截：系统设置 → 隐私与安全性 → 仍要打开</li>
           </ol>
         </article>
@@ -86,84 +93,165 @@
       return "";
     }
 
+    /** @returns {Promise<"arm64"|"x86_64"|"">} */
+    async function detectMacArch() {
+      // Chrome / Edge / new Chromium: Client Hints（最准）
+      try {
+        if (navigator.userAgentData?.getHighEntropyValues) {
+          const { architecture, bitness } = await navigator.userAgentData.getHighEntropyValues([
+            "architecture",
+            "bitness",
+          ]);
+          if (architecture === "arm") return "arm64";
+          if (architecture === "x86") return "x86_64";
+          void bitness;
+        }
+      } catch (_) {}
+
+      // Safari / Firefox：用 WebGL 渲染器推断（platform 在 M 芯片上仍常是 MacIntel，不可信）
+      try {
+        const canvas = document.createElement("canvas");
+        const gl =
+          canvas.getContext("webgl") ||
+          canvas.getContext("experimental-webgl");
+        const info = gl && gl.getExtension("WEBGL_debug_renderer_info");
+        if (info && gl) {
+          const renderer = String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) || "");
+          const vendor = String(gl.getParameter(info.UNMASKED_VENDOR_WEBGL) || "");
+          const blob = `${vendor} ${renderer}`;
+          if (/Apple\s+M\d|Apple GPU|Apple Inc/i.test(blob) && !/Intel|AMD|NVIDIA|Radeon|GeForce/i.test(renderer)) {
+            return "arm64";
+          }
+          if (/Intel|AMD|NVIDIA|Radeon|GeForce|Iris|UHD/i.test(blob)) {
+            return "x86_64";
+          }
+        }
+      } catch (_) {}
+
+      // 少数环境：UA 里仍带 Intel Mac OS X + 无 Apple Silicon 线索时偏向 Intel
+      const ua = navigator.userAgent || "";
+      if (/Macintosh.*Intel Mac OS X/i.test(ua) && !/arm64|aarch64/i.test(ua)) {
+        // 不可靠（M 芯片 Safari 也这样写），仅作未知时的弱提示，返回空让用户自选
+      }
+      return "";
+    }
+
     function bindDownload(el, url, missingText) {
       if (url) {
         el.href = url;
         el.classList.remove("is-off");
         el.removeAttribute("aria-disabled");
+        el.removeAttribute("title");
         el.onclick = null;
+        if (!el.dataset.label) el.dataset.label = el.childNodes[0]?.textContent?.trim() || el.textContent.trim();
         return;
       }
       el.href = "#";
-      el.classList.add("is-off");
+      el.classList.add("is-off", "secondary");
       el.setAttribute("aria-disabled", "true");
-      el.textContent = missingText;
       el.onclick = (e) => {
         e.preventDefault();
+        alert(missingText);
       };
     }
 
-    function lockWrongOs(os) {
-      const macBtn = document.getElementById("btn-mac");
-      const winBtn = document.getElementById("btn-win");
-      const macCard = document.getElementById("card-mac");
-      const winCard = document.getElementById("card-win");
-      function lock(el, card, message) {
-        el.href = "#";
-        el.removeAttribute("target");
-        el.classList.add("is-off", "secondary");
-        el.setAttribute("aria-disabled", "true");
-        el.setAttribute("title", message);
-        card.classList.add("locked");
-        el.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          alert(message);
-        };
-      }
-      if (os === "mac") {
-        lock(winBtn, winCard, "当前是 Mac，请下载 macOS 版。Windows 安装包无法在这台电脑上使用。");
-      } else if (os === "win") {
-        lock(macBtn, macCard, "当前是 Windows，请下载 Windows 版。Mac 安装包无法在这台电脑上使用。");
-      }
+    function lockBtn(el, message) {
+      el.href = "#";
+      el.removeAttribute("target");
+      el.classList.add("is-off", "secondary");
+      el.setAttribute("aria-disabled", "true");
+      el.setAttribute("title", message);
+      el.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        alert(message);
+      };
+    }
+
+    function unlockVisual(el) {
+      el.classList.remove("is-off", "secondary");
+      el.removeAttribute("aria-disabled");
+      el.removeAttribute("title");
+      if (!el.getAttribute("target")) el.setAttribute("target", "_blank");
     }
 
     async function load() {
       const os = detectOs();
       const hint = document.getElementById("os-hint");
-      if (os === "mac") {
-        document.getElementById("card-mac").classList.add("current");
-        document.getElementById("badge-mac").hidden = false;
-        document.getElementById("btn-mac").classList.remove("secondary");
-        document.getElementById("btn-win").classList.add("secondary");
-        hint.textContent = "检测到你正在使用 Mac，已锁定 macOS 版。Windows 下载不可用。";
-      } else if (os === "win") {
-        document.getElementById("card-win").classList.add("current");
-        document.getElementById("badge-win").hidden = false;
-        document.getElementById("btn-win").classList.remove("secondary");
-        document.getElementById("btn-mac").classList.add("secondary");
-        hint.textContent = "检测到你正在使用 Windows，已锁定 Windows 版。Mac 下载不可用。";
-      } else {
-        hint.textContent = "无法自动识别系统时，请对照电脑类型选择：Mac 用 .dmg，Windows 用 .exe。";
-      }
+      const macBtn = document.getElementById("btn-mac");
+      const macIntelBtn = document.getElementById("btn-mac-intel");
+      const winBtn = document.getElementById("btn-win");
+      const tagArm = document.getElementById("tag-mac-arm");
+      const tagIntel = document.getElementById("tag-mac-intel");
 
+      let macUrl = "";
+      let macIntelUrl = "";
+      let winUrl = "";
       try {
         const r = await fetch("/api/config");
         const d = await r.json();
-        bindDownload(
-          document.getElementById("btn-mac"),
-          d.download_mac_url,
-          "Mac 版暂未上架"
-        );
-        bindDownload(
-          document.getElementById("btn-win"),
-          d.download_win_url,
-          "Windows 版暂未上架"
-        );
+        macUrl = d.download_mac_url || "";
+        macIntelUrl = d.download_mac_intel_url || "";
+        winUrl = d.download_win_url || "";
       } catch (e) {
         console.warn(e);
       }
-      lockWrongOs(os);
+
+      // 始终展示两个 Mac 按钮（未配置则显示为不可用）
+      macIntelBtn.style.display = "";
+
+      bindDownload(macBtn, macUrl, "Apple 芯片版暂未上架，请联系客服。");
+      bindDownload(macIntelBtn, macIntelUrl, "Intel 芯片版暂未上架，请联系客服。");
+      bindDownload(winBtn, winUrl, "Windows 版暂未上架，请联系客服。");
+
+      if (os === "mac") {
+        document.getElementById("card-mac").classList.add("current");
+        document.getElementById("badge-mac").hidden = false;
+        document.getElementById("card-win").classList.add("locked");
+        lockBtn(winBtn, "当前是 Mac，请下载 macOS 对应芯片版。Windows 安装包无法在这台电脑上使用。");
+
+        const arch = await detectMacArch();
+        if (arch === "arm64") {
+          hint.textContent =
+            "检测到 Apple 芯片（M 系列），已锁定「Apple 芯片版」。Intel 版与 Windows 版不可下载。";
+          if (macUrl) unlockVisual(macBtn);
+          tagArm.hidden = false;
+          lockBtn(
+            macIntelBtn,
+            "当前是 Apple 芯片 Mac，请下载「Apple 芯片版」。Intel 安装包无法在这台电脑上使用。"
+          );
+        } else if (arch === "x86_64") {
+          hint.textContent =
+            "检测到 Intel 芯片 Mac，已锁定「Intel 芯片版」。Apple 芯片版与 Windows 版不可下载。";
+          if (macIntelUrl) unlockVisual(macIntelBtn);
+          else hint.textContent += "（Intel 安装包链接尚未配置）";
+          tagIntel.hidden = false;
+          lockBtn(
+            macBtn,
+            "当前是 Intel Mac，请下载「Intel 芯片版」。Apple 芯片安装包无法在这台电脑上使用。"
+          );
+        } else {
+          hint.textContent =
+            "已检测到 Mac，但无法自动识别芯片。请两个按钮中选对的：关于本机写「芯片」用 Apple 版，写 Intel 处理器用 Intel 版。Windows 不可下载。";
+          if (macUrl) unlockVisual(macBtn);
+          if (macIntelUrl) {
+            macIntelBtn.classList.remove("is-off");
+            macIntelBtn.removeAttribute("aria-disabled");
+            macIntelBtn.setAttribute("target", "_blank");
+          }
+        }
+      } else if (os === "win") {
+        document.getElementById("card-win").classList.add("current");
+        document.getElementById("badge-win").hidden = false;
+        document.getElementById("card-mac").classList.add("locked");
+        hint.textContent = "检测到你正在使用 Windows，已锁定 Windows 版。Mac 下载不可用。";
+        if (winUrl) unlockVisual(winBtn);
+        lockBtn(macBtn, "当前是 Windows，请下载 Windows 版。Mac 安装包无法在这台电脑上使用。");
+        lockBtn(macIntelBtn, "当前是 Windows，请下载 Windows 版。Mac 安装包无法在这台电脑上使用。");
+      } else {
+        hint.textContent =
+          "无法自动识别系统时，请对照选择：Apple 芯片 Mac / Intel Mac 用对应 .dmg，Windows 用 .exe。";
+      }
     }
     load();
   </script>

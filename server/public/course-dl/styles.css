@@ -198,6 +198,22 @@ footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
   padding: 2px 8px;
   white-space: nowrap;
 }
+.chip-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: middle;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+.btn.secondary .chip-tag,
+.btn.is-off .chip-tag {
+  background: rgba(61, 156, 240, 0.2);
+  color: var(--accent);
+}
 .os-card .os-file {
   font-size: 0.8rem;
   color: var(--muted);

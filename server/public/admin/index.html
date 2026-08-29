@@ -684,8 +684,10 @@
         买家填<strong>小红书订单号</strong>（如 <code>P802096514294231571</code>）领取激活码。
         请先在本产品「生成激活码」里备货；库存空时发货页会自动补生成 1 个。
       </p>
-      <label>macOS 安装包链接</label>
-      <input id="cdlMacUrl" placeholder="https://...dmg 或网盘直链" />
+      <label>macOS 安装包链接（Apple 芯片 / Universal）</label>
+      <input id="cdlMacUrl" placeholder="https://...-macOS-AppleSilicon.dmg 或 Universal" />
+      <label>macOS 安装包链接（Intel，可选）</label>
+      <input id="cdlMacIntelUrl" placeholder="https://...-macOS-Intel.dmg" />
       <label>Windows 安装包链接</label>
       <input id="cdlWinUrl" placeholder="https://...exe 或网盘直链" />
       <label>最新版本号（软件内可选升级，例如 0.1.1）</label>
@@ -1568,6 +1570,7 @@
       try {
         const data = await api("/api/admin/course-dl/config");
         document.getElementById("cdlMacUrl").value = data.download_mac_url || "";
+        document.getElementById("cdlMacIntelUrl").value = data.download_mac_intel_url || "";
         document.getElementById("cdlWinUrl").value = data.download_win_url || "";
         document.getElementById("cdlLatestVersion").value = data.latest_version || "";
         document.getElementById("cdlReleaseNotes").value = data.release_notes || "";
@@ -1586,6 +1589,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             download_mac_url: document.getElementById("cdlMacUrl").value.trim(),
+            download_mac_intel_url: document.getElementById("cdlMacIntelUrl").value.trim(),
             download_win_url: document.getElementById("cdlWinUrl").value.trim(),
             latest_version: document.getElementById("cdlLatestVersion").value.trim(),
             release_notes: document.getElementById("cdlReleaseNotes").value.trim(),

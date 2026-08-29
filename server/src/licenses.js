@@ -563,6 +563,7 @@ export function unbindLicense(licenseKey) {
 
 const COURSE_DL_CONFIG_KEYS = {
   download_mac_url: "course_dl_download_mac_url",
+  download_mac_intel_url: "course_dl_download_mac_intel_url",
   download_win_url: "course_dl_download_win_url",
   guide_video_url: "course_dl_guide_video_url",
   latest_version: "course_dl_latest_version",
