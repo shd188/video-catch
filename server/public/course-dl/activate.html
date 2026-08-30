@@ -33,7 +33,7 @@
           inputmode="text"
           spellcheck="false"
         />
-        <p class="hint" id="order-hint">须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能激活一次。</p>
+        <p class="hint" id="order-hint">须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。同一订单若激活码已作废，重新提交会发放新码。</p>
 
         <label for="device">本机机器码（在软件窗口复制）</label>
         <input
@@ -112,7 +112,7 @@
         orderHint.style.color = "var(--bad)";
       } else {
         orderHint.innerHTML =
-          "须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。每个订单号只能激活一次。";
+          "须以 <strong>P</strong> 开头，后面 <strong>18 位数字</strong>，共 19 位。同一订单若激活码已作废，重新提交会发放新码。";
         orderHint.style.color = "";
       }
     });

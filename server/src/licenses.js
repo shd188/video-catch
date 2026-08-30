@@ -113,7 +113,8 @@ export function activateLicense({ licenseKey, channelId, installationId, userAge
     const used = getDb()
       .prepare(
         `SELECT license_key FROM licenses
-         WHERE channel_id = ? AND order_no = ? AND license_key != ?`
+         WHERE channel_id = ? AND order_no = ? AND license_key != ?
+           AND ifnull(revoked, 0) = 0`
       )
       .get(channelId, orderToBind, license.license_key);
     if (used) {
@@ -281,7 +282,7 @@ function unsentOnlyClause(unsentOnly) {
     : "";
 }
 
-/** unused=未发送未激活, sent=已发送未激活, used=已激活 */
+/** unused=未发送未激活, sent=已发送未激活, used=已激活, revoked=已作废 */
 function licenseStatusClause(status) {
   const notRevoked = `AND ifnull(l.revoked, 0) = 0`;
   if (status === "unused") {
@@ -292,6 +293,9 @@ function licenseStatusClause(status) {
   }
   if (status === "used") {
     return `AND ${LICENSE_ACTIVATION_COUNT_SQL} > 0 ${notRevoked}`;
+  }
+  if (status === "revoked") {
+    return `AND ifnull(l.revoked, 0) = 1`;
   }
   return "";
 }
@@ -542,7 +546,10 @@ export function revokeLicense(licenseKey) {
     return { ok: false, code: "NOT_FOUND", message: "激活码不存在" };
   }
   getDb().prepare(`UPDATE licenses SET revoked = 1 WHERE id = ?`).run(license.id);
-  return { ok: true, message: "已作废，该设备联网后将无法使用" };
+  return {
+    ok: true,
+    message: "已作废。买家用同一订单号重新打开激活页，可领取新码并绑定机器",
+  };
 }
 
 export function unbindLicense(licenseKey) {
@@ -617,7 +624,7 @@ export function normalizeXhsOrder(s) {
 
 /**
  * 发货页：用小红书订单号领取激活码。
- * 已领过同一订单则返回原码；否则绑定一条未发未激活库存，库存空则自动生成 1 个。
+ * 已领过且未作废则返回原码；已作废则发放新码并重新绑定该订单。
  */
 export function claimCourseDlByOrder(orderNo) {
   const order = normalizeXhsOrder(orderNo);
@@ -633,26 +640,31 @@ export function claimCourseDlByOrder(orderNo) {
   const db = getDb();
   const existing = db
     .prepare(
-      `SELECT * FROM licenses WHERE channel_id = ? AND order_no = ?`
+      `SELECT * FROM licenses
+       WHERE channel_id = ? AND order_no = ? AND ifnull(revoked, 0) = 0
+       ORDER BY id DESC LIMIT 1`
     )
     .get(COURSE_DL_CHANNEL, order);
   if (existing) {
-    if (isLicenseRevoked(existing)) {
-      return {
-        ok: false,
-        code: "REVOKED",
-        error: "该订单对应激活码已作废，请联系卖家",
-        message: "该订单对应激活码已作废，请联系卖家",
-      };
-    }
     return {
       ok: true,
       license_key: existing.license_key,
       order_no: order,
       reused: true,
+      reissued: false,
       message: "该订单已领取过激活码",
     };
   }
+
+  const hadRevoked = Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM licenses
+         WHERE channel_id = ? AND order_no = ? AND ifnull(revoked, 0) = 1
+         LIMIT 1`
+      )
+      .get(COURSE_DL_CHANNEL, order)
+  );
 
   let claimed;
   try {
@@ -675,7 +687,7 @@ export function claimCourseDlByOrder(orderNo) {
           channelId: COURSE_DL_CHANNEL,
           maxDevices: 1,
           singleUse: 1,
-          note: "auto-claim",
+          note: hadRevoked ? "reissue-after-revoke" : "auto-claim",
         });
         row = { id: created.id, license_key: created.license_key };
       }
@@ -695,7 +707,8 @@ export function claimCourseDlByOrder(orderNo) {
     if (/UNIQUE|constraint/i.test(msg)) {
       const again = db
         .prepare(
-          `SELECT license_key FROM licenses WHERE channel_id = ? AND order_no = ?`
+          `SELECT license_key FROM licenses
+           WHERE channel_id = ? AND order_no = ? AND ifnull(revoked, 0) = 0`
         )
         .get(COURSE_DL_CHANNEL, order);
       if (again) {
@@ -704,6 +717,7 @@ export function claimCourseDlByOrder(orderNo) {
           license_key: again.license_key,
           order_no: order,
           reused: true,
+          reissued: false,
           message: "该订单已领取过激活码",
         };
       }
@@ -730,7 +744,8 @@ export function claimCourseDlByOrder(orderNo) {
     license_key: claimed.license_key,
     order_no: order,
     reused: false,
-    message: "领取成功",
+    reissued: hadRevoked,
+    message: hadRevoked ? "原激活码已作废，已重新发放" : "领取成功",
   };
 }
 
@@ -759,11 +774,17 @@ export function claimAndActivateCourseDl({ orderNo, deviceId, userAgent }) {
     userAgent,
   });
   if (!result.ok) return result;
+  const message = claimed.reissued
+    ? "原激活码已作废，已重新发放并绑定本机。请把新激活码粘贴回软件"
+    : claimed.reused
+      ? "该订单已激活过，已重新绑定本机"
+      : "激活成功，请把激活码粘贴回软件";
   return {
     ...result,
     license_key: claimed.license_key,
     reused: Boolean(claimed.reused),
-    message: claimed.reused ? "该订单已激活过，已重新绑定本机" : "激活成功，请把激活码粘贴回软件",
+    reissued: Boolean(claimed.reissued),
+    message,
   };
 }
 

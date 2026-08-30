@@ -48,9 +48,10 @@ function migrate(database) {
   database.exec(`
     CREATE INDEX IF NOT EXISTS idx_licenses_channel_sent ON licenses(channel_id, sent_at);
     CREATE INDEX IF NOT EXISTS idx_licenses_claim_token ON licenses(claim_token);
+    DROP INDEX IF EXISTS idx_licenses_channel_order;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_licenses_channel_order
       ON licenses(channel_id, order_no)
-      WHERE order_no IS NOT NULL AND order_no != '';
+      WHERE order_no IS NOT NULL AND order_no != '' AND ifnull(revoked, 0) = 0;
   `);
   database.exec(`
     CREATE TABLE IF NOT EXISTS admin_settings (

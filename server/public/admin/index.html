@@ -702,7 +702,7 @@
 
     <section id="panel-licenses" class="card" hidden>
       <h3>激活码列表</h3>
-      <p class="section-desc">按渠道查看激活码。未使用=未发送未激活，已发送=已发给客户但未激活，已使用=已激活。时间均为北京时间。</p>
+      <p class="section-desc">按渠道查看激活码。未使用=未发送未激活，已发送=已发给客户但未激活，已使用=已激活，已作废=管理员已作废无法再使用。时间均为北京时间。</p>
       <div id="licenseChannelTabs" class="channel-tabs"></div>
       <div class="releases-toolbar">
         <span id="licenseChannelHint" class="section-desc" style="margin:0"></span>
@@ -719,6 +719,7 @@
               <option value="unused">未使用</option>
               <option value="sent">已发送</option>
               <option value="used">已使用</option>
+              <option value="revoked">已作废</option>
             </select>
           </label>
           <button type="button" class="secondary btn-sm" id="refreshLicBtn" data-require-auth>刷新</button>
@@ -1474,7 +1475,9 @@
             ? "该渠道暂无已发送未激活的码"
             : status === "used"
               ? "该渠道暂无已使用的激活码"
-              : "该渠道暂无激活码";
+              : status === "revoked"
+                ? "该渠道暂无已作废的激活码"
+                : "该渠道暂无激活码";
       document.getElementById("licTable").innerHTML =
         licenses
           .map((l) => {
@@ -1544,7 +1547,7 @@
       const key = decodeURIComponent(btn.dataset.key || "");
       const act = btn.dataset.act;
       if (!key) return;
-      if (act === "revoke" && !confirm(`确定作废 ${key}？对方下次联网将无法使用。`)) return;
+      if (act === "revoke" && !confirm(`确定作废 ${key}？对方下次联网将无法使用。买家用同一订单号重新打开激活页，会自动领取新码。`)) return;
       if (act === "unbind" && !confirm(`确定解绑 ${key}？可用同一订单号在新机器重新激活。`)) return;
       btn.disabled = true;
       try {
