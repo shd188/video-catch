@@ -56,17 +56,40 @@
     });
   }
 
-  function renderPan(pan) {
+  function renderDownload(data) {
     var urlEl = $("deliver-pan-url");
     var codeWrap = $("deliver-pan-code-wrap");
     var codeEl = $("deliver-pan-code");
     var missing = $("deliver-pan-missing");
+    var hint = $("deliver-pan-hint");
+    var label = $("deliver-download-label");
     if (!urlEl) return;
-    if (pan && pan.url) {
-      urlEl.href = pan.url;
+    var pkg = data && data.package;
+    var pan = data && data.pan;
+    if (pkg && pkg.available && pkg.download_url) {
+      urlEl.href = pkg.download_url;
+      urlEl.removeAttribute("target");
+      urlEl.removeAttribute("rel");
+      if (pkg.filename) urlEl.setAttribute("download", pkg.filename);
+      else urlEl.removeAttribute("download");
       urlEl.textContent = "点击下载安装包";
       urlEl.hidden = false;
+      if (label) label.textContent = "1. 下载安装包";
       if (missing) missing.hidden = true;
+      if (hint) hint.hidden = false;
+      if (codeWrap) codeWrap.hidden = true;
+      return;
+    }
+    urlEl.removeAttribute("download");
+    if (pan && pan.url) {
+      urlEl.href = pan.url;
+      urlEl.setAttribute("target", "_blank");
+      urlEl.setAttribute("rel", "noopener");
+      urlEl.textContent = "点击下载安装包";
+      urlEl.hidden = false;
+      if (label) label.textContent = "1. 下载安装包（网盘）";
+      if (missing) missing.hidden = true;
+      if (hint) hint.hidden = true;
       if (codeWrap && codeEl) {
         if (pan.code) {
           codeEl.textContent = pan.code;
@@ -78,7 +101,9 @@
     } else {
       urlEl.hidden = true;
       if (codeWrap) codeWrap.hidden = true;
+      if (hint) hint.hidden = true;
       if (missing) missing.hidden = false;
+      if (label) label.textContent = "1. 下载安装包";
     }
   }
 
@@ -154,7 +179,7 @@
           throw new Error(data.message || "领取失败");
         }
         showClaimed(data.license_key);
-        if (data.pan) renderPan(data.pan);
+        renderDownload(data);
         showToast(data.reused ? "已显示您之前领取的激活码" : "领取成功，请妥善保存");
       })
       .catch(function (e) {
@@ -177,7 +202,7 @@
     loadMeta()
       .then(function (data) {
         if (title) title.textContent = data.channel_label || channelId;
-        renderPan(data.pan || {});
+        renderDownload(data);
         if (data.claimed && data.license_key) {
           showClaimed(data.license_key);
         } else if (localKey) {

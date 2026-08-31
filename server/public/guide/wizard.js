@@ -624,7 +624,7 @@
       var title = $("page-title");
       var sub = $("page-sub");
       if (title) title.textContent = "发货与安装说明";
-      if (sub) sub.textContent = "网盘下载 · 领取激活码 · 安装向导";
+      if (sub) sub.textContent = "下载安装包 · 领取激活码 · 安装向导";
       // 发货页跳过选渠道，直接从「下载解压」开始
       if (state.step < 2) state.step = 2;
     }

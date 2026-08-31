@@ -197,6 +197,10 @@
       border-color: var(--primary);
       box-shadow: 0 0 0 3px var(--primary-soft);
     }
+    input[type="file"] {
+      padding: 8px;
+      background: var(--bg);
+    }
     button {
       background: var(--primary);
       color: #fff;
@@ -660,12 +664,20 @@
     <section id="panel-delivery" class="card" hidden>
       <h3>发货页配置</h3>
       <p class="section-desc">
-        每个渠道一个发货链接，填到小红书自动发货。客户打开后可领取激活码并看到网盘下载地址。
+        每个渠道一个发货链接，填到小红书自动发货。客户打开后可领取激活码，并<strong>直接下载安装包</strong>（不用网盘）。
         链接形如 <code id="deliveryUrlExample">https://api…/d/a8f3c2…</code>（不透明 token，无法从地址猜到其它渠道）。
       </p>
       <div id="deliveryChannelTabs" class="channel-tabs"></div>
       <p id="deliveryPageUrl" class="stats-box" style="margin-top:12px">—</p>
-      <label>网盘分享链接</label>
+      <p id="deliveryPackageStatus" class="stats-box">—</p>
+      <label>上传直链安装包（zip）</label>
+      <p class="section-desc" style="margin-top:0">买家点「下载安装包」会从本站直接下载这个 zip。每个渠道上传一次，有新版本再覆盖上传。</p>
+      <input id="deliveryZipVersion" placeholder="版本号，例如 2.6.9" />
+      <input id="deliveryZipFile" type="file" accept=".zip,application/zip" />
+      <button type="button" id="uploadDeliveryZipBtn" data-require-auth>上传安装包</button>
+      <div id="deliveryZipResult"></div>
+      <label style="margin-top:20px">网盘备用链接（可选）</label>
+      <p class="section-desc" style="margin-top:0">未上传 zip 时才会显示给买家。已有直链时买家看不到网盘。</p>
       <input id="deliveryPanUrl" type="url" placeholder="https://pan.baidu.com/s/…" />
       <label>提取码（可选）</label>
       <input id="deliveryPanCode" placeholder="例如：ab12" />
@@ -682,12 +694,13 @@
       <p class="section-desc">
         买家入口：<a id="courseDlPageLink" href="/course-dl/" target="_blank">/course-dl/</a>
         买家填<strong>小红书订单号</strong>（如 <code>P802096514294231571</code>）领取激活码。
+        安装包请填<strong>可直接下载</strong>的地址（对象存储 / 本站直链），不要填网盘分享页。
         请先在本产品「生成激活码」里备货；库存空时发货页会自动补生成 1 个。
       </p>
       <label>macOS 安装包链接（Apple 芯片 / Universal）</label>
-      <input id="cdlMacUrl" placeholder="https://...-macOS-AppleSilicon.dmg 或 Universal" />
+      <input id="cdlMacUrl" placeholder="https://.../xiaoetong-dl-0.1.7-AppleSilicon.dmg" />
       <label>macOS 安装包链接（Intel，可选）</label>
-      <input id="cdlMacIntelUrl" placeholder="https://...-macOS-Intel.dmg" />
+      <input id="cdlMacIntelUrl" placeholder="https://.../xiaoetong-dl-0.1.7-Intel.dmg" />
       <label>Windows 安装包链接</label>
       <input id="cdlWinUrl" placeholder="https://...exe 或网盘直链" />
       <label>最新版本号（软件内可选升级，例如 0.1.1）</label>
@@ -804,7 +817,7 @@
       {
         id: "plugin",
         label: "视频下载插件",
-        hint: "全能、小鹅通、飞书、腾讯会议。生成激活码后可下载 CSV，或把发货链接发给客户自行领取。",
+        hint: "全能、小鹅通、飞书、腾讯会议。生成激活码后可下载 CSV，或把发货链接发给客户自行领取。发货页可直链下载安装包，无需网盘。",
         channelIds: ["quanneng", "xiaoetong", "feishu", "tencentmeeting"],
         tabs: [
           { id: "bulk", label: "生成激活码" },
@@ -1636,6 +1649,17 @@
         );
         document.getElementById("deliveryPanUrl").value = data.pan?.url || "";
         document.getElementById("deliveryPanCode").value = data.pan?.code || "";
+        const pkgStatus = document.getElementById("deliveryPackageStatus");
+        const zipVersion = document.getElementById("deliveryZipVersion");
+        if (data.package?.available) {
+          if (pkgStatus) {
+            pkgStatus.innerHTML = `当前直链安装包：<b>${escapeHtml(data.package.filename || ch + ".zip")}</b>　版本 <b>${escapeHtml(data.package.version)}</b>。买家打开链接即可直接下载。`;
+          }
+          if (zipVersion) zipVersion.value = data.package.version || "";
+        } else if (pkgStatus) {
+          pkgStatus.innerHTML = `当前<strong>还没有直链安装包</strong>。请在下方上传 zip；在此之前买家只能看到网盘备用链接。`;
+          if (zipVersion) zipVersion.value = "";
+        }
         const pageUrl = data.page_url || "";
         if (urlEl) {
           if (pageUrl) {
@@ -1688,6 +1712,55 @@
         loadDeliveryPanel();
       } catch (e) {
         el.innerHTML = `<p class="err">${escapeHtml(e.message)}</p>`;
+      }
+    };
+
+    document.getElementById("uploadDeliveryZipBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const ch = activeDeliveryChannel || channelsForProduct(activeProduct)[0]?.id;
+      const el = document.getElementById("deliveryZipResult");
+      const version = (document.getElementById("deliveryZipVersion")?.value || "").trim();
+      const file = document.getElementById("deliveryZipFile")?.files?.[0];
+      el.innerHTML = "";
+      if (!ch) {
+        el.innerHTML = `<p class="err">请先选择渠道</p>`;
+        return;
+      }
+      if (!version) {
+        el.innerHTML = `<p class="err">请填写版本号</p>`;
+        return;
+      }
+      if (!file) {
+        el.innerHTML = `<p class="err">请选择 zip 文件</p>`;
+        return;
+      }
+      const form = new FormData();
+      form.append("channel_id", ch);
+      form.append("version", version);
+      form.append("file", file);
+      const btn = document.getElementById("uploadDeliveryZipBtn");
+      if (btn) btn.disabled = true;
+      try {
+        const qs = new URLSearchParams({ channel_id: ch, version });
+        const res = await fetch("/api/admin/releases/upload?" + qs.toString(), {
+          method: "POST",
+          headers: { "X-Admin-Key": getKey() },
+          body: form,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          clearAuth();
+          throw new Error("登录已失效，请重新输入管理密钥");
+        }
+        if (!res.ok) throw new Error(data.message || res.statusText);
+        el.innerHTML = `<div class="success-box"><p>已上传 ${escapeHtml(ch)} ${escapeHtml(version)}，发货页将直接提供下载。</p></div>`;
+        const fileInput = document.getElementById("deliveryZipFile");
+        if (fileInput) fileInput.value = "";
+        loadDeliveryPanel();
+      } catch (e) {
+        el.innerHTML = `<p class="err">${escapeHtml(e.message)}</p>`;
+      } finally {
+        if (btn) btn.disabled = false;
       }
     };
 

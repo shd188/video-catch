@@ -32,6 +32,7 @@ import {
   setDeliveryPan,
   listDeliveryPanConfigs,
   checkClaimRateLimit,
+  checkPackageDownloadRateLimit,
   parseCookies,
   claimCookieName,
   ensureDeliverySlug,
@@ -53,6 +54,7 @@ import { isVersionNewer } from "./version.js";
 import {
   getReleaseFilePath,
   getLatestRelease,
+  getLatestPackage,
   buildDownloadUrl,
   createRelease,
   deleteRelease,
@@ -209,7 +211,7 @@ function sendDeliverPage(req, res) {
   // Bust stale browser cache that may still hold application/octet-stream for same ETag
   html = html.replace(
     "<head>",
-    `<head>\n  <!-- vc-deliver-v3 -->\n  <meta http-equiv="Cache-Control" content="no-store" />`
+    `<head>\n  <!-- vc-deliver-v4 -->\n  <meta http-equiv="Cache-Control" content="no-store" />`
   );
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   res.setHeader("Pragma", "no-cache");
@@ -228,6 +230,17 @@ function clientIp(req) {
   const xf = req.headers["x-forwarded-for"];
   if (xf) return String(xf).split(",")[0].trim();
   return req.socket?.remoteAddress || "";
+}
+
+function publicDeliveryPackage(channelId, token) {
+  const pkg = getLatestPackage(channelId);
+  if (!pkg) return { available: false };
+  return {
+    available: true,
+    version: pkg.version,
+    filename: pkg.filename,
+    download_url: `/api/v1/delivery/package?token=${encodeURIComponent(token)}`,
+  };
 }
 
 app.get("/api/v1/delivery/meta", (req, res) => {
@@ -255,6 +268,7 @@ app.get("/api/v1/delivery/meta", (req, res) => {
     channel_id: channelId,
     channel_label: ch?.label || channelId,
     pan,
+    package: publicDeliveryPackage(channelId, token),
     claimed,
     license_key: licenseKey,
   });
@@ -279,6 +293,7 @@ app.post("/api/v1/delivery/claim", (req, res) => {
         license_key: existing.license_key,
         channel_id: existing.channel_id,
         pan,
+        package: publicDeliveryPackage(channelId, token),
         reused: true,
       });
     }
@@ -311,8 +326,27 @@ app.post("/api/v1/delivery/claim", (req, res) => {
     license_key: result.license_key,
     channel_id: result.channel_id,
     pan,
+    package: publicDeliveryPackage(channelId, token),
     reused: false,
   });
+});
+
+app.get("/api/v1/delivery/package", (req, res) => {
+  const token = String(req.query.token || "").trim();
+  const channelId = getChannelIdBySlug(token);
+  if (!channelId || !deliveryChannelAllowed(channelId, ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS)) {
+    return res.status(400).type("text/plain; charset=utf-8").send("链接无效或已失效");
+  }
+  const rate = checkPackageDownloadRateLimit(clientIp(req), channelId, { maxPerDay: 40 });
+  if (!rate.ok) {
+    return res.status(429).type("text/plain; charset=utf-8").send(rate.message);
+  }
+  const pkg = getLatestPackage(channelId);
+  if (!pkg) {
+    return res.status(404).type("text/plain; charset=utf-8").send("安装包暂未上传，请联系客服");
+  }
+  res.setHeader("Cache-Control", "private, no-store");
+  res.download(pkg.filePath, pkg.filename);
 });
 
 const manualDir = path.join(publicDir, "manual");
@@ -603,10 +637,14 @@ app.get("/api/admin/delivery/pan", adminAuth, (req, res) => {
   const channelId = req.query.channel_id ? String(req.query.channel_id).trim() : "";
   if (channelId) {
     const slug = ensureDeliverySlug(channelId);
+    const pkg = getLatestPackage(channelId);
     return res.json({
       ok: true,
       channel_id: channelId,
       pan: getDeliveryPan(channelId),
+      package: pkg
+        ? { available: true, version: pkg.version, filename: pkg.filename }
+        : { available: false },
       slug,
       page_url: deliveryPageUrl(PUBLIC_BASE_URL, slug),
     });

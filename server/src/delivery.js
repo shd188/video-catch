@@ -7,6 +7,8 @@ const SLUG_KEY_PREFIX = "delivery_slug_";
 
 /** @type {Map<string, { count: number, day: string }>} */
 const claimRate = new Map();
+/** @type {Map<string, { count: number, day: string }>} */
+const packageRate = new Map();
 
 export function deliveryChannelAllowed(channelId, adminChannelsEnv, labelOverridesEnv) {
   if (!channelId) return false;
@@ -122,24 +124,41 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** @returns {{ ok: true } | { ok: false, code: string, message: string }} */
-export function checkClaimRateLimit(ip, channelId, { maxPerDay = 20 } = {}) {
+function bumpRate(store, ip, channelId, maxPerDay, message) {
   const day = todayKey();
   const key = `${ip || "unknown"}:${channelId}:${day}`;
-  const cur = claimRate.get(key);
+  const cur = store.get(key);
   if (!cur || cur.day !== day) {
-    claimRate.set(key, { count: 0, day });
+    store.set(key, { count: 0, day });
   }
-  const entry = claimRate.get(key);
+  const entry = store.get(key);
   if (entry.count >= maxPerDay) {
-    return {
-      ok: false,
-      code: "RATE_LIMIT",
-      message: "领取过于频繁，请稍后再试或联系客服",
-    };
+    return { ok: false, code: "RATE_LIMIT", message };
   }
   entry.count += 1;
   return { ok: true };
+}
+
+/** @returns {{ ok: true } | { ok: false, code: string, message: string }} */
+export function checkClaimRateLimit(ip, channelId, { maxPerDay = 20 } = {}) {
+  return bumpRate(
+    claimRate,
+    ip,
+    channelId,
+    maxPerDay,
+    "领取过于频繁，请稍后再试或联系客服"
+  );
+}
+
+/** @returns {{ ok: true } | { ok: false, code: string, message: string }} */
+export function checkPackageDownloadRateLimit(ip, channelId, { maxPerDay = 40 } = {}) {
+  return bumpRate(
+    packageRate,
+    ip,
+    channelId,
+    maxPerDay,
+    "下载过于频繁，请稍后再试"
+  );
 }
 
 export function parseCookies(header) {

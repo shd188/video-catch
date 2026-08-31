@@ -636,15 +636,16 @@
       <h2 class="deliver-title">您购买的是：<span id="deliver-channel-label">…</span></h2>
 
       <div class="deliver-block">
-        <p class="deliver-label">1. 下载安装包（网盘）</p>
+        <p class="deliver-label" id="deliver-download-label">1. 下载安装包</p>
         <div class="deliver-actions">
-          <a id="deliver-pan-url" class="deliver-btn" href="#" target="_blank" rel="noopener" hidden>点击下载安装包</a>
+          <a id="deliver-pan-url" class="deliver-btn" href="#" hidden>点击下载安装包</a>
           <span id="deliver-pan-code-wrap" hidden>
             提取码 <strong id="deliver-pan-code"></strong>
             <button type="button" class="deliver-btn secondary" id="deliver-copy-pan-code" style="padding:6px 10px;font-size:12px;margin-left:6px">复制</button>
           </span>
         </div>
-        <p id="deliver-pan-missing" class="deliver-muted" hidden>网盘链接尚未配置，请联系客服获取安装包。</p>
+        <p id="deliver-pan-hint" class="deliver-muted" hidden>下载后请解压 zip，再按下面的向导加载<strong>文件夹</strong>（不要直接加载 zip）。</p>
+        <p id="deliver-pan-missing" class="deliver-muted" hidden>安装包尚未准备好，请联系客服。</p>
       </div>
 
       <div class="deliver-block">
@@ -723,7 +724,7 @@
               </span>
             </button>
             <div class="wiz-step-body" hidden>
-              <p>请从<strong>上方网盘</strong>下载 <code data-ch-zip>xiaoetong.zip</code>（渠道：<strong data-ch-name>…</strong>），或使用您已收到的安装包。</p>
+              <p>请从<strong>上方</strong>下载 <code data-ch-zip>xiaoetong.zip</code>（渠道：<strong data-ch-name>…</strong>），或使用您已收到的安装包。</p>
               <ol>
                 <li>把 zip 保存到电脑（如下载文件夹）。</li>
                 <li>双击解压，得到文件夹 <code data-ch-folder>xiaoetong</code>。</li>

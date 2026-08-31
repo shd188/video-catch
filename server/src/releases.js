@@ -135,6 +135,21 @@ export function releaseDownloadFilename(channelId) {
   return id ? `${id}.zip` : "extension.zip";
 }
 
+/** 发货页直链：最新版本且磁盘上有 zip */
+export function getLatestPackage(channelId) {
+  const latest = getLatestRelease(channelId);
+  if (!latest) return null;
+  const filePath = resolveReleaseFilePath(channelId, latest.version);
+  if (!filePath) return null;
+  return {
+    channel_id: channelId,
+    version: latest.version,
+    filename: releaseDownloadFilename(channelId),
+    stored_filename: latest.filename,
+    filePath,
+  };
+}
+
 export function buildDownloadUrl(
   publicBaseUrl,
   channelId,
