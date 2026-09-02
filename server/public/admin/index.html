@@ -689,6 +689,58 @@
       <div id="deliveryStockStats" class="stats-box">—</div>
     </section>
 
+    <section id="panel-whitelist" class="card" hidden>
+      <h3>渠道白名单</h3>
+      <p class="section-desc">
+        远程追加的域名会随激活校验下发给已安装新版扩展的用户，<strong>不必卸载重装</strong>。
+        打开扩展或最多约 30 分钟内生效。安装包内置规则仍会保留；此处只能追加或删除远程规则。
+        尚未升级到支持远程白名单的用户，仍需覆盖安装包后重新加载。
+      </p>
+      <div id="whitelistChannelTabs" class="channel-tabs"></div>
+      <p id="whitelistChannelHint" class="section-desc"></p>
+      <div id="whitelistNotice" class="stats-box">登录后显示白名单…</div>
+      <div id="whitelistForm" hidden>
+        <div class="row2">
+          <div>
+            <label>域名或规则</label>
+            <input id="whitelistUrl" placeholder="*.caomaoweilai.com 或 www.example.com" />
+          </div>
+          <div>
+            <label>备注（可选）</label>
+            <input id="whitelistComment" placeholder="例如：商家独立域名" />
+          </div>
+        </div>
+        <button type="button" id="addWhitelistBtn" data-require-auth>添加</button>
+        <div id="whitelistResult"></div>
+      </div>
+      <h3 style="margin-top:24px">远程追加</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>规则</th>
+              <th>备注</th>
+              <th>添加时间</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="whitelistExtraTable"></tbody>
+        </table>
+      </div>
+      <h3 style="margin-top:24px">安装包内置（只读）</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>规则</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody id="whitelistBuiltInTable"></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="panel-coursedl" class="card" hidden>
       <h3>发货页配置</h3>
       <p class="section-desc">
@@ -822,6 +874,7 @@
         tabs: [
           { id: "bulk", label: "生成激活码" },
           { id: "licenses", label: "激活码列表" },
+          { id: "whitelist", label: "渠道白名单" },
           { id: "delivery", label: "发货页配置" },
         ],
       },
@@ -847,10 +900,11 @@
         ],
       },
     ];
-    const PANEL_IDS = ["bulk", "redeem-bulk", "delivery", "coursedl", "licenses", "redeem-list", "account"];
+    const PANEL_IDS = ["bulk", "redeem-bulk", "delivery", "coursedl", "licenses", "redeem-list", "whitelist", "account"];
     const HASH_ALIASES = {
       bulk: ["plugin", "bulk"],
       licenses: ["plugin", "licenses"],
+      whitelist: ["plugin", "whitelist"],
       delivery: ["plugin", "delivery"],
       "redeem-bulk": ["sph", "redeem-bulk"],
       "redeem-list": ["sph", "redeem-list"],
@@ -868,6 +922,7 @@
     let activeTab = "bulk";
     let activeLicenseChannel = "";
     let activeDeliveryChannel = "";
+    let activeWhitelistChannel = "";
     let licensePage = 1;
     const licensePageSize = 50;
     let redeemPage = 1;
@@ -1068,6 +1123,10 @@
       if (list.length && (!activeDeliveryChannel || !list.some((c) => c.id === activeDeliveryChannel))) {
         activeDeliveryChannel = list[0].id;
       }
+      const wlList = whitelistChannels();
+      if (wlList.length && (!activeWhitelistChannel || !wlList.some((c) => c.id === activeWhitelistChannel))) {
+        activeWhitelistChannel = wlList[0].id;
+      }
 
       const hideChannelTabs = list.length <= 1;
       const licTabs = document.getElementById("licenseChannelTabs");
@@ -1086,6 +1145,10 @@
       }
 
       refreshChannelTabs();
+    }
+
+    function whitelistChannels() {
+      return channelsForProduct(activeProduct).filter((c) => c.id !== "quanneng");
     }
 
     function mountChannelTabs(containerId, hintId, getActive, setActive, onSelect, list) {
@@ -1141,6 +1204,14 @@
         (id) => { activeDeliveryChannel = id; },
         loadDeliveryPanel,
         list
+      );
+      mountChannelTabs(
+        "whitelistChannelTabs",
+        "whitelistChannelHint",
+        () => activeWhitelistChannel,
+        (id) => { activeWhitelistChannel = id; },
+        loadWhitelist,
+        whitelistChannels()
       );
     }
 
@@ -1215,6 +1286,7 @@
       if (activeTab === "bulk") loadBulkStats();
       if (activeTab === "redeem-bulk") loadRedeemBulkStats();
       if (activeTab === "delivery" && isAuthenticated) loadDeliveryPanel();
+      if (activeTab === "whitelist" && isAuthenticated) loadWhitelist();
       if (activeTab === "coursedl" && isAuthenticated) loadCourseDlConfig();
       if (activeTab === "licenses" && isAuthenticated) loadLicenses();
       if (activeTab === "redeem-list" && isAuthenticated) loadRedeemCodes();
@@ -1615,6 +1687,120 @@
         el.innerHTML = `<div class="success-box">已保存。买家打开 ${location.origin}/course-dl/ 即可下载。</div>`;
       } catch (e) {
         el.innerHTML = `<p class="err">${e.message}</p>`;
+      }
+    };
+
+    async function loadWhitelist() {
+      const notice = document.getElementById("whitelistNotice");
+      const form = document.getElementById("whitelistForm");
+      const extraTable = document.getElementById("whitelistExtraTable");
+      const builtInTable = document.getElementById("whitelistBuiltInTable");
+      if (!notice || !form || !extraTable || !builtInTable) return;
+      if (!isAuthenticated) {
+        notice.textContent = "登录后显示白名单…";
+        form.hidden = true;
+        extraTable.innerHTML = "";
+        builtInTable.innerHTML = "";
+        return;
+      }
+      const list = whitelistChannels();
+      if (list.length && (!activeWhitelistChannel || !list.some((c) => c.id === activeWhitelistChannel))) {
+        activeWhitelistChannel = list[0].id;
+      }
+      const ch = activeWhitelistChannel;
+      if (!ch) {
+        notice.textContent = "当前产品没有需要白名单的渠道。";
+        form.hidden = true;
+        extraTable.innerHTML = "";
+        builtInTable.innerHTML = "";
+        return;
+      }
+      try {
+        const data = await api("/api/admin/whitelist?channel_id=" + encodeURIComponent(ch));
+        if (!data.uses_whitelist) {
+          notice.innerHTML = "该渠道为全站嗅探，不使用站点白名单。";
+          form.hidden = true;
+          extraTable.innerHTML = `<tr class="empty-row"><td colspan="4">—</td></tr>`;
+          builtInTable.innerHTML = `<tr class="empty-row"><td colspan="2">—</td></tr>`;
+          return;
+        }
+        notice.innerHTML =
+          `已安装支持远程白名单的用户，添加后打开扩展或最多约 30 分钟内生效，无需卸载重装。`;
+        form.hidden = false;
+        const extras = data.extra || [];
+        extraTable.innerHTML = extras.length
+          ? extras
+              .map(
+                (row) => `<tr>
+            <td class="mono" data-label="规则"><code>${escapeHtml(row.url)}</code></td>
+            <td data-label="备注">${escapeHtml(row.comment || "—")}</td>
+            <td data-label="添加时间">${escapeHtml(formatAdminTime(row.created_at) || "—")}</td>
+            <td class="row-actions-cell" data-label="操作">
+              <div class="row-actions">
+                <button type="button" class="btn-danger btn-sm" data-wl-del="${row.id}">删除</button>
+              </div>
+            </td>
+          </tr>`
+              )
+              .join("")
+          : `<tr class="empty-row"><td colspan="4">暂无远程规则。添加后已升级用户无需重装即可使用。</td></tr>`;
+        extraTable.querySelectorAll("[data-wl-del]").forEach((btn) => {
+          btn.onclick = async () => {
+            if (!requireAuth()) return;
+            if (!confirm("确定删除这条远程白名单？已拉取过的用户下次联网后会去掉该规则。")) return;
+            try {
+              await api(
+                `/api/admin/whitelist/${btn.dataset.wlDel}?channel_id=${encodeURIComponent(ch)}`,
+                { method: "DELETE" }
+              );
+              loadWhitelist();
+            } catch (e) {
+              alert(e.message);
+            }
+          };
+        });
+        const builtIn = data.built_in || [];
+        builtInTable.innerHTML = builtIn.length
+          ? builtIn
+              .map(
+                (row) => `<tr>
+            <td class="mono" data-label="规则"><code>${escapeHtml(row.url)}</code></td>
+            <td data-label="备注">${escapeHtml(row.comment || "—")}</td>
+          </tr>`
+              )
+              .join("")
+          : `<tr class="empty-row"><td colspan="2">服务器上看不到安装包内置规则（未部署仓库 channels/）。远程追加仍可下发。</td></tr>`;
+      } catch (e) {
+        notice.textContent = e.message;
+        form.hidden = true;
+      }
+    }
+
+    document.getElementById("addWhitelistBtn").onclick = async () => {
+      if (!requireAuth()) return;
+      const ch = activeWhitelistChannel;
+      const el = document.getElementById("whitelistResult");
+      el.innerHTML = "";
+      if (!ch) {
+        el.innerHTML = `<p class="err">请先选择渠道</p>`;
+        return;
+      }
+      try {
+        await api("/api/admin/whitelist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channel_id: ch,
+            url: document.getElementById("whitelistUrl").value.trim(),
+            comment: document.getElementById("whitelistComment").value.trim(),
+          }),
+        });
+        document.getElementById("whitelistUrl").value = "";
+        document.getElementById("whitelistComment").value = "";
+        el.innerHTML = `<div class="success-box"><p>已添加。已升级用户打开扩展后即可使用，无需卸载重装。</p></div>`;
+        loadWhitelist();
+      } catch (e) {
+        el.innerHTML = `<p class="err">${escapeHtml(e.message)}</p>`;
       }
     };
 

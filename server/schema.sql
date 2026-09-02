@@ -59,6 +59,17 @@ CREATE INDEX IF NOT EXISTS idx_releases_channel ON releases(channel_id);
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_pack ON redeem_codes(pack);
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_remaining ON redeem_codes(remaining);
 
+CREATE TABLE IF NOT EXISTS channel_whitelist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  comment TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(channel_id, url)
+);
+
+CREATE INDEX IF NOT EXISTS idx_channel_whitelist_channel ON channel_whitelist(channel_id);
+
 -- Unique per order only among active codes; revoked rows keep order_no for lookup.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_licenses_channel_order
   ON licenses(channel_id, order_no)

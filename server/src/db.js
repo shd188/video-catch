@@ -79,6 +79,17 @@ function migrate(database) {
   if (!redeemCols.includes("activated_at")) {
     database.exec(`ALTER TABLE redeem_codes ADD COLUMN activated_at TEXT`);
   }
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS channel_whitelist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      channel_id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      comment TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(channel_id, url)
+    );
+    CREATE INDEX IF NOT EXISTS idx_channel_whitelist_channel ON channel_whitelist(channel_id);
+  `);
 }
 
 export function getReleasesDir() {

@@ -8,6 +8,7 @@ const LicenseStorage = {
   lastCheck: "licenseLastCheck",
   activatedOnce: "licenseActivatedOnce",
   invalidated: "licenseInvalidated",
+  remoteBlockUrl: "channelRemoteBlockUrl",
 };
 
 /** 不依赖 G 的订阅状态（安装页 / background 共用） */
@@ -86,6 +87,9 @@ function licenseApplyCheckResult(result, cfg) {
   if (LicenseState.update && typeof licenseMaybePromptUpdate === "function") {
     licenseMaybePromptUpdate();
   }
+  if (Array.isArray(result?.block_url)) {
+    licenseApplyRemoteBlockUrl(result.block_url);
+  }
 }
 
 function licenseMarkInvalidated() {
@@ -124,6 +128,7 @@ function licenseApplyLocalActivationHint() {
 
 async function licenseBootstrap() {
   await licenseAwaitStorageReady();
+  await licenseLoadCachedRemoteBlockUrl();
   const cfg = await licenseGetConfig();
   if (!cfg?.apiBase) {
     LicenseState.active = true;
@@ -208,6 +213,33 @@ function licenseSetStoredKey(key) {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [LicenseStorage.key]: key }, resolve);
   });
+}
+
+function licenseApplyRemoteBlockUrl(list) {
+  const cleaned = Array.isArray(list)
+    ? list
+        .map((item) => ({ url: String(item?.url || item || "").trim(), state: true }))
+        .filter((item) => item.url)
+    : [];
+  chrome.storage.local.set({ [LicenseStorage.remoteBlockUrl]: cleaned });
+  if (typeof setChannelRemoteBlockUrl === "function") {
+    setChannelRemoteBlockUrl(cleaned);
+  } else if (typeof G !== "undefined") {
+    G._channelRemoteBlockUrl = cleaned;
+  }
+}
+
+async function licenseLoadCachedRemoteBlockUrl() {
+  const items = await new Promise((resolve) => {
+    chrome.storage.local.get([LicenseStorage.remoteBlockUrl], (data) => resolve(data || {}));
+  });
+  const list = items[LicenseStorage.remoteBlockUrl];
+  if (!Array.isArray(list)) return;
+  if (typeof setChannelRemoteBlockUrl === "function") {
+    setChannelRemoteBlockUrl(list);
+  } else if (typeof G !== "undefined") {
+    G._channelRemoteBlockUrl = list;
+  }
 }
 
 async function licenseApiPost(path, body) {
@@ -308,6 +340,7 @@ function licensePreserveKeys() {
     LicenseStorage.lastCheck,
     LicenseStorage.activatedOnce,
     LicenseStorage.invalidated,
+    LicenseStorage.remoteBlockUrl,
     "updateDismissedVersion",
     "updatePromptShownVersion",
     "pendingUpdate",

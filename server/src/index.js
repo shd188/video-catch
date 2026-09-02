@@ -72,6 +72,14 @@ import {
 } from "./admin-auth.js";
 import { getAdminChannelList } from "./admin-channels.js";
 import { resolveUserGuidePath } from "./user-guide.js";
+import {
+  addChannelWhitelist,
+  channelUsesWhitelist,
+  deleteChannelWhitelist,
+  getBuiltInBlockUrl,
+  getChannelWhitelistPatterns,
+  listChannelWhitelist,
+} from "./channel-whitelist.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
@@ -436,6 +444,7 @@ app.post("/api/v1/check", (req, res) => {
       { strict: strictMode }
     );
   }
+  payload.block_url = getChannelWhitelistPatterns(channelId);
   res.json(payload);
 });
 
@@ -567,6 +576,54 @@ app.get("/api/admin/channels", adminAuth, (_req, res) => {
     ok: true,
     channels: getAdminChannelList(ADMIN_CHANNELS.join(","), ADMIN_CHANNEL_LABELS),
   });
+});
+
+app.get("/api/admin/whitelist", adminAuth, (req, res) => {
+  const channelId = String(req.query.channel_id || "").trim();
+  if (!channelId) {
+    return res.status(400).json({ ok: false, message: "请指定 channel_id" });
+  }
+  res.json({
+    ok: true,
+    channel_id: channelId,
+    uses_whitelist: channelUsesWhitelist(channelId),
+    built_in: getBuiltInBlockUrl(channelId),
+    extra: listChannelWhitelist(channelId),
+  });
+});
+
+app.post("/api/admin/whitelist", adminAuth, (req, res) => {
+  const channelId = String(req.body?.channel_id || "").trim();
+  if (!channelId) {
+    return res.status(400).json({ ok: false, message: "请指定 channel_id" });
+  }
+  if (!channelUsesWhitelist(channelId)) {
+    return res.status(400).json({ ok: false, message: "该渠道为全站嗅探，无需白名单" });
+  }
+  try {
+    const item = addChannelWhitelist({
+      channelId,
+      url: req.body?.url,
+      comment: req.body?.comment,
+    });
+    res.json({ ok: true, item });
+  } catch (e) {
+    res.status(400).json({ ok: false, message: e.message || "添加失败" });
+  }
+});
+
+app.delete("/api/admin/whitelist/:id", adminAuth, (req, res) => {
+  const channelId = String(req.body?.channel_id || req.query.channel_id || "").trim();
+  const id = Number(req.params.id);
+  if (!channelId || !Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ ok: false, message: "请指定 channel_id 与规则 id" });
+  }
+  try {
+    deleteChannelWhitelist(id, channelId);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ ok: false, message: e.message || "删除失败" });
+  }
 });
 
 app.get("/api/admin/releases/download", adminAuth, (req, res) => {

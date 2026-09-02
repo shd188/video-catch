@@ -33,8 +33,17 @@ function stripChannelProtectedImport(importData) {
 }
 
 function getChannelWhitelistPatterns() {
-    const list = G._channelBuildLock?.blockUrl ?? G.OptionLists?.blockUrl ?? [];
-    return list.filter((x) => x.state !== false).map((x) => x.url);
+    const builtIn = G._channelBuildLock?.blockUrl ?? G.OptionLists?.blockUrl ?? [];
+    const extras = G._channelRemoteBlockUrl ?? [];
+    const urls = [];
+    const seen = new Set();
+    for (const item of [...builtIn, ...extras]) {
+        if (!item || item.state === false || !item.url) { continue; }
+        if (seen.has(item.url)) { continue; }
+        seen.add(item.url);
+        urls.push(item.url);
+    }
+    return urls;
 }
 
 /** Keys to write back to chrome.storage.sync after import/reset */

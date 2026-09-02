@@ -405,9 +405,19 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
             continue;
         }
         if (key == "blockUrl") {
+            if (typeof applyChannelBuildDefaults === "function" && G.channelId && G._channelBuildLock) {
+                applyChannelBuildDefaults();
+                continue;
+            }
             G.blockUrl = newValue.map(item => {
                 return { url: wildcardToRegex(item.url), state: item.state }
             });
+            continue;
+        }
+        if (key == "channelRemoteBlockUrl") {
+            if (typeof setChannelRemoteBlockUrl === "function") {
+                setChannelRemoteBlockUrl(newValue || []);
+            }
             continue;
         }
         if (key == "featMobileTabId" || key == "featAutoDownTabId") {

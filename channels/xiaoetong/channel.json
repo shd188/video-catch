@@ -99,6 +99,11 @@
         "url": "https://www.tuyaedu.com/*",
         "state": true,
         "comment": "商家独立域名：www.tuyaedu.com"
+      },
+      {
+        "url": "https://*.caomaoweilai.com/*",
+        "state": true,
+        "comment": "商家独立域名：*.caomaoweilai.com"
       }
     ],
     "deepSearch": false,

@@ -25,12 +25,12 @@
         $(".Tabs").after($bar);
 
         const name = G.channelDisplayName || G.channelId;
-        const patterns = typeof getChannelWhitelistPatterns === "function"
-            ? getChannelWhitelistPatterns()
-            : [];
         $bar.find(".channel-title").text(name);
 
         const renderWhitelist = function () {
+            const patterns = typeof getChannelWhitelistPatterns === "function"
+                ? getChannelWhitelistPatterns()
+                : [];
             isCurrentTabChannelAllowed(function (allowed, tabUrl) {
                 if (allowed) {
                     $bar.removeClass("channel-blocked").addClass("channel-allowed");

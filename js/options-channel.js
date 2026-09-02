@@ -54,7 +54,7 @@
         div.className = "channel-banner";
         div.innerHTML = `
             <h2>${escapeHtml(name)}</h2>
-            <p>渠道构建版本：域名白名单由源码配置锁定，运行时自动生效。修改白名单请编辑仓库 <code>channels/${escapeHtml(G.channelId)}/channel.json</code> 后重新构建。</p>
+            <p>渠道构建版本：域名白名单由源码配置锁定，并可接收服务端远程追加。修改内置规则请编辑仓库 <code>channels/${escapeHtml(G.channelId)}/channel.json</code> 后重新构建；临时域名可在管理后台「渠道白名单」添加，用户无需重装。</p>
             <p>软件遵循 <strong>GPL-3.0</strong>；付费内容为技术支持与适配服务，见仓库 <code>docs/SERVICE.md</code>。</p>
         `;
         wrapper.insertBefore(div, wrapper.firstChild);
@@ -64,9 +64,11 @@
         const wrapper = document.querySelector(".wrapper.options");
         if (!wrapper || document.getElementById("anchorChannelWhitelist")) { return; }
 
-        const urls = (G._channelBuildLock?.blockUrl || G.OptionLists?.blockUrl || [])
-            .filter((x) => x.state !== false)
-            .map((x) => x.url);
+        const urls = (typeof getChannelWhitelistPatterns === "function"
+            ? getChannelWhitelistPatterns()
+            : (G._channelBuildLock?.blockUrl || G.OptionLists?.blockUrl || [])
+                .filter((x) => x.state !== false)
+                .map((x) => x.url));
 
         const section = document.createElement("section");
         section.id = "anchorChannelWhitelist";
